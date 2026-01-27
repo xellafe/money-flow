@@ -49,12 +49,27 @@ cd budget-tracker
 # Installa dipendenze
 npm install
 
-# Avvia in development
+# Avvia in development (solo web)
 npm run dev
 
-# Build per produzione
+# Build per produzione (solo web)
 npm run build
 ```
+
+### 🖥️ Electron (App Desktop)
+
+```bash
+# Avvia app desktop in development
+npm run electron:dev
+
+# Anteprima build desktop
+npm run electron:preview
+
+# Build app desktop per distribuzione
+npm run electron:build
+```
+
+> **Nota:** Il comando `electron:build` genera un eseguibile portable per Windows nella cartella `release/`.
 
 ## 📁 Struttura Progetto
 
