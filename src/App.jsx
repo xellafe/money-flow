@@ -115,9 +115,8 @@ function ConfirmModal({ title, message, onConfirm, onCancel }) {
 }
 
 // Componente Wizard mappatura colonne
-function ImportWizard({ columns, sampleData, onConfirm, onCancel, existingProfiles }) {
+function ImportWizard({ columns, sampleData, onConfirm, onCancel }) {
   const [profileName, setProfileName] = useState('');
-  const [headerRow, setHeaderRow] = useState(0);
   const [dateColumn, setDateColumn] = useState('');
   const [descriptionColumn, setDescriptionColumn] = useState('');
   const [amountType, setAmountType] = useState('single');
@@ -132,7 +131,7 @@ function ImportWizard({ columns, sampleData, onConfirm, onCancel, existingProfil
   const handleConfirm = () => {
     const profile = {
       name: profileName.trim(),
-      headerRow,
+      headerRow: 0,
       dateColumn,
       descriptionColumn,
       amountType,
@@ -607,7 +606,7 @@ export default function MoneyFlow() {
   }), [importProfiles]);
 
   // Auto-detect del formato file
-  const detectProfile = useCallback((columns, rows) => {
+  const detectProfile = useCallback((columns) => {
     // Prova tutti i profili disponibili
     for (const [key, profile] of Object.entries(allProfiles)) {
       const hasDate = columns.includes(profile.dateColumn);
@@ -686,7 +685,7 @@ export default function MoneyFlow() {
               break;
             }
           }
-        } catch (e) {
+        } catch {
           // Continua con il prossimo
         }
       }
@@ -719,7 +718,7 @@ export default function MoneyFlow() {
     } finally {
       setLoading(false);
     }
-  }, [transactions, detectProfile, processRowsWithProfile, showToast]);
+  }, [detectProfile, processRowsWithProfile, processImportedTransactions, showToast]);
 
   // Funzione per processare transazioni importate con rilevamento conflitti
   const processImportedTransactions = useCallback((newTx, profileName) => {
@@ -907,7 +906,7 @@ export default function MoneyFlow() {
       console.error('Errore import backup:', error);
       showToast('Errore nel ripristino del backup', 'error');
     }
-  }, [transactions, categories, showToast]);
+  }, [transactions, categories, importProfiles, showToast]);
 
   // Delete transaction
   const deleteTransaction = useCallback((id) => {
