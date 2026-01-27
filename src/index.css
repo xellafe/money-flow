@@ -65,6 +65,11 @@ button {
   padding: 0;
 }
 
+/* Focus solo per navigazione da tastiera, non per click */
+button:focus {
+  outline: none;
+}
+
 button:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
@@ -75,9 +80,29 @@ input, select {
   font-size: inherit;
 }
 
+/* Focus visibile solo per input testuali */
 input:focus, select:focus {
+  outline: none;
+}
+
+input[type="text"]:focus,
+input[type="search"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
+}
+
+/* Rimuovi focus da elementi non interattivi */
+svg:focus,
+path:focus,
+g:focus,
+.recharts-wrapper:focus,
+.recharts-surface:focus,
+.recharts-layer:focus {
+  outline: none !important;
 }
 
 ::-webkit-scrollbar {

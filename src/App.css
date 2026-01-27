@@ -3,8 +3,12 @@
 /* Layout */
 .app-container {
   min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   background-color: var(--color-gray-50);
   color: var(--color-gray-800);
+  overflow: hidden;
 }
 
 /* Header */
@@ -51,7 +55,168 @@
   flex-wrap: wrap;
 }
 
-/* Navigation */
+/* Dropdown */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.dropdown-toggle.active {
+  background: var(--color-gray-200);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.375rem;
+  min-width: 200px;
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  animation: fadeIn 0.15s ease;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-gray-700);
+  text-align: left;
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+.dropdown-item:hover {
+  background: var(--color-gray-50);
+}
+
+.dropdown-item.text-danger {
+  color: var(--color-danger);
+}
+
+.dropdown-item.text-danger:hover {
+  background: var(--color-danger-light);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--color-gray-200);
+  margin: 0.25rem 0;
+}
+
+/* Tab Bar */
+/* Filters Bar */
+.filters-bar {
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
+  padding: 0.75rem 0;
+}
+
+.filters-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.filters-content .year-select {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 0.5rem;
+  background: white;
+  color: var(--color-gray-700);
+  cursor: pointer;
+}
+
+.filters-content .year-select:hover {
+  border-color: var(--color-gray-300);
+}
+
+.filters-content .month-buttons {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.filters-content .month-btn {
+  padding: 0.375rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 0.375rem;
+  background: white;
+  color: var(--color-gray-600);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filters-content .month-btn:hover {
+  background: var(--color-gray-50);
+  border-color: var(--color-gray-300);
+}
+
+.filters-content .month-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.tab-bar {
+  background: white;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.tab-bar-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tab-bar-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.tab-item {
+  padding: 0.875rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-gray-500);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  margin-bottom: -1px;
+}
+
+.tab-item:hover {
+  color: var(--color-gray-700);
+}
+
+.tab-item.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Navigation - kept for backwards compatibility */
 .nav-tabs {
   display: flex;
   gap: 0.25rem;
@@ -99,9 +264,14 @@
 
 /* Main content */
 .main-content {
+  flex: 1;
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   padding: 1.5rem 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Drop zone */
@@ -214,6 +384,13 @@
   overflow: hidden;
 }
 
+.card.card-fullheight {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .card-header {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--color-gray-100);
@@ -233,6 +410,8 @@
 
 .card-body {
   padding: 1.25rem;
+  flex: 1;
+  overflow-y: auto;
 }
 
 /* Stats cards */
@@ -393,10 +572,73 @@
   text-align: right;
 }
 
+/* Add transaction form */
+.add-transaction-form {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.form-input {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 0.5rem;
+  background: white;
+  color: var(--color-gray-700);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input::placeholder {
+  color: var(--color-gray-400);
+}
+
 /* Transactions list */
 .transactions-list {
-  max-height: 500px;
+  flex: 1;
   overflow-y: auto;
+  min-height: 0;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.pagination:last-child {
+  top: auto;
+  bottom: 0;
+  border-bottom: none;
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.pagination-info {
+  font-size: 0.875rem;
+  color: var(--color-gray-600);
+}
+
+.pagination .btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .transaction-item {
@@ -632,11 +874,80 @@
   animation: slideUp 0.3s ease;
 }
 
+.modal.modal-large {
+  max-width: 600px;
+}
+
+.category-manager-modal {
+  max-width: 900px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.category-manager-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-gray-200);
+  margin-bottom: 0;
+}
+
+.category-manager-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-gray-200);
+  margin-bottom: 1rem;
+}
+
+.modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-gray-900);
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--color-gray-500);
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
 .modal-title {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--color-gray-900);
   margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .modal-message {
@@ -688,4 +999,283 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Import Wizard */
+.wizard-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.wizard-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.wizard-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-gray-700);
+}
+
+.wizard-field input,
+.wizard-field select {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wizard-field input:focus,
+.wizard-field select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.wizard-radio-group {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.wizard-radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.wizard-radio-group input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-primary);
+}
+
+.wizard-preview {
+  margin-top: 0.5rem;
+}
+
+.wizard-preview > label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-gray-700);
+  margin-bottom: 0.5rem;
+}
+
+.wizard-preview-table {
+  border: 1px solid var(--color-gray-200);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.wizard-preview-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.wizard-preview-table th,
+.wizard-preview-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-gray-100);
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wizard-preview-table th {
+  background: var(--color-gray-50);
+  font-weight: 600;
+  color: var(--color-gray-700);
+}
+
+.wizard-preview-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Conflict Resolver */
+.conflict-actions-top {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.btn-small {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-small:hover {
+  background: var(--color-gray-200);
+}
+
+.conflict-list {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.conflict-item {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-gray-100);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.conflict-item:last-child {
+  border-bottom: none;
+}
+
+.conflict-info {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.conflict-date {
+  font-size: 0.875rem;
+  color: var(--color-gray-600);
+  font-weight: 500;
+}
+
+.conflict-amount {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-gray-900);
+}
+
+.conflict-descriptions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.conflict-existing,
+.conflict-new {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.conflict-label {
+  font-weight: 500;
+  color: var(--color-gray-500);
+  min-width: 55px;
+  flex-shrink: 0;
+}
+
+.conflict-text {
+  color: var(--color-gray-700);
+  word-break: break-word;
+}
+
+.conflict-existing .conflict-text {
+  color: var(--color-gray-500);
+}
+
+.conflict-new .conflict-text {
+  color: var(--color-primary);
+}
+
+.conflict-decision {
+  display: flex;
+  gap: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--color-gray-200);
+}
+
+.conflict-decision label {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--color-gray-600);
+  cursor: pointer;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.conflict-decision label:hover {
+  background: var(--color-gray-100);
+}
+
+.conflict-decision label.selected {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.conflict-decision input[type="radio"] {
+  accent-color: var(--color-primary);
+  outline: none;
+}
+
+.conflict-decision input[type="radio"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.wizard-radio-group input[type="radio"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Rimuovi focus da elementi non interattivi */
+.stat-card:focus,
+.chart-container:focus,
+.category-card:focus,
+.transaction-item:focus,
+.month-card:focus,
+.drop-zone:focus {
+  outline: none;
+}
+
+/* Rimuovi focus da grafici Recharts */
+.recharts-wrapper,
+.recharts-wrapper *:focus {
+  outline: none !important;
+}
+
+/* Rimuovi focus da label che contengono input */
+label:focus {
+  outline: none;
+}
+
+/* Nav tabs - focus solo con tastiera */
+.nav-tab:focus {
+  outline: none;
+}
+
+.nav-tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Checkbox e radio generici */
+input[type="checkbox"]:focus,
+input[type="radio"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+input[type="file"]:focus {
+  outline: none;
 }
