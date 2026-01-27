@@ -469,6 +469,8 @@ export default function MoneyFlow() {
   const [wizardData, setWizardData] = useState(null); // { columns, sampleData, rawRows, file }
   // State per conflitti import
   const [importConflicts, setImportConflicts] = useState(null); // { conflicts, newTransactions, profileName }
+  // State per risoluzioni conflitti categoria memorizzate (descrizione -> categoria)
+  const [categoryResolutions, setCategoryResolutions] = useState({});
   // State per dropdown menu
   const [openDropdown, setOpenDropdown] = useState(null); // 'file' | 'actions' | null
   // State per nuova transazione manuale
@@ -479,6 +481,9 @@ export default function MoneyFlow() {
   // State per paginazione transazioni
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 50;
+  // State per filtri dashboard
+  const [dashboardTypeFilter, setDashboardTypeFilter] = useState('all'); // 'all' | 'income' | 'expenses'
+  const [dashboardCategoryFilter, setDashboardCategoryFilter] = useState([]); // array di categorie selezionate
   // State per segnalare modifiche categorie non applicate
   const [categoriesChanged, setCategoriesChanged] = useState(false);
 
@@ -503,6 +508,7 @@ export default function MoneyFlow() {
         setTransactions(data.transactions || []);
         if (data.categories) setCategories({...DEFAULT_CATEGORIES, ...data.categories});
         if (data.importProfiles) setImportProfiles(data.importProfiles);
+        if (data.categoryResolutions) setCategoryResolutions(data.categoryResolutions);
       }
     } catch (error) {
       console.error('Errore caricamento dati:', error);
@@ -512,14 +518,14 @@ export default function MoneyFlow() {
 
   // Salva dati
   useEffect(() => {
-    if (transactions.length > 0 || Object.keys(importProfiles).length > 0) {
+    if (transactions.length > 0 || Object.keys(importProfiles).length > 0 || Object.keys(categoryResolutions).length > 0) {
       try {
-        localStorage.setItem('moneyFlow', JSON.stringify({ transactions, categories, importProfiles }));
+        localStorage.setItem('moneyFlow', JSON.stringify({ transactions, categories, importProfiles, categoryResolutions }));
       } catch (error) {
         console.error('Errore salvataggio:', error);
       }
     }
-  }, [transactions, categories, importProfiles]);
+  }, [transactions, categories, importProfiles, categoryResolutions]);
 
   // Trova tutte le categorie che matchano una descrizione
   const findMatchingCategories = useCallback((description) => {
@@ -950,6 +956,14 @@ export default function MoneyFlow() {
       if (matches.length <= 1) {
         return { ...t, category: matches.length === 1 ? matches[0].category : 'Altro' };
       }
+      
+      // Controlla se c'è una risoluzione memorizzata per questa descrizione
+      const savedResolution = categoryResolutions[t.description];
+      if (savedResolution && matches.some(m => m.category === savedResolution)) {
+        // Usa la risoluzione memorizzata se la categoria è ancora tra le opzioni
+        return { ...t, category: savedResolution };
+      }
+      
       // Conflitto: più categorie matchano
       // Per ora usa la keyword più lunga, ma registra il conflitto
       const best = matches.reduce((a, b) => a.keyword.length >= b.keyword.length ? a : b);
@@ -965,20 +979,29 @@ export default function MoneyFlow() {
     } else {
       showToast('Transazioni ri-categorizzate');
     }
-  }, [transactions, findMatchingCategories, showToast]);
+  }, [transactions, findMatchingCategories, showToast, categoryResolutions]);
 
-  // Risolvi un conflitto di categoria
+  // Risolvi un conflitto di categoria (e memorizza la scelta)
   const resolveCategoryConflict = useCallback((txId, category) => {
+    // Trova la descrizione della transazione per memorizzare la risoluzione
+    const conflict = categoryConflicts?.find(c => c.txId === txId);
+    if (conflict) {
+      setCategoryResolutions(prev => ({
+        ...prev,
+        [conflict.description]: category
+      }));
+    }
+    
     setTransactions(prev => prev.map(t => t.id === txId ? { ...t, category } : t));
     setCategoryConflicts(prev => {
       const remaining = prev.filter(c => c.txId !== txId);
       if (remaining.length === 0) {
-        showToast('Conflitti risolti');
+        showToast('Conflitti risolti (scelte memorizzate)');
         return null;
       }
       return remaining;
     });
-  }, [showToast]);
+  }, [showToast, categoryConflicts]);
 
   // Chiudi conflitti categoria (applica scelte di default)
   const closeCategoryConflicts = useCallback(() => {
@@ -1025,8 +1048,20 @@ export default function MoneyFlow() {
       filtered = filtered.filter(t => new Date(t.date).getMonth() === selectedMonth);
     }
     
-    // Dati per dashboard (senza filtro ricerca)
-    const dashboardFiltered = filtered;
+    // Dati per dashboard (senza filtro ricerca, ma con filtri dashboard)
+    let dashboardFiltered = filtered;
+    
+    // Filtro per tipo (entrate/uscite)
+    if (dashboardTypeFilter === 'income') {
+      dashboardFiltered = dashboardFiltered.filter(t => t.amount > 0);
+    } else if (dashboardTypeFilter === 'expenses') {
+      dashboardFiltered = dashboardFiltered.filter(t => t.amount < 0);
+    }
+    
+    // Filtro per categoria
+    if (dashboardCategoryFilter.length > 0) {
+      dashboardFiltered = dashboardFiltered.filter(t => dashboardCategoryFilter.includes(t.category));
+    }
 
     const income = dashboardFiltered.filter(t => t.amount > 0).reduce((s,t) => s + t.amount, 0);
     const expenses = dashboardFiltered.filter(t => t.amount < 0).reduce((s,t) => s + Math.abs(t.amount), 0);
@@ -1043,10 +1078,32 @@ export default function MoneyFlow() {
       value: Math.abs(txs.reduce((s, t) => s + t.amount, 0)),
       count: txs.length
     })).sort((a,b) => b.value - a.value);
+    
+    // Categorie per entrate
+    const byCategoryIncome = {};
+    dashboardFiltered.filter(t => t.amount > 0).forEach(t => {
+      if (!byCategoryIncome[t.category]) byCategoryIncome[t.category] = [];
+      byCategoryIncome[t.category].push(t);
+    });
+    
+    const categoryDataIncome = Object.entries(byCategoryIncome).map(([name, txs]) => ({
+      name,
+      value: txs.reduce((s, t) => s + t.amount, 0),
+      count: txs.length
+    })).sort((a,b) => b.value - a.value);
 
     // Dati mensili
     const byMonth = {};
-    transactions.filter(t => new Date(t.date).getFullYear() === selectedYear).forEach(t => {
+    let monthlyFiltered = transactions.filter(t => new Date(t.date).getFullYear() === selectedYear);
+    if (dashboardTypeFilter === 'income') {
+      monthlyFiltered = monthlyFiltered.filter(t => t.amount > 0);
+    } else if (dashboardTypeFilter === 'expenses') {
+      monthlyFiltered = monthlyFiltered.filter(t => t.amount < 0);
+    }
+    if (dashboardCategoryFilter.length > 0) {
+      monthlyFiltered = monthlyFiltered.filter(t => dashboardCategoryFilter.includes(t.category));
+    }
+    monthlyFiltered.forEach(t => {
       const month = new Date(t.date).getMonth();
       if (!byMonth[month]) byMonth[month] = [];
       byMonth[month].push(t);
@@ -1081,6 +1138,9 @@ export default function MoneyFlow() {
         return { day, Saldo: cumulative, Movimento: dayTotal };
       });
     }
+    
+    // Lista di tutte le categorie disponibili (per filtro)
+    const allCategories = [...new Set(filtered.map(t => t.category))].sort((a, b) => a.localeCompare(b, 'it'));
 
     // Filtro ricerca (solo per lista transazioni)
     if (searchQuery.trim()) {
@@ -1091,8 +1151,8 @@ export default function MoneyFlow() {
       );
     }
 
-    return { income, expenses, balance: income - expenses, categoryData, monthlyData, dailyData, filtered };
-  }, [transactions, selectedMonth, selectedYear, searchQuery]);
+    return { income, expenses, balance: income - expenses, categoryData, categoryDataIncome, monthlyData, dailyData, filtered, allCategories };
+  }, [transactions, selectedMonth, selectedYear, searchQuery, dashboardTypeFilter, dashboardCategoryFilter]);
 
   // Update categoria transazione
   const updateTxCategory = useCallback((id, category) => {
@@ -1271,6 +1331,72 @@ export default function MoneyFlow() {
         {/* Dashboard View */}
         {transactions.length > 0 && view === 'dashboard' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            {/* Filtri Dashboard */}
+            <div className="dashboard-filters">
+              <div className="filter-group">
+                <span className="filter-label">Mostra:</span>
+                <div className="filter-toggle">
+                  <button 
+                    className={`filter-btn ${dashboardTypeFilter === 'all' ? 'active' : ''}`}
+                    onClick={() => setDashboardTypeFilter('all')}
+                  >
+                    Tutto
+                  </button>
+                  <button 
+                    className={`filter-btn ${dashboardTypeFilter === 'income' ? 'active' : ''}`}
+                    onClick={() => setDashboardTypeFilter('income')}
+                  >
+                    Entrate
+                  </button>
+                  <button 
+                    className={`filter-btn ${dashboardTypeFilter === 'expenses' ? 'active' : ''}`}
+                    onClick={() => setDashboardTypeFilter('expenses')}
+                  >
+                    Uscite
+                  </button>
+                </div>
+              </div>
+              <div className="filter-group">
+                <span className="filter-label">Categorie:</span>
+                <div className="category-filter-chips">
+                  {dashboardCategoryFilter.length === 0 ? (
+                    <span className="filter-placeholder">Tutte le categorie</span>
+                  ) : (
+                    dashboardCategoryFilter.map(cat => (
+                      <span key={cat} className="filter-chip">
+                        {cat}
+                        <button onClick={() => setDashboardCategoryFilter(prev => prev.filter(c => c !== cat))}>
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))
+                  )}
+                  <select 
+                    className="category-filter-select"
+                    value=""
+                    onChange={e => {
+                      if (e.target.value && !dashboardCategoryFilter.includes(e.target.value)) {
+                        setDashboardCategoryFilter(prev => [...prev, e.target.value]);
+                      }
+                    }}
+                  >
+                    <option value="">+ Aggiungi</option>
+                    {stats.allCategories.filter(c => !dashboardCategoryFilter.includes(c)).sort((a, b) => a.localeCompare(b, 'it')).map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  {dashboardCategoryFilter.length > 0 && (
+                    <button 
+                      className="filter-clear" 
+                      onClick={() => setDashboardCategoryFilter([])}
+                    >
+                      Azzera
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Stats Cards */}
             <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
               <StatCard 
@@ -1291,12 +1417,16 @@ export default function MoneyFlow() {
             <div className="charts-grid">
               {/* Pie Chart */}
               <div className="chart-container">
-                <h3 className="chart-title">Uscite per categoria</h3>
-                {stats.categoryData.length > 0 ? (
+                <h3 className="chart-title">
+                  {dashboardTypeFilter === 'income' ? 'Entrate per categoria' : 
+                   dashboardTypeFilter === 'expenses' ? 'Uscite per categoria' : 
+                   'Uscite per categoria'}
+                </h3>
+                {(dashboardTypeFilter === 'income' ? stats.categoryDataIncome : stats.categoryData).length > 0 ? (
                   <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
                       <Pie 
-                        data={stats.categoryData} 
+                        data={dashboardTypeFilter === 'income' ? stats.categoryDataIncome : stats.categoryData} 
                         dataKey="value" 
                         nameKey="name" 
                         cx="50%" 
@@ -1304,7 +1434,7 @@ export default function MoneyFlow() {
                         outerRadius={80}
                         innerRadius={40}
                       >
-                        {stats.categoryData.map((_, i) => (
+                        {(dashboardTypeFilter === 'income' ? stats.categoryDataIncome : stats.categoryData).map((_, i) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
                       </Pie>
@@ -1320,7 +1450,9 @@ export default function MoneyFlow() {
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="chart-empty">Nessuna uscita nel periodo</div>
+                  <div className="chart-empty">
+                    {dashboardTypeFilter === 'income' ? 'Nessuna entrata nel periodo' : 'Nessuna uscita nel periodo'}
+                  </div>
                 )}
               </div>
 
