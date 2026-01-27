@@ -379,7 +379,26 @@ function ConflictResolver({ conflicts, onResolve, onCancel }) {
 }
 
 // Componente per gestione conflitti categoria
-function CategoryConflictResolver({ conflicts, onResolve, onClose }) {
+function CategoryConflictResolver({ conflicts, onConfirm, onClose }) {
+  // Stato locale per le scelte (inizializzato con le scelte di default)
+  const [choices, setChoices] = useState(() => {
+    const initial = {};
+    conflicts.forEach(c => {
+      initial[c.txId] = c.currentChoice;
+    });
+    return initial;
+  });
+
+  const handleConfirm = () => {
+    // Passa tutte le scelte al genitore
+    const resolutions = conflicts.map(c => ({
+      txId: c.txId,
+      description: c.description,
+      category: choices[c.txId]
+    }));
+    onConfirm(resolutions);
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-large" onClick={e => e.stopPropagation()}>
@@ -409,11 +428,11 @@ function CategoryConflictResolver({ conflicts, onResolve, onClose }) {
               </div>
               <div className="conflict-decision" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                 {conflict.matches.map(m => (
-                  <label key={m.category} className={conflict.currentChoice === m.category ? 'selected' : ''}>
+                  <label key={m.category} className={choices[conflict.txId] === m.category ? 'selected' : ''}>
                     <input
                       type="radio"
-                      checked={conflict.currentChoice === m.category}
-                      onChange={() => onResolve(conflict.txId, m.category)}
+                      checked={choices[conflict.txId] === m.category}
+                      onChange={() => setChoices(prev => ({ ...prev, [conflict.txId]: m.category }))}
                     />
                     {m.category} <small style={{ color: 'var(--color-gray-500)' }}>({m.keyword})</small>
                   </label>
@@ -424,7 +443,10 @@ function CategoryConflictResolver({ conflicts, onResolve, onClose }) {
         </div>
 
         <div className="modal-actions">
-          <button className="btn-primary" onClick={onClose}>
+          <button className="btn-secondary" onClick={onClose}>
+            Annulla
+          </button>
+          <button className="btn-primary" onClick={handleConfirm}>
             <Check size={16} /> Conferma
           </button>
         </div>
@@ -484,13 +506,17 @@ export default function MoneyFlow() {
   // State per filtri dashboard
   const [dashboardTypeFilter, setDashboardTypeFilter] = useState('all'); // 'all' | 'income' | 'expenses'
   const [dashboardCategoryFilter, setDashboardCategoryFilter] = useState([]); // array di categorie selezionate
+  // State per categoria espansa nel dettaglio dashboard
+  const [expandedCategory, setExpandedCategory] = useState(null);
+  // State per filtro categoria nei movimenti
+  const [transactionsCategoryFilter, setTransactionsCategoryFilter] = useState(null);
   // State per segnalare modifiche categorie non applicate
   const [categoriesChanged, setCategoriesChanged] = useState(false);
 
   // Reset pagina quando cambiano i filtri
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedYear, selectedMonth, searchQuery, view]);
+  }, [selectedYear, selectedMonth, searchQuery, view, transactionsCategoryFilter]);
   // State per conflitti categoria durante ricategorizzazione
   const [categoryConflicts, setCategoryConflicts] = useState(null); // [{ txId, description, matches: [{category, keyword}] }]
 
@@ -952,16 +978,16 @@ export default function MoneyFlow() {
   const recategorizeAll = useCallback(() => {
     const conflicts = [];
     const updated = transactions.map(t => {
+      // Prima controlla se c'è una risoluzione memorizzata per questa descrizione
+      const savedResolution = categoryResolutions[t.description];
+      if (savedResolution) {
+        // Usa sempre la scelta memorizzata dell'utente
+        return { ...t, category: savedResolution };
+      }
+      
       const matches = findMatchingCategories(t.description);
       if (matches.length <= 1) {
         return { ...t, category: matches.length === 1 ? matches[0].category : 'Altro' };
-      }
-      
-      // Controlla se c'è una risoluzione memorizzata per questa descrizione
-      const savedResolution = categoryResolutions[t.description];
-      if (savedResolution && matches.some(m => m.category === savedResolution)) {
-        // Usa la risoluzione memorizzata se la categoria è ancora tra le opzioni
-        return { ...t, category: savedResolution };
       }
       
       // Conflitto: più categorie matchano
@@ -981,33 +1007,35 @@ export default function MoneyFlow() {
     }
   }, [transactions, findMatchingCategories, showToast, categoryResolutions]);
 
-  // Risolvi un conflitto di categoria (e memorizza la scelta)
-  const resolveCategoryConflict = useCallback((txId, category) => {
-    // Trova la descrizione della transazione per memorizzare la risoluzione
-    const conflict = categoryConflicts?.find(c => c.txId === txId);
-    if (conflict) {
-      setCategoryResolutions(prev => ({
-        ...prev,
-        [conflict.description]: category
-      }));
-    }
-    
-    setTransactions(prev => prev.map(t => t.id === txId ? { ...t, category } : t));
-    setCategoryConflicts(prev => {
-      const remaining = prev.filter(c => c.txId !== txId);
-      if (remaining.length === 0) {
-        showToast('Conflitti risolti (scelte memorizzate)');
-        return null;
-      }
-      return remaining;
+  // Conferma tutte le scelte dei conflitti
+  const confirmCategoryConflicts = useCallback((resolutions) => {
+    // Salva le risoluzioni per descrizione
+    const newResolutions = {};
+    resolutions.forEach(r => {
+      newResolutions[r.description] = r.category;
     });
-  }, [showToast, categoryConflicts]);
+    setCategoryResolutions(prev => ({
+      ...prev,
+      ...newResolutions
+    }));
+    
+    // Aggiorna le transazioni con le scelte confermate
+    setTransactions(prev => prev.map(t => {
+      const resolution = resolutions.find(r => r.txId === t.id);
+      if (resolution) {
+        return { ...t, category: resolution.category };
+      }
+      return t;
+    }));
+    
+    setCategoryConflicts(null);
+    showToast(`${resolutions.length} conflitti risolti (scelte memorizzate)`);
+  }, [showToast]);
 
-  // Chiudi conflitti categoria (applica scelte di default)
+  // Chiudi conflitti categoria senza salvare
   const closeCategoryConflicts = useCallback(() => {
     setCategoryConflicts(null);
-    showToast('Transazioni ri-categorizzate (keyword più lunga)');
-  }, [showToast]);
+  }, []);
 
   // Aggiungi transazione manuale
   const addManualTransaction = useCallback(() => {
@@ -1076,7 +1104,8 @@ export default function MoneyFlow() {
     const categoryData = Object.entries(byCategory).map(([name, txs]) => ({
       name,
       value: Math.abs(txs.reduce((s, t) => s + t.amount, 0)),
-      count: txs.length
+      count: txs.length,
+      transactions: txs.sort((a, b) => new Date(b.date) - new Date(a.date))
     })).sort((a,b) => b.value - a.value);
     
     // Categorie per entrate
@@ -1089,7 +1118,8 @@ export default function MoneyFlow() {
     const categoryDataIncome = Object.entries(byCategoryIncome).map(([name, txs]) => ({
       name,
       value: txs.reduce((s, t) => s + t.amount, 0),
-      count: txs.length
+      count: txs.length,
+      transactions: txs.sort((a, b) => new Date(b.date) - new Date(a.date))
     })).sort((a,b) => b.value - a.value);
 
     // Dati mensili
@@ -1150,15 +1180,28 @@ export default function MoneyFlow() {
         t.category.toLowerCase().includes(query)
       );
     }
+    
+    // Filtro categoria per movimenti
+    if (transactionsCategoryFilter) {
+      filtered = filtered.filter(t => t.category === transactionsCategoryFilter);
+    }
 
     return { income, expenses, balance: income - expenses, categoryData, categoryDataIncome, monthlyData, dailyData, filtered, allCategories };
-  }, [transactions, selectedMonth, selectedYear, searchQuery, dashboardTypeFilter, dashboardCategoryFilter]);
+  }, [transactions, selectedMonth, selectedYear, searchQuery, dashboardTypeFilter, dashboardCategoryFilter, transactionsCategoryFilter]);
 
-  // Update categoria transazione
+  // Update categoria transazione (e memorizza la scelta)
   const updateTxCategory = useCallback((id, category) => {
+    // Trova la transazione per memorizzare la scelta per descrizione
+    const tx = transactions.find(t => t.id === id);
+    if (tx) {
+      setCategoryResolutions(prev => ({
+        ...prev,
+        [tx.description]: category
+      }));
+    }
     setTransactions(prev => prev.map(t => t.id === id ? {...t, category} : t));
     setEditingTx(null);
-  }, []);
+  }, [transactions]);
 
   // Update descrizione transazione
   const updateTxDescription = useCallback((id, description) => {
@@ -1492,22 +1535,62 @@ export default function MoneyFlow() {
             {/* Category breakdown */}
             <div className="card">
               <div className="card-header">
-                <h3 className="card-title">Dettaglio categorie</h3>
+                <h3 className="card-title">
+                  {dashboardTypeFilter === 'income' ? 'Dettaglio entrate per categoria' : 'Dettaglio uscite per categoria'}
+                </h3>
               </div>
-              <div className="card-body">
-                {stats.categoryData.length > 0 ? (
-                  <div className="category-list">
-                    {stats.categoryData.map((cat, i) => (
-                      <div key={cat.name} className="category-item">
-                        <div className="category-dot" style={{backgroundColor: COLORS[i % COLORS.length]}} />
-                        <span className="category-name">{cat.name}</span>
-                        <span className="category-count">{cat.count} mov.</span>
-                        <span className="category-amount">{formatCurrency(cat.value)}</span>
+              <div className="card-body" style={{ padding: 0 }}>
+                {(dashboardTypeFilter === 'income' ? stats.categoryDataIncome : stats.categoryData).length > 0 ? (
+                  <div className="category-list-expandable">
+                    {(dashboardTypeFilter === 'income' ? stats.categoryDataIncome : stats.categoryData).map((cat, i) => (
+                      <div key={cat.name} className="category-item-expandable">
+                        <div 
+                          className={`category-item-header ${expandedCategory === cat.name ? 'expanded' : ''}`}
+                          onClick={() => setExpandedCategory(expandedCategory === cat.name ? null : cat.name)}
+                        >
+                          <div className="category-dot" style={{backgroundColor: COLORS[i % COLORS.length]}} />
+                          <span className="category-name">{cat.name}</span>
+                          <span className="category-count">{cat.count} mov.</span>
+                          <span className="category-amount">{formatCurrency(cat.value)}</span>
+                          <ChevronDown 
+                            size={16} 
+                            className={`category-chevron ${expandedCategory === cat.name ? 'rotated' : ''}`}
+                          />
+                        </div>
+                        {expandedCategory === cat.name && (
+                          <div className="category-transactions">
+                            {cat.transactions.slice(0, 10).map(tx => (
+                              <div key={tx.id} className="category-transaction-item">
+                                <span className="category-tx-date">
+                                  {new Date(tx.date).toLocaleDateString('it-IT')}
+                                </span>
+                                <span className="category-tx-description">{tx.description}</span>
+                                <span className={`category-tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>
+                                  {tx.amount >= 0 ? '+' : ''}{formatCurrency(tx.amount)}
+                                </span>
+                              </div>
+                            ))}
+                            {cat.transactions.length > 10 && (
+                              <button 
+                                className="category-view-all"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTransactionsCategoryFilter(cat.name);
+                                  setView('transactions');
+                                }}
+                              >
+                                Vedi tutti i {cat.transactions.length} movimenti →
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="empty-state">Nessuna uscita nel periodo selezionato</div>
+                  <div className="empty-state" style={{ padding: '2rem' }}>
+                    {dashboardTypeFilter === 'income' ? 'Nessuna entrata nel periodo' : 'Nessuna uscita nel periodo'}
+                  </div>
                 )}
               </div>
             </div>
@@ -1519,7 +1602,7 @@ export default function MoneyFlow() {
           <div className="card card-fullheight" style={{ animation: 'fadeIn 0.3s ease' }}>
             <div className="card-header">
               <h3 className="card-title">Movimenti ({stats.filtered.length})</h3>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div className="search-wrapper">
                   <Search className="search-icon" size={16} />
                   <input
@@ -1529,6 +1612,27 @@ export default function MoneyFlow() {
                     onChange={e => setSearchQuery(e.target.value)}
                     className="search-input"
                   />
+                </div>
+                <div className="transactions-category-filter">
+                  <select
+                    value={transactionsCategoryFilter || ''}
+                    onChange={e => setTransactionsCategoryFilter(e.target.value || null)}
+                    className="category-filter-select-tx"
+                  >
+                    <option value="">Tutte le categorie</option>
+                    {stats.allCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  {transactionsCategoryFilter && (
+                    <button 
+                      className="filter-clear-btn"
+                      onClick={() => setTransactionsCategoryFilter(null)}
+                      title="Rimuovi filtro"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
                 </div>
                 <button 
                   className="btn-primary" 
@@ -1860,7 +1964,7 @@ export default function MoneyFlow() {
       {categoryConflicts && (
         <CategoryConflictResolver
           conflicts={categoryConflicts}
-          onResolve={resolveCategoryConflict}
+          onConfirm={confirmCategoryConflicts}
           onClose={closeCategoryConflicts}
         />
       )}

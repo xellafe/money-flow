@@ -694,6 +694,152 @@
   text-align: right;
 }
 
+/* Expandable Category List */
+.category-list-expandable {
+  display: flex;
+  flex-direction: column;
+}
+
+.category-item-expandable {
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.category-item-expandable:last-child {
+  border-bottom: none;
+}
+
+.category-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.category-item-header:hover {
+  background: var(--color-gray-50);
+}
+
+.category-item-header.expanded {
+  background: var(--color-gray-50);
+}
+
+.category-chevron {
+  color: var(--color-gray-400);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.category-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.category-transactions {
+  background: var(--color-gray-50);
+  border-top: 1px solid var(--color-gray-100);
+}
+
+.category-transaction-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem 0.75rem 2.5rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.category-transaction-item:last-of-type {
+  border-bottom: none;
+}
+
+.category-tx-date {
+  color: var(--color-gray-500);
+  font-size: 0.8125rem;
+  min-width: 80px;
+}
+
+.category-tx-description {
+  flex: 1;
+  color: var(--color-gray-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-tx-amount {
+  font-weight: 500;
+  min-width: 90px;
+  text-align: right;
+}
+
+.category-tx-amount.positive {
+  color: var(--color-success);
+}
+
+.category-tx-amount.negative {
+  color: var(--color-danger);
+}
+
+.category-view-all {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--color-gray-100);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.category-view-all:hover {
+  background: var(--color-gray-100);
+}
+
+/* Transactions category filter */
+.transactions-category-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.category-filter-select-tx {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 0.5rem;
+  background: white;
+  color: var(--color-gray-700);
+  cursor: pointer;
+  min-width: 160px;
+}
+
+.category-filter-select-tx:hover {
+  border-color: var(--color-gray-300);
+}
+
+.filter-clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--color-gray-100);
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  color: var(--color-gray-500);
+}
+
+.filter-clear-btn:hover {
+  background: var(--color-gray-200);
+  color: var(--color-gray-700);
+}
+
 /* Add transaction form */
 .add-transaction-form {
   display: flex;
