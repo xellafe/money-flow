@@ -48,6 +48,11 @@
   margin: 0;
 }
 
+.logo-image {
+  height: 32px;
+  width: auto;
+}
+
 .header-controls {
   display: flex;
   align-items: center;
