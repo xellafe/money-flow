@@ -4,3 +4,4 @@ export { default as ConflictResolver } from './ConflictResolver';
 export { default as CategoryConflictResolver } from './CategoryConflictResolver';
 export { default as CategoryManager } from './CategoryManager';
 export { default as SyncSettings } from './SyncSettings';
+export { default as PayPalEnrichWizard } from './PayPalEnrichWizard';

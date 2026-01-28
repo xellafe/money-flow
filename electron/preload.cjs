@@ -22,7 +22,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Backup automatico alla chiusura
   onRequestBackupData: (callback) => {
-    ipcRenderer.on('request-backup-data', () => callback());
+    const handler = () => callback();
+    ipcRenderer.on('request-backup-data', handler);
+    // Ritorna funzione per rimuovere il listener
+    return () => ipcRenderer.removeListener('request-backup-data', handler);
   },
   sendBackupDataForClose: (data) => {
     ipcRenderer.send('backup-data-for-close', data);

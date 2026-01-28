@@ -746,6 +746,15 @@
 .category-transactions {
   background: var(--color-gray-50);
   border-top: 1px solid var(--color-gray-100);
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, opacity 0.25s ease-out;
+}
+
+.category-transactions.expanded {
+  max-height: 600px;
+  opacity: 1;
 }
 
 .category-transaction-item {
