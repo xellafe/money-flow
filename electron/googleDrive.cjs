@@ -16,9 +16,6 @@ const store = new Store({
   encryptionKey: 'moneyflow-secure-key-2026', // Chiave per cifrare i dati
 });
 
-// Log del percorso dove vengono salvati i token
-console.log('Token storage path:', store.path);
-
 // Carica le credenziali OAuth
 const credentialsPath = path.join(__dirname, 'google-credentials.json');
 let credentials = null;
@@ -79,12 +76,6 @@ function initializeOAuth() {
  */
 function isAuthenticated() {
   const tokens = store.get('tokens');
-  console.log('isAuthenticated check - tokens found:', !!tokens, tokens ? { 
-    hasAccessToken: !!tokens.access_token, 
-    hasRefreshToken: !!tokens.refresh_token,
-    expiry: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : 'none'
-  } : 'no tokens');
-  
   if (!tokens || !tokens.access_token) return false;
   
   // Se c'è un refresh_token, consideriamo l'utente autenticato
@@ -218,8 +209,6 @@ async function signIn() {
     });
 
     server.listen(OAUTH_PORT, 'localhost', () => {
-      console.log(`Server OAuth in ascolto su http://localhost:${OAUTH_PORT}`);
-      
       // Salva riferimenti per poter annullare
       activeAuthServer = server;
       activeAuthCleanup = () => {
@@ -288,10 +277,7 @@ function getDriveClient() {
   if (!oauth2Client) initializeOAuth();
   
   const tokens = store.get('tokens');
-  console.log('getDriveClient - tokens presenti:', !!tokens, tokens ? Object.keys(tokens) : []);
-  
   if (!tokens || !tokens.access_token) {
-    console.log('getDriveClient - nessun access_token trovato');
     return null;
   }
   
@@ -436,7 +422,6 @@ async function getUserInfo() {
     
     // Se non c'è refresh_token e il token è scaduto, non possiamo fare nulla
     if (!tokens.refresh_token && tokens.expiry_date && tokens.expiry_date < Date.now()) {
-      console.log('Token scaduto e nessun refresh token disponibile');
       store.delete('tokens');
       return null;
     }
@@ -454,10 +439,7 @@ async function getUserInfo() {
   } catch (error) {
     // Se è un errore 401, i token non sono più validi
     if (error.code === 401 || error.status === 401) {
-      console.log('Token non valido, rimuovo i dati salvati');
       store.delete('tokens');
-    } else {
-      console.error('Errore recupero info utente:', error.message);
     }
     return null;
   }

@@ -20,6 +20,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getUserInfo: () => ipcRenderer.invoke('google-drive:get-user-info'),
   },
   
+  // Backup automatico alla chiusura
+  onRequestBackupData: (callback) => {
+    ipcRenderer.on('request-backup-data', () => callback());
+  },
+  sendBackupDataForClose: (data) => {
+    ipcRenderer.send('backup-data-for-close', data);
+  },
+  
   // Utility per sapere se siamo in Electron
   isElectron: true,
 });

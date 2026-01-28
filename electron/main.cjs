@@ -6,6 +6,10 @@ const googleDrive = require('./googleDrive.cjs');
 // Disabilita la GPU cache per evitare errori di permessi su Windows
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 
+// Riferimento alla finestra principale
+let mainWindow = null;
+let isQuitting = false;
+
 // Determina se siamo in development o production
 const distPath = path.join(__dirname, '../dist/index.html');
 const isDev = process.env.ELECTRON_DEV === 'true' || !fs.existsSync(distPath);
@@ -29,7 +33,7 @@ if (isDev) {
 }
 
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 800,
@@ -43,6 +47,27 @@ function createWindow() {
     },
     autoHideMenuBar: true,
     show: false,
+  });
+
+  // Intercetta la chiusura per fare backup automatico
+  mainWindow.on('close', async (e) => {
+    if (isQuitting) return; // Già in fase di chiusura
+    
+    // Verifica se l'utente è autenticato con Google Drive
+    if (googleDrive.isAuthenticated()) {
+      e.preventDefault(); // Blocca la chiusura temporaneamente
+      isQuitting = true;
+      
+      // Chiedi al renderer di inviare i dati per il backup
+      mainWindow.webContents.send('request-backup-data');
+      
+      // Timeout di sicurezza: se non riceviamo risposta in 10 secondi, chiudi comunque
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.destroy();
+        }
+      }, 10000);
+    }
   });
 
   // Mostra la finestra quando è pronta (evita flash bianco)
@@ -100,6 +125,23 @@ app.on('window-all-closed', () => {
 
 // ============================================
 // IPC Handlers per Google Drive
+// ============================================
+
+// Handler per ricevere i dati di backup alla chiusura
+ipcMain.on('backup-data-for-close', async (event, data) => {
+  try {
+    if (data && googleDrive.isAuthenticated()) {
+      await googleDrive.uploadBackup(data);
+    }
+  } catch (error) {
+    console.error('Errore durante il backup automatico:', error.message);
+  } finally {
+    // Chiudi la finestra dopo il backup (o in caso di errore)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.destroy();
+    }
+  }
+});
 // ============================================
 
 // Inizializza OAuth all'avvio

@@ -94,6 +94,16 @@ export default function MoneyFlow() {
   // Google Drive sync hook
   const googleDrive = useGoogleDrive();
 
+  // Backup automatico alla chiusura dell'app (solo Electron)
+  useEffect(() => {
+    if (window.electronAPI?.onRequestBackupData) {
+      window.electronAPI.onRequestBackupData(() => {
+        const data = { transactions, categories, importProfiles };
+        window.electronAPI.sendBackupDataForClose(data);
+      });
+    }
+  }, [transactions, categories, importProfiles]);
+
   // Reset pagina quando cambiano i filtri
   useEffect(() => {
     setCurrentPage(1);
