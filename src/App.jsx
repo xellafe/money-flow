@@ -90,6 +90,8 @@ export default function MoneyFlow() {
   const [categoryConflicts, setCategoryConflicts] = useState(null);
   // State per modale sincronizzazione
   const [showSyncSettings, setShowSyncSettings] = useState(false);
+  // State per indicare se i dati iniziali sono stati caricati
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Google Drive sync hook
   const googleDrive = useGoogleDrive();
@@ -128,6 +130,8 @@ export default function MoneyFlow() {
     } catch (error) {
       console.error('Errore caricamento dati:', error);
       showToast('Errore nel caricamento dei dati salvati', 'error');
+    } finally {
+      setIsInitialized(true);
     }
   }, [showToast]);
 
@@ -719,6 +723,11 @@ export default function MoneyFlow() {
       setSelectedYear(years[0]);
     }
   }, [years, selectedYear]);
+
+  // Mostra nulla finché i dati iniziali non sono caricati
+  if (!isInitialized) {
+    return null;
+  }
 
   return (
     <div className="app-container" onClick={() => setOpenDropdown(null)}>
