@@ -29,8 +29,16 @@
       "electron/**/*"
     ],
     "win": {
-      "target": "portable",
-      "icon": "public/icon.png"
+      "target": ["portable", "nsis"],
+      "icon": "public/logo.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MoneyFlow"
     }
   },
   "dependencies": {

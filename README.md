@@ -1,15 +1,17 @@
 # 💸 MoneyFlow
 
-Applicazione web per il monitoraggio delle entrate e uscite personali, con importazione automatica da file Excel bancari.
+Applicazione desktop per il monitoraggio delle entrate e uscite personali, con importazione automatica da file Excel bancari.
 
 ## ✨ Funzionalità
 
 ### Dashboard
 - 📊 Visualizzazione entrate e uscite
-- 📈 Grafico a torta per categorie di spesa
-- 📉 Andamento mensile con grafico a barre
+- 📈 Grafico a barre orizzontali per categorie di spesa
+- 📉 Andamento annuale con grafico a barre (entrate/uscite)
+- 📈 Grafico area impilata per trend categorie nell'anno
 - 📅 Filtro per mese e anno
 - 🔄 Trend giornaliero per mese selezionato
+- 🔀 Toggle valori assoluti / percentuali nelle categorie
 
 ### Gestione Movimenti
 - 📥 Import da file Excel (.xlsx, .xls, .csv)
@@ -24,14 +26,19 @@ Applicazione web per il monitoraggio delle entrate e uscite personali, con impor
 - 🔄 Ri-categorizzazione automatica di tutte le transazioni
 - 🗑️ Eliminazione categorie custom
 
-### ☁️ Sincronizzazione Cloud (Solo Desktop)
+### 💳 Arricchimento PayPal
+- 📄 Import CSV da PayPal per arricchire le descrizioni
+- 🔗 Matching automatico per data e importo
+- ✏️ Sostituzione descrizioni generiche con dettagli PayPal
+
+### ☁️ Sincronizzazione Cloud
 - 🔐 Login sicuro con Google OAuth
-- 💾 Backup automatico su Google Drive
+- 💾 Backup automatico su Google Drive (anche alla chiusura)
 - 📥 Ripristino dati da cloud
 - 🔒 Dati salvati in cartella app nascosta (drive.appdata)
 
 ### Import Intelligente
-- 🏦 Supporto formato Illimity (header in riga 18)
+- 🏦 Supporto formato Illimity, Fineco e altri
 - 🔄 Deduplicazione automatica
 - 📋 Gestione colonne Entrate/Uscite separate
 - 🤖 Categorizzazione automatica basata su keyword
@@ -39,11 +46,13 @@ Applicazione web per il monitoraggio delle entrate e uscite personali, con impor
 ## 🛠️ Tecnologie
 
 - **React 19** - Framework UI
-- **Vite** - Build tool
+- **Vite 7** - Build tool
+- **Electron 34** - App desktop cross-platform
 - **Recharts** - Grafici interattivi
 - **SheetJS (xlsx)** - Lettura/scrittura file Excel
+- **Google APIs** - Sincronizzazione cloud
 - **Lucide React** - Icone
-- **LocalStorage** - Persistenza dati
+- **LocalStorage** - Persistenza dati locale
 
 ## 🚀 Installazione
 

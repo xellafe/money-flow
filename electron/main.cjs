@@ -39,7 +39,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     title: 'MoneyFlow',
-    icon: path.join(__dirname, '../public/logo.png'),
+    icon: path.join(__dirname, '../public/logo.ico'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

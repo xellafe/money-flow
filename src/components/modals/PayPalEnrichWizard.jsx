@@ -108,40 +108,30 @@ export default function PayPalEnrichWizard({
 
   // Filtra transazioni PayPal valide
   const validPayPalTransactions = useMemo(() => {
-    console.log('=== Filtro transazioni PayPal ===');
-    console.log('Righe CSV totali:', paypalData.length);
-    
     const filtered = paypalData.filter(row => {
       const type = row[PAYPAL_CONFIG.typeColumn];
       const status = row[PAYPAL_CONFIG.statusColumn];
       const rawTotal = row[PAYPAL_CONFIG.totalColumn];
-      console.log(`  RAW Totale: "${rawTotal}" (tipo: ${typeof rawTotal})`);
       const amount = parsePayPalAmount(rawTotal);
-      const name = row[PAYPAL_CONFIG.nameColumn];
       
       // Ignora tipi non validi
       if (PAYPAL_CONFIG.ignoredTypes.some(t => type?.includes(t))) {
-        console.log(`  SCARTATO (tipo): "${name}" | ${type}`);
         return false;
       }
       
       // Ignora stati non validi
       if (PAYPAL_CONFIG.ignoredStatuses.includes(status)) {
-        console.log(`  SCARTATO (stato): "${name}" | ${status}`);
         return false;
       }
       
       // Deve avere un importo
       if (amount === 0) {
-        console.log(`  SCARTATO (importo 0): "${name}"`);
         return false;
       }
       
-      console.log(`  VALIDO: ${row[PAYPAL_CONFIG.dateColumn]} | ${amount}€ | "${name}" | ${type}`);
       return true;
     });
     
-    console.log('Transazioni PayPal valide:', filtered.length);
     return filtered;
   }, [paypalData]);
 
@@ -150,28 +140,12 @@ export default function PayPalEnrichWizard({
     const result = [];
     const usedPayPalIndices = new Set();
 
-    console.log('=== PayPal Matching Debug ===');
-    console.log('Transazioni bancarie totali:', transactions.length);
-    console.log('Transazioni PayPal valide:', validPayPalTransactions.length);
-    
-    // Debug: mostra prime 5 transazioni bancarie
-    console.log('Prime 5 transazioni bancarie:');
-    transactions.slice(0, 5).forEach(tx => {
-      console.log(`  ${tx.date} | ${tx.amount}€ | "${tx.description}"`);
-    });
-
-    // Conta quante transazioni contengono "paypal"
-    const paypalTxs = transactions.filter(tx => tx.description?.toLowerCase().includes('paypal'));
-    console.log(`Transazioni bancarie con "paypal" nella descrizione: ${paypalTxs.length}`);
-
     // Cerca transazioni che potrebbero essere PayPal
     transactions.forEach((tx, txIndex) => {
       const desc = tx.description?.toLowerCase() || '';
       const isPayPal = desc.includes('paypal');
       
       if (!isPayPal) return;
-
-      console.log(`Transazione PayPal bancaria: ${tx.date} | ${tx.amount}€ | "${tx.description}"`);
 
       // Cerca match nel CSV PayPal
       for (let i = 0; i < validPayPalTransactions.length; i++) {
@@ -185,10 +159,6 @@ export default function PayPalEnrichWizard({
 
         const dateOk = datesMatch(txDate, ppDate);
         const amountOk = amountsMatch(txAmount, ppAmount);
-        
-        if (dateOk || amountOk) {
-          console.log(`  Candidato PP: ${ppRow[PAYPAL_CONFIG.dateColumn]} | ${ppAmount}€ | "${ppRow[PAYPAL_CONFIG.nameColumn]}" | dateOk=${dateOk} amountOk=${amountOk}`);
-        }
 
         // Match per data e importo
         if (dateOk && amountOk) {

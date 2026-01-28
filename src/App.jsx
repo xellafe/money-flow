@@ -894,7 +894,7 @@ export default function MoneyFlow() {
       };
     });
 
-    // Dati per stacked area chart - categorie per mese (top 6 + Altro)
+    // Dati per stacked area chart - categorie per mese (top 6 + Altre categorie)
     const topCategories = categoryData.slice(0, 6).map(c => c.name);
     const monthlyCategoryData = Array.from({ length: 12 }, (_, i) => {
       const txs = (byMonth[i] || []).filter(t => t.amount < 0);
@@ -907,13 +907,22 @@ export default function MoneyFlow() {
         );
       });
       
-      // Calcola "Altro" per le categorie rimanenti
-      monthData['Altro'] = Math.abs(
+      // Calcola "Altre categorie" per le categorie rimanenti
+      const otherAmount = Math.abs(
         txs.filter(t => !topCategories.includes(t.category)).reduce((s, t) => s + t.amount, 0)
       );
+      if (otherAmount > 0) {
+        monthData['Altre cat.'] = otherAmount;
+      }
       
       return monthData;
     });
+    
+    // Lista categorie per il grafico (aggiungi 'Altre cat.' solo se presente)
+    const hasOtherCategories = categoryData.length > 6;
+    const chartCategories = hasOtherCategories 
+      ? [...topCategories, 'Altre cat.'] 
+      : topCategories;
 
     let dailyData = [];
     if (selectedMonth !== null) {
@@ -966,7 +975,7 @@ export default function MoneyFlow() {
       categoryDataIncome,
       monthlyData,
       monthlyCategoryData,
-      topCategories,
+      chartCategories,
       dailyData,
       filtered,
       allCategories,
@@ -1549,7 +1558,7 @@ export default function MoneyFlow() {
                             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                           }}
                         />
-                        {[...stats.topCategories, 'Altro'].map((cat, i) => (
+                        {stats.chartCategories.map((cat, i) => (
                           <Area
                             key={cat}
                             type="monotone"
@@ -1630,6 +1639,7 @@ export default function MoneyFlow() {
                       />
                       <Tooltip
                         formatter={(v) => formatCurrency(v)}
+                        labelFormatter={(day) => `${day} ${MONTHS_IT[selectedMonth]}`}
                         contentStyle={{
                           borderRadius: "8px",
                           border: "none",
