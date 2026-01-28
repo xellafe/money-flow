@@ -282,6 +282,9 @@
   text-align: center;
   transition: all 0.3s ease;
   background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .drop-zone.active {
@@ -1267,6 +1270,10 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
 }
 
 /* Import Wizard */

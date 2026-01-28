@@ -24,6 +24,12 @@ Applicazione web per il monitoraggio delle entrate e uscite personali, con impor
 - 🔄 Ri-categorizzazione automatica di tutte le transazioni
 - 🗑️ Eliminazione categorie custom
 
+### ☁️ Sincronizzazione Cloud (Solo Desktop)
+- 🔐 Login sicuro con Google OAuth
+- 💾 Backup automatico su Google Drive
+- 📥 Ripristino dati da cloud
+- 🔒 Dati salvati in cartella app nascosta (drive.appdata)
+
 ### Import Intelligente
 - 🏦 Supporto formato Illimity (header in riga 18)
 - 🔄 Deduplicazione automatica
@@ -83,6 +89,9 @@ src/
 │   └── index.js         # Costanti e configurazioni (profili import, categorie default)
 ├── utils/
 │   └── index.js         # Funzioni di utilità (parsing, formattazione, categorizzazione)
+├── hooks/
+│   ├── index.js         # Export hooks
+│   └── useGoogleDrive.js # Hook per sincronizzazione Google Drive
 └── components/
     ├── index.js         # Export centralizzato componenti
     ├── Toast.jsx        # Notifiche toast
@@ -93,7 +102,14 @@ src/
         ├── ImportWizard.jsx     # Wizard configurazione import
         ├── ConflictResolver.jsx # Risoluzione conflitti import
         ├── CategoryConflictResolver.jsx  # Risoluzione conflitti categoria
-        └── CategoryManager.jsx  # Gestione categorie e keyword
+        ├── CategoryManager.jsx  # Gestione categorie e keyword
+        └── SyncSettings.jsx     # Impostazioni sincronizzazione cloud
+
+electron/
+├── main.cjs             # Entry point Electron
+├── preload.cjs          # Bridge sicuro IPC per renderer
+├── googleDrive.cjs      # Servizio Google Drive API
+└── google-credentials.json  # Credenziali OAuth (non versionato)
 ```
 
 ## 📝 Formato File Excel Supportato

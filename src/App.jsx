@@ -7,7 +7,7 @@ import {
 import { 
   Upload, TrendingUp, TrendingDown, Tag, Search, Trash2, 
   Download, FileSpreadsheet, X, Check, Loader2, Plus,
-  Save, FolderOpen, Settings, ChevronDown
+  Save, FolderOpen, Settings, ChevronDown, Cloud, CloudOff
 } from 'lucide-react';
 
 // Constants
@@ -36,8 +36,13 @@ import {
   ImportWizard, 
   ConflictResolver, 
   CategoryConflictResolver,
-  CategoryManager 
+  CategoryManager,
+  SyncSettings,
+  GoogleSignInButton 
 } from './components';
+
+// Hooks
+import { useGoogleDrive } from './hooks';
 
 import './App.css';
 
@@ -83,6 +88,11 @@ export default function MoneyFlow() {
   const [categoriesChanged, setCategoriesChanged] = useState(false);
   // State per conflitti categoria durante ricategorizzazione
   const [categoryConflicts, setCategoryConflicts] = useState(null);
+  // State per modale sincronizzazione
+  const [showSyncSettings, setShowSyncSettings] = useState(false);
+  
+  // Google Drive sync hook
+  const googleDrive = useGoogleDrive();
 
   // Reset pagina quando cambiano i filtri
   useEffect(() => {
@@ -748,6 +758,11 @@ export default function MoneyFlow() {
                       <button className="dropdown-item" onClick={() => { setShowCategoryManager(true); setOpenDropdown(null); }}>
                         <Tag size={16} /> Gestione Categorie
                       </button>
+                      {googleDrive.isElectron && (
+                        <button className="dropdown-item" onClick={() => { setShowSyncSettings(true); setOpenDropdown(null); }}>
+                          <Cloud size={16} /> Sincronizzazione Cloud
+                        </button>
+                      )}
                       <div className="dropdown-divider" />
                       <button className="dropdown-item danger" onClick={() => { if(confirm('Eliminare TUTTI i dati?')) { setTransactions([]); setCategories(DEFAULT_CATEGORIES); } setOpenDropdown(null); }}>
                         <Trash2 size={16} /> Elimina tutti i dati
@@ -837,6 +852,67 @@ export default function MoneyFlow() {
                     onChange={e => e.target.files[0] && handleFile(e.target.files[0])} 
                   />
                 </label>
+                
+                {/* Opzioni Google Drive (solo Electron) */}
+                {googleDrive.isElectron && (
+                  <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid var(--color-gray-200)', width: '100%', maxWidth: '400px', textAlign: 'center' }}>
+                    <p style={{ color: 'var(--color-gray-500)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+                      Oppure ripristina da cloud
+                    </p>
+                    
+                    {googleDrive.isAuthenticated ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: 'var(--color-success)', fontSize: '0.875rem' }}>
+                          <Cloud size={16} />
+                          <span>Connesso come {googleDrive.userInfo?.email || 'Google'}</span>
+                        </div>
+                        
+                        {googleDrive.backupInfo ? (
+                          <button 
+                            className="btn-secondary"
+                            onClick={async () => {
+                              const result = await googleDrive.downloadBackup();
+                              if (result.success && result.data) {
+                                setTransactions(result.data.transactions || []);
+                                setCategories(result.data.categories || DEFAULT_CATEGORIES);
+                                setImportProfiles(result.data.importProfiles || {});
+                                showToast('Dati ripristinati da Google Drive');
+                              } else {
+                                showToast(result.error || 'Errore durante il ripristino', 'error');
+                              }
+                            }}
+                            disabled={googleDrive.syncStatus === 'syncing'}
+                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                          >
+                            {googleDrive.syncStatus === 'syncing' ? (
+                              <Loader2 size={16} className="spin" />
+                            ) : (
+                              <Download size={16} />
+                            )}
+                            Ripristina backup ({new Date(googleDrive.backupInfo.modifiedTime).toLocaleDateString('it-IT')})
+                          </button>
+                        ) : (
+                          <p style={{ color: 'var(--color-gray-400)', fontSize: '0.875rem', margin: 0 }}>
+                            Nessun backup trovato su Drive
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <GoogleSignInButton
+                        onClick={async () => {
+                          const result = await googleDrive.signIn();
+                          if (result.success) {
+                            showToast('Connesso a Google Drive');
+                          } else {
+                            showToast(result.error || 'Errore durante la connessione', 'error');
+                          }
+                        }}
+                        disabled={googleDrive.isLoading}
+                        isLoading={googleDrive.isLoading}
+                      />
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -1275,6 +1351,56 @@ export default function MoneyFlow() {
           onRemoveKeyword={removeKeyword}
           onRecategorize={recategorizeAll}
           onClose={() => setShowCategoryManager(false)}
+        />
+      )}
+
+      {/* Sync Settings Modal */}
+      {showSyncSettings && (
+        <SyncSettings
+          isAuthenticated={googleDrive.isAuthenticated}
+          isLoading={googleDrive.isLoading}
+          userInfo={googleDrive.userInfo}
+          backupInfo={googleDrive.backupInfo}
+          lastSyncTime={googleDrive.lastSyncTime}
+          syncStatus={googleDrive.syncStatus}
+          error={googleDrive.error}
+          onSignIn={async () => {
+            const result = await googleDrive.signIn();
+            if (result.success) showToast('Connesso a Google Drive');
+            else if (!result.cancelled) showToast(result.error, 'error');
+          }}
+          onCancelSignIn={() => {
+            googleDrive.cancelSignIn();
+          }}
+          onSignOut={async () => {
+            const result = await googleDrive.signOut();
+            if (result.success) showToast('Disconnesso da Google Drive');
+          }}
+          onUpload={async () => {
+            const data = { transactions, categories, importProfiles };
+            const result = await googleDrive.uploadBackup(data);
+            if (result.success) showToast('Backup salvato su Google Drive');
+            else showToast(result.error, 'error');
+          }}
+          onDownload={async () => {
+            const result = await googleDrive.downloadBackup();
+            if (result.success && result.data) {
+              if (confirm(`Sostituire i dati attuali con il backup di Google Drive?\n(${result.data.transactions?.length || 0} transazioni)`)) {
+                setTransactions(result.data.transactions || []);
+                setCategories(result.data.categories || DEFAULT_CATEGORIES);
+                setImportProfiles(result.data.importProfiles || {});
+                showToast('Dati ripristinati da Google Drive');
+              }
+            } else {
+              showToast(result.error || 'Nessun backup trovato', 'error');
+            }
+          }}
+          onDelete={async () => {
+            const result = await googleDrive.deleteBackup();
+            if (result.success) showToast('Backup eliminato da Google Drive');
+            else showToast(result.error, 'error');
+          }}
+          onClose={() => setShowSyncSettings(false)}
         />
       )}
 

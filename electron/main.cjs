@@ -1,6 +1,7 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const googleDrive = require('./googleDrive.cjs');
 
 // Disabilita la GPU cache per evitare errori di permessi su Windows
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
@@ -12,13 +13,18 @@ const isDev = process.env.ELECTRON_DEV === 'true' || !fs.existsSync(distPath);
 // Hot reload in development
 if (isDev) {
   try {
+    // Su Windows il binario è .cmd, su altri sistemi è senza estensione
+    const electronBin = process.platform === 'win32' 
+      ? path.join(__dirname, '../node_modules/electron/dist/electron.exe')
+      : path.join(__dirname, '../node_modules/.bin/electron');
+    
     require('electron-reload')(__dirname, {
-      electron: path.join(__dirname, '../node_modules', '.bin', 'electron'),
+      electron: electronBin,
       hardResetMethod: 'exit',
       forceHardReset: true,
     });
   } catch (e) {
-    console.log('electron-reload not available');
+    console.log('electron-reload not available:', e.message);
   }
 }
 
@@ -33,6 +39,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
     autoHideMenuBar: true,
     show: false,
@@ -56,6 +63,24 @@ function createWindow() {
 
 // Quando Electron è pronto
 app.whenReady().then(() => {
+  // Imposta Content Security Policy
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; " +
+          "script-src 'self' 'unsafe-inline'; " +
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+          "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+          "font-src 'self' https://fonts.gstatic.com; " +
+          "img-src 'self' data: https:; " +
+          "connect-src 'self' http://localhost:* ws://localhost:* https://www.googleapis.com https://oauth2.googleapis.com"
+        ]
+      }
+    });
+  });
+
   createWindow();
 
   app.on('activate', () => {
@@ -70,5 +95,128 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+// ============================================
+// IPC Handlers per Google Drive
+// ============================================
+
+// Inizializza OAuth all'avvio
+try {
+  googleDrive.initializeOAuth();
+} catch (error) {
+  console.error('Errore inizializzazione Google OAuth:', error);
+}
+
+// Verifica autenticazione
+ipcMain.handle('google-drive:is-authenticated', async () => {
+  try {
+    return googleDrive.isAuthenticated();
+  } catch (error) {
+    console.error('Errore verifica autenticazione:', error);
+    return false;
+  }
+});
+
+// Login
+ipcMain.handle('google-drive:sign-in', async () => {
+  try {
+    const tokens = await googleDrive.signIn();
+    return { success: true, tokens };
+  } catch (error) {
+    console.error('Errore login Google:', error);
+    // Distingui tra annullamento e altri errori
+    const isCancelled = error.code === 'AUTH_CANCELLED';
+    return { success: false, error: error.message, cancelled: isCancelled };
+  }
+});
+
+// Annulla login in corso
+ipcMain.handle('google-drive:cancel-sign-in', async () => {
+  try {
+    googleDrive.cancelSignIn();
+    return { success: true };
+  } catch (error) {
+    console.error('Errore annullamento login:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Verifica se login in corso
+ipcMain.handle('google-drive:is-signing-in', async () => {
+  try {
+    return googleDrive.isSigningIn();
+  } catch (error) {
+    return false;
+  }
+});
+
+// Logout
+ipcMain.handle('google-drive:sign-out', async () => {
+  try {
+    await googleDrive.signOut();
+    return { success: true };
+  } catch (error) {
+    console.error('Errore logout Google:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Upload backup
+ipcMain.handle('google-drive:upload-backup', async (event, data) => {
+  try {
+    const result = await googleDrive.uploadBackup(data);
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('Errore upload backup:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Download backup
+ipcMain.handle('google-drive:download-backup', async () => {
+  try {
+    const result = await googleDrive.downloadBackup();
+    if (!result) {
+      return { success: true, data: null };
+    }
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('Errore download backup:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Info backup
+ipcMain.handle('google-drive:get-backup-info', async () => {
+  try {
+    const info = await googleDrive.getBackupInfo();
+    return { success: true, info };
+  } catch (error) {
+    console.error('Errore info backup:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Elimina backup
+ipcMain.handle('google-drive:delete-backup', async () => {
+  try {
+    const deleted = await googleDrive.deleteBackup();
+    return { success: true, deleted };
+  } catch (error) {
+    console.error('Errore eliminazione backup:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Info utente
+ipcMain.handle('google-drive:get-user-info', async () => {
+  try {
+    const userInfo = await googleDrive.getUserInfo();
+    return { success: true, userInfo };
+  } catch (error) {
+    console.error('Errore info utente:', error);
+    return { success: false, error: error.message };
   }
 });
