@@ -6,466 +6,40 @@ import {
 } from 'recharts';
 import { 
   Upload, TrendingUp, TrendingDown, Tag, Search, Trash2, 
-  Download, FileSpreadsheet, X, Check, AlertCircle, Loader2, Plus, Edit2,
-  Save, FolderOpen, Settings, ChevronDown, MoreVertical, Menu
+  Download, FileSpreadsheet, X, Check, Loader2, Plus,
+  Save, FolderOpen, Settings, ChevronDown
 } from 'lucide-react';
+
+// Constants
+import { 
+  COLORS, 
+  BUILTIN_IMPORT_PROFILES, 
+  DEFAULT_CATEGORIES, 
+  MONTHS_IT,
+  ITEMS_PER_PAGE 
+} from './constants';
+
+// Utils
+import { 
+  formatCurrency, 
+  parseDate, 
+  parseAmount, 
+  findMatchingCategories, 
+  categorize 
+} from './utils';
+
+// Components
+import { 
+  Toast, 
+  StatCard, 
+  ConfirmModal, 
+  ImportWizard, 
+  ConflictResolver, 
+  CategoryConflictResolver,
+  CategoryManager 
+} from './components';
+
 import './App.css';
-
-// Costanti
-const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
-
-// Profili di import predefiniti
-const BUILTIN_IMPORT_PROFILES = {
-  'illimity': {
-    name: 'Illimity Bank',
-    headerRow: 17, // 0-indexed (riga 18)
-    dateColumn: 'Data operazione',
-    descriptionColumn: 'Causale',
-    amountType: 'split', // 'single' o 'split'
-    incomeColumn: 'Entrate',
-    expenseColumn: 'Uscite',
-    idColumn: 'Id Transazione',
-  },
-  'generic-it': {
-    name: 'Generico Italiano',
-    headerRow: 0,
-    dateColumn: 'Data',
-    descriptionColumn: 'Descrizione',
-    amountType: 'single',
-    amountColumn: 'Importo',
-    idColumn: null,
-  },
-  'generic-en': {
-    name: 'Generic English',
-    headerRow: 0,
-    dateColumn: 'Date',
-    descriptionColumn: 'Description',
-    amountType: 'single',
-    amountColumn: 'Amount',
-    idColumn: null,
-  },
-  'fineco': {
-    name: 'Fineco',
-    headerRow: 0,
-    dateColumn: 'Data',
-    descriptionColumn: 'Descrizione Operazione',
-    amountType: 'split',
-    incomeColumn: 'Entrate',
-    expenseColumn: 'Uscite',
-    idColumn: 'Numero Operazione',
-  },
-};
-
-const DEFAULT_CATEGORIES = {
-  'Spesa alimentare': ['CONAD','COOP','ESSELUNGA','LIDL','EUROSPIN','CARREFOUR','PAM','PENNY','MD ','ALDI','SUPERMERCATO','ALIMENTARI','DESPAR'],
-  'Ristorazione': ['RISTORANTE','PIZZERIA','BAR ','CAFE','MCDONALD','BURGER','SUSHI','PUB','TAVOLA CALDA','TRATTORIA'],
-  'Trasporti': ['TRENITALIA','ITALO','ATM','BENZINA','CARBURANTE','ENI','Q8','TAMOIL','IP ','AUTOSTRAD','TELEPASS','UBER','TAXI','BUS'],
-  'Abbonamenti': ['NETFLIX','SPOTIFY','AMAZON PRIME','DISNEY','DAZN','NOW TV','APPLE','GOOGLE STORAGE','PLAYSTATION','XBOX'],
-  'Utenze': ['ENEL','ENI GAS','A2A','HERA','IREN','SORGENIA','FASTWEB','TIM','VODAFONE','WINDTRE','ILIAD','TARI','ACQUA'],
-  'Salute': ['FARMACIA','PARAFARMACIA','MEDICO','DENTISTA','OCULISTA','OTTICO','OSPEDALE','ASL','TICKET'],
-  'Shopping': ['ZALANDO','AMAZON','EBAY','ZARA','H&M','DECATHLON','IKEA','MEDIAWORLD','UNIEURO','FELTRINELLI'],
-  'Casa': ['LEROY MERLIN','BRICO','OBI','CASTORAMA','MONDO CONVENIENZA','MAISON'],
-  'Stipendio': ['STIPENDIO','SALARY','EMOLUMENTO','COMPENSO','ACCREDITO'],
-  'Bonifici in entrata': ['BONIFICO A VOSTRO FAVORE','BONIF SEPA A VS FAVORE'],
-  'Commissioni': ['COMMISSIONE','CANONE','SPESE CONTO','IMPOSTA BOLLO'],
-};
-
-const MONTHS_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-
-// Formattazione valuta
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat('it-IT', { 
-    style: 'currency', 
-    currency: 'EUR' 
-  }).format(value);
-};
-
-// Componente Toast
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  return (
-    <div className={`toast ${type}`}>
-      {type === 'success' ? <Check size={18} /> : <AlertCircle size={18} />}
-      {message}
-      <button onClick={onClose} style={{ marginLeft: 'auto', opacity: 0.7 }}>
-        <X size={16} />
-      </button>
-    </div>
-  );
-}
-
-// Componente Modal conferma
-function ConfirmModal({ title, message, onConfirm, onCancel }) {
-  return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <h3 className="modal-title">{title}</h3>
-        <p className="modal-message">{message}</p>
-        <div className="modal-actions">
-          <button className="btn-cancel" onClick={onCancel}>Annulla</button>
-          <button className="btn-danger" onClick={onConfirm}>Elimina</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Componente Wizard mappatura colonne
-function ImportWizard({ columns, sampleData, onConfirm, onCancel }) {
-  const [profileName, setProfileName] = useState('');
-  const [dateColumn, setDateColumn] = useState('');
-  const [descriptionColumn, setDescriptionColumn] = useState('');
-  const [amountType, setAmountType] = useState('single');
-  const [amountColumn, setAmountColumn] = useState('');
-  const [incomeColumn, setIncomeColumn] = useState('');
-  const [expenseColumn, setExpenseColumn] = useState('');
-  const [idColumn, setIdColumn] = useState('');
-
-  const isValid = profileName.trim() && dateColumn && descriptionColumn && 
-    (amountType === 'single' ? amountColumn : (incomeColumn || expenseColumn));
-
-  const handleConfirm = () => {
-    const profile = {
-      name: profileName.trim(),
-      headerRow: 0,
-      dateColumn,
-      descriptionColumn,
-      amountType,
-      ...(amountType === 'single' ? { amountColumn } : { incomeColumn, expenseColumn }),
-      idColumn: idColumn || null,
-    };
-    onConfirm(profile);
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal modal-large" onClick={e => e.stopPropagation()}>
-        <h3 className="modal-title">
-          <Settings size={20} /> Configura formato import
-        </h3>
-        
-        <p className="modal-message">
-          Non ho riconosciuto il formato di questo file. Configura la mappatura delle colonne.
-        </p>
-
-        <div className="wizard-form">
-          <div className="wizard-field">
-            <label>Nome profilo (per riutilizzarlo in futuro)</label>
-            <input 
-              type="text" 
-              value={profileName} 
-              onChange={e => setProfileName(e.target.value)}
-              placeholder="Es: La mia banca"
-            />
-          </div>
-
-          <div className="wizard-field">
-            <label>Colonna Data *</label>
-            <select value={dateColumn} onChange={e => setDateColumn(e.target.value)}>
-              <option value="">-- Seleziona --</option>
-              {columns.map(col => <option key={col} value={col}>{col}</option>)}
-            </select>
-          </div>
-
-          <div className="wizard-field">
-            <label>Colonna Descrizione *</label>
-            <select value={descriptionColumn} onChange={e => setDescriptionColumn(e.target.value)}>
-              <option value="">-- Seleziona --</option>
-              {columns.map(col => <option key={col} value={col}>{col}</option>)}
-            </select>
-          </div>
-
-          <div className="wizard-field">
-            <label>Tipo importo</label>
-            <div className="wizard-radio-group">
-              <label>
-                <input 
-                  type="radio" 
-                  checked={amountType === 'single'} 
-                  onChange={() => setAmountType('single')}
-                />
-                Colonna unica (+ e -)
-              </label>
-              <label>
-                <input 
-                  type="radio" 
-                  checked={amountType === 'split'} 
-                  onChange={() => setAmountType('split')}
-                />
-                Colonne separate (Entrate/Uscite)
-              </label>
-            </div>
-          </div>
-
-          {amountType === 'single' ? (
-            <div className="wizard-field">
-              <label>Colonna Importo *</label>
-              <select value={amountColumn} onChange={e => setAmountColumn(e.target.value)}>
-                <option value="">-- Seleziona --</option>
-                {columns.map(col => <option key={col} value={col}>{col}</option>)}
-              </select>
-            </div>
-          ) : (
-            <>
-              <div className="wizard-field">
-                <label>Colonna Entrate</label>
-                <select value={incomeColumn} onChange={e => setIncomeColumn(e.target.value)}>
-                  <option value="">-- Nessuna --</option>
-                  {columns.map(col => <option key={col} value={col}>{col}</option>)}
-                </select>
-              </div>
-              <div className="wizard-field">
-                <label>Colonna Uscite</label>
-                <select value={expenseColumn} onChange={e => setExpenseColumn(e.target.value)}>
-                  <option value="">-- Nessuna --</option>
-                  {columns.map(col => <option key={col} value={col}>{col}</option>)}
-                </select>
-              </div>
-            </>
-          )}
-
-          <div className="wizard-field">
-            <label>Colonna ID Transazione (opzionale, per deduplicazione)</label>
-            <select value={idColumn} onChange={e => setIdColumn(e.target.value)}>
-              <option value="">-- Nessuna --</option>
-              {columns.map(col => <option key={col} value={col}>{col}</option>)}
-            </select>
-          </div>
-
-          {sampleData.length > 0 && (
-            <div className="wizard-preview">
-              <label>Anteprima dati:</label>
-              <div className="wizard-preview-table">
-                <table>
-                  <thead>
-                    <tr>
-                      {columns.slice(0, 5).map(col => <th key={col}>{col}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sampleData.slice(0, 3).map((row, i) => (
-                      <tr key={i}>
-                        {columns.slice(0, 5).map(col => <td key={col}>{String(row[col] || '')}</td>)}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="modal-actions">
-          <button className="btn-cancel" onClick={onCancel}>Annulla</button>
-          <button className="btn-primary" onClick={handleConfirm} disabled={!isValid}>
-            <Check size={16} /> Salva e Importa
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Componente per gestione conflitti import
-function ConflictResolver({ conflicts, onResolve, onCancel }) {
-  const [decisions, setDecisions] = useState(
-    conflicts.reduce((acc, c, i) => ({ ...acc, [i]: 'skip' }), {})
-  );
-
-  const handleDecision = (index, decision) => {
-    setDecisions(prev => ({ ...prev, [index]: decision }));
-  };
-
-  const handleConfirm = () => {
-    const resolved = conflicts.map((c, i) => ({ ...c, decision: decisions[i] }));
-    const toReplace = resolved.filter(c => c.decision === 'replace');
-    const toAdd = resolved.filter(c => c.decision === 'add');
-    onResolve(toReplace, toAdd);
-  };
-
-  const selectAll = (decision) => {
-    setDecisions(conflicts.reduce((acc, _, i) => ({ ...acc, [i]: decision }), {}));
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal modal-large" onClick={e => e.stopPropagation()}>
-        <h3 className="modal-title">
-          <AlertCircle size={20} /> Conflitti rilevati
-        </h3>
-        
-        <p className="modal-message">
-          Ho trovato <strong>{conflicts.length}</strong> transazioni con stessa data e importo ma descrizione diversa. 
-          Potrebbero essere transazioni rinominate o movimenti separati.
-        </p>
-
-        <div className="conflict-actions-top">
-          <button className="btn-small" onClick={() => selectAll('skip')}>
-            Salta tutti
-          </button>
-          <button className="btn-small" onClick={() => selectAll('replace')}>
-            Sostituisci tutti
-          </button>
-          <button className="btn-small" onClick={() => selectAll('add')}>
-            Aggiungi tutti
-          </button>
-        </div>
-
-        <div className="conflict-list">
-          {conflicts.map((conflict, i) => (
-            <div key={i} className="conflict-item">
-              <div className="conflict-info">
-                <div className="conflict-date">
-                  {new Date(conflict.existing.date).toLocaleDateString('it-IT')}
-                </div>
-                <div className="conflict-amount">
-                  {formatCurrency(conflict.existing.amount)}
-                </div>
-              </div>
-              <div className="conflict-descriptions">
-                <div className="conflict-existing">
-                  <span className="conflict-label">Attuale:</span>
-                  <span className="conflict-text">{conflict.existing.description}</span>
-                </div>
-                <div className="conflict-new">
-                  <span className="conflict-label">Nuova:</span>
-                  <span className="conflict-text">{conflict.new.description}</span>
-                </div>
-              </div>
-              <div className="conflict-decision">
-                <label className={decisions[i] === 'skip' ? 'selected' : ''}>
-                  <input
-                    type="radio"
-                    checked={decisions[i] === 'skip'}
-                    onChange={() => handleDecision(i, 'skip')}
-                  />
-                  Mantieni
-                </label>
-                <label className={decisions[i] === 'replace' ? 'selected' : ''}>
-                  <input
-                    type="radio"
-                    checked={decisions[i] === 'replace'}
-                    onChange={() => handleDecision(i, 'replace')}
-                  />
-                  Sostituisci
-                </label>
-                <label className={decisions[i] === 'add' ? 'selected' : ''}>
-                  <input
-                    type="radio"
-                    checked={decisions[i] === 'add'}
-                    onChange={() => handleDecision(i, 'add')}
-                  />
-                  Aggiungi
-                </label>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="modal-actions">
-          <button className="btn-cancel" onClick={onCancel}>Annulla import</button>
-          <button className="btn-primary" onClick={handleConfirm}>
-            <Check size={16} /> Conferma
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Componente per gestione conflitti categoria
-function CategoryConflictResolver({ conflicts, onConfirm, onClose }) {
-  // Stato locale per le scelte (inizializzato con le scelte di default)
-  const [choices, setChoices] = useState(() => {
-    const initial = {};
-    conflicts.forEach(c => {
-      initial[c.txId] = c.currentChoice;
-    });
-    return initial;
-  });
-
-  const handleConfirm = () => {
-    // Passa tutte le scelte al genitore
-    const resolutions = conflicts.map(c => ({
-      txId: c.txId,
-      description: c.description,
-      category: choices[c.txId]
-    }));
-    onConfirm(resolutions);
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-large" onClick={e => e.stopPropagation()}>
-        <h3 className="modal-title">
-          <AlertCircle size={20} /> Conflitti di categoria
-        </h3>
-        
-        <p className="modal-message">
-          Alcune transazioni matchano keyword di più categorie. 
-          Di default viene usata la keyword più lunga (più specifica).
-          Puoi modificare la scelta per ogni transazione.
-        </p>
-
-        <div className="conflict-list">
-          {conflicts.map((conflict) => (
-            <div key={conflict.txId} className="conflict-item">
-              <div className="conflict-descriptions">
-                <div className="conflict-existing">
-                  <span className="conflict-text" style={{ fontWeight: 500 }}>{conflict.description}</span>
-                </div>
-                <div className="conflict-new" style={{ marginTop: '0.5rem' }}>
-                  <span className="conflict-label">Categorie trovate:</span>
-                  <span className="conflict-text">
-                    {conflict.matches.map(m => `${m.category} (${m.keyword})`).join(', ')}
-                  </span>
-                </div>
-              </div>
-              <div className="conflict-decision" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                {conflict.matches.map(m => (
-                  <label key={m.category} className={choices[conflict.txId] === m.category ? 'selected' : ''}>
-                    <input
-                      type="radio"
-                      checked={choices[conflict.txId] === m.category}
-                      onChange={() => setChoices(prev => ({ ...prev, [conflict.txId]: m.category }))}
-                    />
-                    {m.category} <small style={{ color: 'var(--color-gray-500)' }}>({m.keyword})</small>
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="modal-actions">
-          <button className="btn-secondary" onClick={onClose}>
-            Annulla
-          </button>
-          <button className="btn-primary" onClick={handleConfirm}>
-            <Check size={16} /> Conferma
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Componente Stat Card
-function StatCard({ label, value, icon: Icon, type }) {
-  return (
-    <div className={`stat-card ${type}`}>
-      <div className="stat-label">
-        {Icon && <Icon size={18} />}
-        {label}
-      </div>
-      <div className={`stat-value ${type}`}>{formatCurrency(value)}</div>
-    </div>
-  );
-}
 
 export default function MoneyFlow() {
   // State
@@ -481,19 +55,16 @@ export default function MoneyFlow() {
   const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [editingCategory, setEditingCategory] = useState(null);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newKeyword, setNewKeyword] = useState('');
   const [editingDescription, setEditingDescription] = useState(null);
   const [newDescription, setNewDescription] = useState('');
   // State per wizard import
-  const [wizardData, setWizardData] = useState(null); // { columns, sampleData, rawRows, file }
+  const [wizardData, setWizardData] = useState(null);
   // State per conflitti import
-  const [importConflicts, setImportConflicts] = useState(null); // { conflicts, newTransactions, profileName }
-  // State per risoluzioni conflitti categoria memorizzate (descrizione -> categoria)
+  const [importConflicts, setImportConflicts] = useState(null);
+  // State per risoluzioni conflitti categoria memorizzate
   const [categoryResolutions, setCategoryResolutions] = useState({});
   // State per dropdown menu
-  const [openDropdown, setOpenDropdown] = useState(null); // 'file' | 'actions' | null
+  const [openDropdown, setOpenDropdown] = useState(null);
   // State per nuova transazione manuale
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   // State per modale gestione categorie
@@ -501,25 +72,24 @@ export default function MoneyFlow() {
   const [newTransaction, setNewTransaction] = useState({ date: '', description: '', amount: '', category: 'Altro' });
   // State per paginazione transazioni
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 50;
   // State per filtri dashboard
-  const [dashboardTypeFilter, setDashboardTypeFilter] = useState('all'); // 'all' | 'income' | 'expenses'
-  const [dashboardCategoryFilter, setDashboardCategoryFilter] = useState([]); // array di categorie selezionate
+  const [dashboardTypeFilter, setDashboardTypeFilter] = useState('all');
+  const [dashboardCategoryFilter, setDashboardCategoryFilter] = useState([]);
   // State per categoria espansa nel dettaglio dashboard
   const [expandedCategory, setExpandedCategory] = useState(null);
   // State per filtro categoria nei movimenti
   const [transactionsCategoryFilter, setTransactionsCategoryFilter] = useState(null);
   // State per segnalare modifiche categorie non applicate
   const [categoriesChanged, setCategoriesChanged] = useState(false);
+  // State per conflitti categoria durante ricategorizzazione
+  const [categoryConflicts, setCategoryConflicts] = useState(null);
 
   // Reset pagina quando cambiano i filtri
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedYear, selectedMonth, searchQuery, view, transactionsCategoryFilter]);
-  // State per conflitti categoria durante ricategorizzazione
-  const [categoryConflicts, setCategoryConflicts] = useState(null); // [{ txId, description, matches: [{category, keyword}] }]
 
-  // Toast helper (definito prima perché usato negli useEffect)
+  // Toast helper
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
   }, []);
@@ -552,53 +122,6 @@ export default function MoneyFlow() {
     }
   }, [transactions, categories, importProfiles, categoryResolutions]);
 
-  // Trova tutte le categorie che matchano una descrizione
-  const findMatchingCategories = useCallback((description) => {
-    const desc = description.toUpperCase();
-    const matches = [];
-    for (const [cat, keywords] of Object.entries(categories)) {
-      for (const k of keywords) {
-        if (desc.includes(k.toUpperCase())) {
-          matches.push({ category: cat, keyword: k });
-          break; // Una sola keyword per categoria
-        }
-      }
-    }
-    return matches;
-  }, [categories]);
-
-  // Auto-categorizza (prende la prima, o la keyword più lunga in caso di conflitto)
-  const categorize = useCallback((description) => {
-    const matches = findMatchingCategories(description);
-    if (matches.length === 0) return 'Altro';
-    if (matches.length === 1) return matches[0].category;
-    // Più match: prendi quello con la keyword più lunga (più specifica)
-    const best = matches.reduce((a, b) => a.keyword.length >= b.keyword.length ? a : b);
-    return best.category;
-  }, [findMatchingCategories]);
-
-  // Parse Excel date
-  const parseDate = useCallback((val) => {
-    if (!val) return new Date();
-    if (typeof val === 'number') {
-      return new Date((val - 25569) * 86400 * 1000);
-    }
-    if (typeof val === 'string') {
-      const parts = val.split('/');
-      if (parts.length === 3) return new Date(parts[2], parts[1]-1, parts[0]);
-    }
-    return new Date(val);
-  }, []);
-
-  // Parse amount (gestisce formati italiani con virgola)
-  const parseAmount = useCallback((val) => {
-    if (!val) return 0;
-    if (typeof val === 'number') return val;
-    // Rimuove tutto tranne numeri, virgola, punto e segno meno
-    const cleaned = String(val).replace(/[^\d,.-]/g, '').replace(',', '.');
-    return parseFloat(cleaned) || 0;
-  }, []);
-
   // Tutti i profili disponibili (built-in + custom)
   const allProfiles = useMemo(() => ({
     ...BUILTIN_IMPORT_PROFILES,
@@ -607,7 +130,6 @@ export default function MoneyFlow() {
 
   // Auto-detect del formato file
   const detectProfile = useCallback((columns) => {
-    // Prova tutti i profili disponibili
     for (const [key, profile] of Object.entries(allProfiles)) {
       const hasDate = columns.includes(profile.dateColumn);
       const hasDesc = columns.includes(profile.descriptionColumn);
@@ -637,8 +159,6 @@ export default function MoneyFlow() {
       }
       
       const date = parseDate(r[profile.dateColumn]);
-      
-      // ID dalla banca o generato
       const bankId = profile.idColumn ? r[profile.idColumn] : null;
       
       if (!desc || amt === 0) return null;
@@ -649,11 +169,58 @@ export default function MoneyFlow() {
         date: date.toISOString(),
         description: desc,
         amount: amt,
-        category: categorize(desc),
+        category: categorize(desc, categories),
         note: ''
       };
     }).filter(t => t !== null && !isNaN(t.amount) && t.amount !== 0);
-  }, [parseAmount, parseDate, categorize]);
+  }, [categories]);
+
+  // Funzione per processare transazioni importate con rilevamento conflitti
+  const processImportedTransactions = useCallback((newTx, profileName) => {
+    const existingByDateAmount = {};
+    transactions.forEach(t => {
+      const key = `${t.date}-${t.amount}`;
+      if (!existingByDateAmount[key]) existingByDateAmount[key] = [];
+      existingByDateAmount[key].push(t);
+    });
+
+    const existingExact = new Set(
+      transactions.map(t => t.bankId || `${t.date}-${t.amount}-${t.description}`)
+    );
+
+    const unique = [];
+    const conflicts = [];
+
+    newTx.forEach(t => {
+      const exactKey = t.bankId || `${t.date}-${t.amount}-${t.description}`;
+      
+      if (existingExact.has(exactKey)) {
+        return;
+      }
+
+      const dateAmountKey = `${t.date}-${t.amount}`;
+      const possibleMatches = existingByDateAmount[dateAmountKey] || [];
+      
+      const conflict = possibleMatches.find(existing => 
+        existing.description !== t.description
+      );
+
+      if (conflict) {
+        conflicts.push({ existing: conflict, new: t });
+      } else {
+        unique.push(t);
+      }
+    });
+
+    if (conflicts.length > 0) {
+      setImportConflicts({ conflicts, newTransactions: unique, profileName });
+    } else if (unique.length === 0) {
+      showToast('Nessuna nuova transazione trovata', 'error');
+    } else {
+      setTransactions(prev => [...prev, ...unique].sort((a, b) => new Date(b.date) - new Date(a.date)));
+      showToast(`Importate ${unique.length} transazioni (${profileName})`);
+    }
+  }, [transactions, showToast]);
 
   // Import file - principale
   const handleFile = useCallback(async (file) => {
@@ -665,7 +232,6 @@ export default function MoneyFlow() {
       const wb = XLSX.read(data, { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       
-      // Prova vari header rows (0, 17 per Illimity, ecc.)
       const headerRowsToTry = [0, 17, 1, 2];
       let rows = [];
       let columns = [];
@@ -676,7 +242,6 @@ export default function MoneyFlow() {
           const testRows = XLSX.utils.sheet_to_json(sheet, { range: headerRow });
           if (testRows.length > 0) {
             const testCols = Object.keys(testRows[0]);
-            // Verifica che le colonne abbiano nomi sensati (non vuoti o numeri)
             const validCols = testCols.filter(c => c && isNaN(c) && c.trim().length > 0);
             if (validCols.length >= 2) {
               rows = testRows;
@@ -696,15 +261,12 @@ export default function MoneyFlow() {
         return;
       }
 
-      // Prova auto-detect
       const detected = detectProfile(columns, rows);
       
       if (detected) {
-        // Formato riconosciuto - processa direttamente
         const newTx = processRowsWithProfile(rows, detected.profile);
         processImportedTransactions(newTx, detected.profile.name);
       } else {
-        // Formato non riconosciuto - apri wizard
         setWizardData({
           columns,
           sampleData: rows.slice(0, 5),
@@ -720,71 +282,13 @@ export default function MoneyFlow() {
     }
   }, [detectProfile, processRowsWithProfile, processImportedTransactions, showToast]);
 
-  // Funzione per processare transazioni importate con rilevamento conflitti
-  const processImportedTransactions = useCallback((newTx, profileName) => {
-    // Mappa per lookup veloce: chiave = data+amount (senza descrizione)
-    const existingByDateAmount = {};
-    transactions.forEach(t => {
-      const key = `${t.date}-${t.amount}`;
-      if (!existingByDateAmount[key]) existingByDateAmount[key] = [];
-      existingByDateAmount[key].push(t);
-    });
-
-    // Mappa per match esatto (inclusa descrizione o bankId)
-    const existingExact = new Set(
-      transactions.map(t => t.bankId || `${t.date}-${t.amount}-${t.description}`)
-    );
-
-    const unique = [];
-    const conflicts = [];
-
-    newTx.forEach(t => {
-      const exactKey = t.bankId || `${t.date}-${t.amount}-${t.description}`;
-      
-      // Match esatto → skip silenzioso
-      if (existingExact.has(exactKey)) {
-        return;
-      }
-
-      // Controlla conflitti (stessa data+amount, descrizione diversa)
-      const dateAmountKey = `${t.date}-${t.amount}`;
-      const possibleMatches = existingByDateAmount[dateAmountKey] || [];
-      
-      const conflict = possibleMatches.find(existing => 
-        existing.description !== t.description
-      );
-
-      if (conflict) {
-        conflicts.push({ existing: conflict, new: t });
-      } else {
-        unique.push(t);
-      }
-    });
-
-    // Se ci sono conflitti, mostra il resolver
-    if (conflicts.length > 0) {
-      setImportConflicts({ conflicts, newTransactions: unique, profileName });
-    } else if (unique.length === 0) {
-      showToast('Nessuna nuova transazione trovata', 'error');
-    } else {
-      setTransactions(prev => [...prev, ...unique].sort((a, b) => new Date(b.date) - new Date(a.date)));
-      showToast(`Importate ${unique.length} transazioni (${profileName})`);
-    }
-  }, [transactions, showToast]);
-
   // Callback quando l'utente risolve i conflitti
   const handleConflictResolve = useCallback((toReplace, toAdd) => {
     if (!importConflicts) return;
 
     const { newTransactions, conflicts } = importConflicts;
-    
-    // Crea set di ID da sostituire
     const idsToReplace = new Set(toReplace.map(c => c.existing.id));
-    
-    // Transazioni sostituite (nuova versione)
     const replacements = toReplace.map(c => c.new);
-    
-    // Transazioni aggiunte (entrambe coesistono)
     const additions = toAdd.map(c => c.new);
     
     setTransactions(prev => {
@@ -801,7 +305,6 @@ export default function MoneyFlow() {
     if (skipped > 0) parts.push(`${skipped} saltate`);
     
     showToast(parts.join(', ') || 'Nessuna modifica');
-    
     setImportConflicts(null);
   }, [importConflicts, showToast]);
 
@@ -809,14 +312,12 @@ export default function MoneyFlow() {
   const handleWizardConfirm = useCallback((profile) => {
     if (!wizardData) return;
     
-    // Salva il profilo custom
     const profileKey = profile.name.toLowerCase().replace(/\s+/g, '-');
     setImportProfiles(prev => ({
       ...prev,
       [profileKey]: { ...profile, headerRow: wizardData.headerRow }
     }));
     
-    // Processa le righe
     const newTx = processRowsWithProfile(wizardData.rawRows, profile);
     processImportedTransactions(newTx, profile.name);
     
@@ -847,7 +348,7 @@ export default function MoneyFlow() {
     showToast('File Excel esportato con successo');
   }, [transactions, showToast]);
 
-  // Export backup (JSON completo con categorie e profili import)
+  // Export backup (JSON completo)
   const exportBackup = useCallback(() => {
     const backup = {
       version: '1.1',
@@ -878,7 +379,6 @@ export default function MoneyFlow() {
         return;
       }
       
-      // Conferma prima di sovrascrivere
       if (transactions.length > 0) {
         const confirmed = window.confirm(
           `Questo sostituirà tutti i dati attuali (${transactions.length} transazioni).\nVuoi continuare?`
@@ -894,7 +394,6 @@ export default function MoneyFlow() {
         setImportProfiles(backup.importProfiles);
       }
       
-      // Salva subito nel localStorage
       localStorage.setItem('moneyFlow', JSON.stringify({
         transactions: backup.transactions,
         categories: backup.categories || categories,
@@ -931,7 +430,6 @@ export default function MoneyFlow() {
       return;
     }
     setCategories(prev => ({ ...prev, [name.trim()]: [] }));
-    setNewCategoryName('');
     setCategoriesChanged(true);
     showToast(`Categoria "${name}" creata`);
   }, [categories, showToast]);
@@ -959,7 +457,6 @@ export default function MoneyFlow() {
       ...prev,
       [category]: [...(prev[category] || []), upperKeyword]
     }));
-    setNewKeyword('');
     setCategoriesChanged(true);
     showToast(`Keyword "${upperKeyword}" aggiunta`);
   }, [categories, showToast]);
@@ -973,24 +470,20 @@ export default function MoneyFlow() {
     setCategoriesChanged(true);
   }, []);
 
-  // Ri-categorizza tutte le transazioni (con rilevamento conflitti)
+  // Ri-categorizza tutte le transazioni
   const recategorizeAll = useCallback(() => {
     const conflicts = [];
     const updated = transactions.map(t => {
-      // Prima controlla se c'è una risoluzione memorizzata per questa descrizione
       const savedResolution = categoryResolutions[t.description];
       if (savedResolution) {
-        // Usa sempre la scelta memorizzata dell'utente
         return { ...t, category: savedResolution };
       }
       
-      const matches = findMatchingCategories(t.description);
+      const matches = findMatchingCategories(t.description, categories);
       if (matches.length <= 1) {
         return { ...t, category: matches.length === 1 ? matches[0].category : 'Altro' };
       }
       
-      // Conflitto: più categorie matchano
-      // Per ora usa la keyword più lunga, ma registra il conflitto
       const best = matches.reduce((a, b) => a.keyword.length >= b.keyword.length ? a : b);
       conflicts.push({ txId: t.id, description: t.description, matches, currentChoice: best.category });
       return { ...t, category: best.category };
@@ -1004,11 +497,10 @@ export default function MoneyFlow() {
     } else {
       showToast('Transazioni ri-categorizzate');
     }
-  }, [transactions, findMatchingCategories, showToast, categoryResolutions]);
+  }, [transactions, categories, showToast, categoryResolutions]);
 
-  // Conferma tutte le scelte dei conflitti
+  // Conferma scelte conflitti categoria
   const confirmCategoryConflicts = useCallback((resolutions) => {
-    // Salva le risoluzioni per descrizione
     const newResolutions = {};
     resolutions.forEach(r => {
       newResolutions[r.description] = r.category;
@@ -1018,7 +510,6 @@ export default function MoneyFlow() {
       ...newResolutions
     }));
     
-    // Aggiorna le transazioni con le scelte confermate
     setTransactions(prev => prev.map(t => {
       const resolution = resolutions.find(r => r.txId === t.id);
       if (resolution) {
@@ -1030,11 +521,6 @@ export default function MoneyFlow() {
     setCategoryConflicts(null);
     showToast(`${resolutions.length} conflitti risolti (scelte memorizzate)`);
   }, [showToast]);
-
-  // Chiudi conflitti categoria senza salvare
-  const closeCategoryConflicts = useCallback(() => {
-    setCategoryConflicts(null);
-  }, []);
 
   // Aggiungi transazione manuale
   const addManualTransaction = useCallback(() => {
@@ -1067,25 +553,20 @@ export default function MoneyFlow() {
   const stats = useMemo(() => {
     let filtered = transactions;
     
-    // Filtro per anno
     filtered = transactions.filter(t => new Date(t.date).getFullYear() === selectedYear);
     
-    // Filtro per mese
     if (selectedMonth !== null) {
       filtered = filtered.filter(t => new Date(t.date).getMonth() === selectedMonth);
     }
     
-    // Dati per dashboard (senza filtro ricerca, ma con filtri dashboard)
     let dashboardFiltered = filtered;
     
-    // Filtro per tipo (entrate/uscite)
     if (dashboardTypeFilter === 'income') {
       dashboardFiltered = dashboardFiltered.filter(t => t.amount > 0);
     } else if (dashboardTypeFilter === 'expenses') {
       dashboardFiltered = dashboardFiltered.filter(t => t.amount < 0);
     }
     
-    // Filtro per categoria
     if (dashboardCategoryFilter.length > 0) {
       dashboardFiltered = dashboardFiltered.filter(t => dashboardCategoryFilter.includes(t.category));
     }
@@ -1093,7 +574,6 @@ export default function MoneyFlow() {
     const income = dashboardFiltered.filter(t => t.amount > 0).reduce((s,t) => s + t.amount, 0);
     const expenses = dashboardFiltered.filter(t => t.amount < 0).reduce((s,t) => s + Math.abs(t.amount), 0);
     
-    // Raggruppa per categoria
     const byCategory = {};
     dashboardFiltered.filter(t => t.amount < 0).forEach(t => {
       if (!byCategory[t.category]) byCategory[t.category] = [];
@@ -1107,7 +587,6 @@ export default function MoneyFlow() {
       transactions: txs.sort((a, b) => new Date(b.date) - new Date(a.date))
     })).sort((a,b) => b.value - a.value);
     
-    // Categorie per entrate
     const byCategoryIncome = {};
     dashboardFiltered.filter(t => t.amount > 0).forEach(t => {
       if (!byCategoryIncome[t.category]) byCategoryIncome[t.category] = [];
@@ -1121,7 +600,6 @@ export default function MoneyFlow() {
       transactions: txs.sort((a, b) => new Date(b.date) - new Date(a.date))
     })).sort((a,b) => b.value - a.value);
 
-    // Dati mensili
     const byMonth = {};
     let monthlyFiltered = transactions.filter(t => new Date(t.date).getFullYear() === selectedYear);
     if (dashboardTypeFilter === 'income') {
@@ -1147,7 +625,6 @@ export default function MoneyFlow() {
       };
     });
 
-    // Trend giornaliero
     let dailyData = [];
     if (selectedMonth !== null) {
       const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
@@ -1168,10 +645,8 @@ export default function MoneyFlow() {
       });
     }
     
-    // Lista di tutte le categorie disponibili (per filtro)
     const allCategories = [...new Set(filtered.map(t => t.category))].sort((a, b) => a.localeCompare(b, 'it'));
 
-    // Filtro ricerca (solo per lista transazioni)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(t => 
@@ -1180,7 +655,6 @@ export default function MoneyFlow() {
       );
     }
     
-    // Filtro categoria per movimenti
     if (transactionsCategoryFilter) {
       filtered = filtered.filter(t => t.category === transactionsCategoryFilter);
     }
@@ -1188,9 +662,8 @@ export default function MoneyFlow() {
     return { income, expenses, balance: income - expenses, categoryData, categoryDataIncome, monthlyData, dailyData, filtered, allCategories };
   }, [transactions, selectedMonth, selectedYear, searchQuery, dashboardTypeFilter, dashboardCategoryFilter, transactionsCategoryFilter]);
 
-  // Update categoria transazione (e memorizza la scelta)
+  // Update categoria transazione
   const updateTxCategory = useCallback((id, category) => {
-    // Trova la transazione per memorizzare la scelta per descrizione
     const tx = transactions.find(t => t.id === id);
     if (tx) {
       setCategoryResolutions(prev => ({
@@ -1221,7 +694,6 @@ export default function MoneyFlow() {
     [transactions]
   );
   
-  // Aggiorna anno se non valido
   useEffect(() => {
     if (years.length > 0 && !years.includes(selectedYear)) {
       setSelectedYear(years[0]);
@@ -1758,7 +1230,7 @@ export default function MoneyFlow() {
                     </button>
                   </div>
                 ))}
-                {/* Paginazione bottom */}
+                {/* Paginazione */}
                 {stats.filtered.length > ITEMS_PER_PAGE && (
                   <div className="pagination">
                     <button 
@@ -1790,131 +1262,20 @@ export default function MoneyFlow() {
             </div>
           </div>
         )}
-
       </main>
 
       {/* Category Manager Modal */}
       {showCategoryManager && (
-        <div className="modal-overlay" onClick={() => setShowCategoryManager(false)}>
-          <div className="modal category-manager-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Gestione Categorie</h2>
-              <button className="modal-close" onClick={() => setShowCategoryManager(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <p style={{ color: 'var(--color-gray-500)', marginBottom: '1rem', fontSize: '0.875rem' }}>
-                Le transazioni vengono categorizzate automaticamente se la descrizione contiene una delle parole chiave.
-              </p>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                {categoriesChanged && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-warning)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <AlertCircle size={14} /> Rilevate modifiche.
-                  </span>
-                )}
-                <button className="btn-secondary" onClick={recategorizeAll}>
-                  Ri-categorizza tutto
-                </button>
-              </div>
-              
-              {/* Aggiungi nuova categoria */}
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                <input
-                  type="text"
-                  placeholder="Nome nuova categoria..."
-                  value={newCategoryName}
-                  onChange={e => setNewCategoryName(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && addCategory(newCategoryName)}
-                  className="search-input"
-                  style={{ paddingLeft: '1rem', flex: 1, maxWidth: 'none' }}
-                />
-                <button 
-                  className="btn-primary" 
-                  onClick={() => addCategory(newCategoryName)}
-                  style={{ padding: '0.5rem 1rem' }}
-                >
-                  <Plus size={16} /> Aggiungi
-                </button>
-              </div>
-
-              <div className="categories-grid">
-                {Object.entries(categories).sort((a, b) => a[0].localeCompare(b[0], 'it')).map(([cat, keywords]) => (
-                  <div 
-                    key={cat} 
-                    className="category-card"
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                      <div className="category-card-title" style={{ marginBottom: 0 }}>{cat}</div>
-                      <button
-                        onClick={() => deleteCategory(cat)}
-                        className="btn-delete"
-                        title="Elimina categoria"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    
-                    {/* Aggiungi keyword */}
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                      <input
-                        type="text"
-                        placeholder="Nuova keyword..."
-                        value={editingCategory === cat ? newKeyword : ''}
-                        onChange={e => { setEditingCategory(cat); setNewKeyword(e.target.value); }}
-                        onKeyDown={e => e.key === 'Enter' && addKeyword(cat, newKeyword)}
-                        className="search-input"
-                        style={{ paddingLeft: '0.75rem', flex: 1, maxWidth: 'none', fontSize: '0.75rem', padding: '0.375rem 0.75rem' }}
-                      />
-                      <button 
-                        className="btn-secondary" 
-                        onClick={() => addKeyword(cat, newKeyword)}
-                        style={{ padding: '0.375rem 0.75rem', fontSize: '0.75rem' }}
-                      >
-                        <Plus size={12} />
-                      </button>
-                    </div>
-                    
-                    <div className="keywords-list">
-                      {keywords.map(k => (
-                        <span 
-                          key={k} 
-                          className="keyword-tag"
-                          style={{ 
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.25rem'
-                          }}
-                        >
-                          {k}
-                          <button
-                            onClick={() => removeKeyword(cat, k)}
-                            style={{ 
-                              background: 'none', 
-                              border: 'none', 
-                              padding: 0, 
-                              cursor: 'pointer',
-                              display: 'flex',
-                              color: 'var(--color-gray-500)'
-                            }}
-                          >
-                            <X size={12} />
-                          </button>
-                        </span>
-                      ))}
-                      {keywords.length === 0 && (
-                        <span style={{ color: 'var(--color-gray-400)', fontSize: '0.75rem' }}>
-                          Nessuna keyword
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <CategoryManager
+          categories={categories}
+          categoriesChanged={categoriesChanged}
+          onAddCategory={addCategory}
+          onDeleteCategory={deleteCategory}
+          onAddKeyword={addKeyword}
+          onRemoveKeyword={removeKeyword}
+          onRecategorize={recategorizeAll}
+          onClose={() => setShowCategoryManager(false)}
+        />
       )}
 
       {/* Toast */}
@@ -1944,7 +1305,6 @@ export default function MoneyFlow() {
         <ImportWizard
           columns={wizardData.columns}
           sampleData={wizardData.sampleData}
-          existingProfiles={allProfiles}
           onConfirm={handleWizardConfirm}
           onCancel={() => setWizardData(null)}
         />
@@ -1964,7 +1324,7 @@ export default function MoneyFlow() {
         <CategoryConflictResolver
           conflicts={categoryConflicts}
           onConfirm={confirmCategoryConflicts}
-          onClose={closeCategoryConflicts}
+          onClose={() => setCategoryConflicts(null)}
         />
       )}
     </div>
