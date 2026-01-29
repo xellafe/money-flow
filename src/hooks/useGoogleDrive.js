@@ -130,6 +130,7 @@ export function useGoogleDrive() {
       
       if (result.success) {
         setIsAuthenticated(false);
+        setHasDrivePermission(true); // Reset per prossimo login
         setUserInfo(null);
         setBackupInfo(null);
         setLastSyncTime(null);

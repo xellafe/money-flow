@@ -465,18 +465,28 @@ function isSigningIn() {
  * Effettua il logout e revoca i token
  */
 async function signOut() {
+  // Prima elimina i token dallo store locale
+  store.delete('tokens');
+  
   if (oauth2Client) {
-    const tokens = store.get('tokens');
+    const tokens = oauth2Client.credentials;
+    
+    // Tenta di revocare il token su Google
     if (tokens && tokens.access_token) {
       try {
         await oauth2Client.revokeToken(tokens.access_token);
       } catch (error) {
-        console.error('Errore revoca token:', error);
+        // Ignora errori di revoca - il token potrebbe essere già scaduto
+        console.log('Token revoca (può essere ignorato):', error.message);
       }
     }
+    
+    // Resetta le credenziali nel client
     oauth2Client.setCredentials({});
   }
-  store.delete('tokens');
+  
+  // Assicurati che lo store sia stato pulito
+  store.clear();
 }
 
 /**
