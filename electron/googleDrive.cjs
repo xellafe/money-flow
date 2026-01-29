@@ -280,7 +280,7 @@ async function signIn() {
                           <li>Chiudi questa finestra</li>
                           <li>Clicca di nuovo su "Accedi con Google" nell'app</li>
                           <li>Nella schermata di Google, assicurati di <strong>selezionare</strong> il permesso:<br>
-                            <span class="permission-name">📁 Dati di configurazione dell'applicazione</span>
+                            <span class="permission-name">📁 Visualizzare, creare ed eliminare i propri dati di configurazione nel tuo account Google Drive</span>
                           </li>
                         </ol>
                       </div>
