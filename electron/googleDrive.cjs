@@ -156,12 +156,51 @@ async function signIn() {
           if (error) {
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
             res.end(`
+              <!DOCTYPE html>
               <html>
-                <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #fef2f2;">
-                  <div style="text-align: center; padding: 2rem;">
-                    <h1 style="color: #dc2626;">❌ Errore</h1>
-                    <p>Autenticazione fallita: ${error}</p>
-                    <p style="color: #666;">Puoi chiudere questa finestra.</p>
+                <head>
+                  <title>MoneyFlow - Errore Login</title>
+                  <style>
+                    * { box-sizing: border-box; }
+                    body { 
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                      display: flex; 
+                      justify-content: center; 
+                      align-items: center; 
+                      min-height: 100vh; 
+                      margin: 0; 
+                      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+                    }
+                    .container {
+                      text-align: center;
+                      padding: 2.5rem;
+                      max-width: 450px;
+                      background: white;
+                      border-radius: 16px;
+                      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+                    }
+                    .icon { font-size: 4rem; margin-bottom: 1rem; }
+                    h1 { color: #dc2626; margin: 0 0 1rem 0; font-size: 1.5rem; }
+                    p { color: #4b5563; line-height: 1.6; margin: 0.5rem 0; }
+                    .error-detail { 
+                      background: #fef2f2; 
+                      color: #991b1b; 
+                      padding: 0.75rem 1rem; 
+                      border-radius: 8px; 
+                      margin: 1rem 0;
+                      font-family: monospace;
+                      font-size: 0.875rem;
+                    }
+                    .hint { color: #6b7280; font-size: 0.875rem; margin-top: 1.5rem; }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <div class="icon">❌</div>
+                    <h1>Autenticazione fallita</h1>
+                    <div class="error-detail">${error}</div>
+                    <p>L'accesso a Google non è andato a buon fine.</p>
+                    <p class="hint">Chiudi questa finestra e riprova dall'applicazione MoneyFlow.</p>
                   </div>
                 </body>
               </html>
@@ -182,12 +221,71 @@ async function signIn() {
             if (!hasDriveScope) {
               res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
               res.end(`
+                <!DOCTYPE html>
                 <html>
-                  <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #fef2f2;">
-                    <div style="text-align: center; padding: 2rem; max-width: 500px;">
-                      <h1 style="color: #dc2626;">⚠️ Permessi mancanti</h1>
-                      <p>Per utilizzare la sincronizzazione, devi selezionare il permesso <strong>"Visualizza e gestisci i dati di configurazione dell'applicazione"</strong> durante il login.</p>
-                      <p style="color: #666;">Riprova il login e assicurati di selezionare tutti i permessi richiesti.</p>
+                  <head>
+                    <title>MoneyFlow - Permessi Mancanti</title>
+                    <style>
+                      * { box-sizing: border-box; }
+                      body { 
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                        display: flex; 
+                        justify-content: center; 
+                        align-items: center; 
+                        min-height: 100vh; 
+                        margin: 0; 
+                        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+                      }
+                      .container {
+                        text-align: center;
+                        padding: 2.5rem;
+                        max-width: 500px;
+                        background: white;
+                        border-radius: 16px;
+                        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+                      }
+                      .icon { font-size: 4rem; margin-bottom: 1rem; }
+                      h1 { color: #d97706; margin: 0 0 1rem 0; font-size: 1.5rem; }
+                      p { color: #4b5563; line-height: 1.6; margin: 0.5rem 0; }
+                      .permission-box {
+                        background: #fef3c7;
+                        border: 2px solid #f59e0b;
+                        border-radius: 8px;
+                        padding: 1rem;
+                        margin: 1.5rem 0;
+                        text-align: left;
+                      }
+                      .permission-box strong { color: #92400e; }
+                      .permission-name {
+                        background: #fde68a;
+                        padding: 0.25rem 0.5rem;
+                        border-radius: 4px;
+                        font-weight: 600;
+                        color: #78350f;
+                      }
+                      .steps { text-align: left; margin: 1rem 0; }
+                      .steps li { margin: 0.5rem 0; color: #374151; }
+                      .hint { color: #6b7280; font-size: 0.875rem; margin-top: 1.5rem; }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="container">
+                      <div class="icon">⚠️</div>
+                      <h1>Permessi non concessi</h1>
+                      <p>Per salvare i backup su Google Drive, MoneyFlow ha bisogno del tuo permesso.</p>
+                      
+                      <div class="permission-box">
+                        <strong>Cosa fare:</strong>
+                        <ol class="steps">
+                          <li>Chiudi questa finestra</li>
+                          <li>Clicca di nuovo su "Accedi con Google" nell'app</li>
+                          <li>Nella schermata di Google, assicurati di <strong>selezionare</strong> il permesso:<br>
+                            <span class="permission-name">📁 Dati di configurazione dell'applicazione</span>
+                          </li>
+                        </ol>
+                      </div>
+                      
+                      <p class="hint">Senza questo permesso, la sincronizzazione cloud non funzionerà.</p>
                     </div>
                   </body>
                 </html>
@@ -202,12 +300,51 @@ async function signIn() {
 
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
             res.end(`
+              <!DOCTYPE html>
               <html>
-                <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0fdf4;">
-                  <div style="text-align: center; padding: 2rem;">
-                    <h1 style="color: #16a34a;">✅ Autenticazione completata!</h1>
-                    <p>MoneyFlow è ora connesso a Google Drive.</p>
-                    <p style="color: #666;">Puoi chiudere questa finestra e tornare all'app.</p>
+                <head>
+                  <title>MoneyFlow - Login Completato</title>
+                  <style>
+                    * { box-sizing: border-box; }
+                    body { 
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                      display: flex; 
+                      justify-content: center; 
+                      align-items: center; 
+                      min-height: 100vh; 
+                      margin: 0; 
+                      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+                    }
+                    .container {
+                      text-align: center;
+                      padding: 2.5rem;
+                      max-width: 450px;
+                      background: white;
+                      border-radius: 16px;
+                      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+                    }
+                    .icon { font-size: 4rem; margin-bottom: 1rem; }
+                    h1 { color: #059669; margin: 0 0 1rem 0; font-size: 1.5rem; }
+                    p { color: #4b5563; line-height: 1.6; margin: 0.5rem 0; }
+                    .success-badge {
+                      display: inline-block;
+                      background: #d1fae5;
+                      color: #065f46;
+                      padding: 0.5rem 1rem;
+                      border-radius: 9999px;
+                      font-weight: 500;
+                      margin: 1rem 0;
+                    }
+                    .hint { color: #6b7280; font-size: 0.875rem; margin-top: 1.5rem; }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <div class="icon">✅</div>
+                    <h1>Accesso completato!</h1>
+                    <div class="success-badge">🔗 Connesso a Google Drive</div>
+                    <p>MoneyFlow può ora salvare i tuoi backup in sicurezza sul cloud.</p>
+                    <p class="hint">Puoi chiudere questa finestra e tornare all'app.</p>
                   </div>
                 </body>
               </html>
@@ -223,12 +360,50 @@ async function signIn() {
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(`
+          <!DOCTYPE html>
           <html>
-            <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #fef2f2;">
-              <div style="text-align: center; padding: 2rem;">
-                <h1 style="color: #dc2626;">❌ Errore</h1>
-                <p>${err.message}</p>
-                <p style="color: #666;">Puoi chiudere questa finestra.</p>
+            <head>
+              <title>MoneyFlow - Errore</title>
+              <style>
+                * { box-sizing: border-box; }
+                body { 
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                  display: flex; 
+                  justify-content: center; 
+                  align-items: center; 
+                  min-height: 100vh; 
+                  margin: 0; 
+                  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+                }
+                .container {
+                  text-align: center;
+                  padding: 2.5rem;
+                  max-width: 450px;
+                  background: white;
+                  border-radius: 16px;
+                  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+                }
+                .icon { font-size: 4rem; margin-bottom: 1rem; }
+                h1 { color: #dc2626; margin: 0 0 1rem 0; font-size: 1.5rem; }
+                p { color: #4b5563; line-height: 1.6; margin: 0.5rem 0; }
+                .error-detail { 
+                  background: #fef2f2; 
+                  color: #991b1b; 
+                  padding: 0.75rem 1rem; 
+                  border-radius: 8px; 
+                  margin: 1rem 0;
+                  font-size: 0.875rem;
+                  word-break: break-word;
+                }
+                .hint { color: #6b7280; font-size: 0.875rem; margin-top: 1.5rem; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="icon">❌</div>
+                <h1>Si è verificato un errore</h1>
+                <div class="error-detail">${err.message}</div>
+                <p class="hint">Chiudi questa finestra e riprova dall'applicazione MoneyFlow.</p>
               </div>
             </body>
           </html>
