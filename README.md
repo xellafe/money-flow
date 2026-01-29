@@ -86,6 +86,37 @@ npm run electron:build
 
 > **Nota:** Il comando `electron:build` genera un eseguibile portable per Windows nella cartella `release/`.
 
+### 🔐 Configurazione Google Drive (opzionale)
+
+Per abilitare la sincronizzazione cloud con Google Drive, devi configurare le credenziali OAuth:
+
+1. **Crea un progetto Google Cloud** su [Google Cloud Console](https://console.cloud.google.com/)
+
+2. **Abilita l'API Google Drive**:
+   - Vai su "API e servizi" > "Libreria"
+   - Cerca "Google Drive API" e abilitala
+
+3. **Crea le credenziali OAuth**:
+   - Vai su "API e servizi" > "Credenziali"
+   - Clicca "Crea credenziali" > "ID client OAuth"
+   - Seleziona "Applicazione desktop"
+   - Scarica il file JSON
+
+4. **Configura l'applicazione**:
+   ```bash
+   # Copia il template
+   cp electron/google-credentials.example.json electron/google-credentials.json
+   
+   # Modifica il file con le tue credenziali
+   ```
+
+5. **Aggiorna il file** `electron/google-credentials.json` con i valori dal file scaricato:
+   - `client_id`
+   - `client_secret`
+   - `project_id`
+
+> ⚠️ **Importante:** Non committare mai `google-credentials.json` nel repository. Il file è già incluso nel `.gitignore`.
+
 ## 📁 Struttura Progetto
 
 ```
