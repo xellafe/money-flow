@@ -137,10 +137,10 @@ export default function MoneyFlow() {
 
   // Backup automatico alla chiusura dell'app (solo Electron)
   // Usa ref per evitare di ricreare listener ad ogni cambio di stato
-  const backupDataRef = useRef({ transactions, categories, importProfiles });
+  const backupDataRef = useRef({ transactions, categories, importProfiles, categoryResolutions });
   useEffect(() => {
-    backupDataRef.current = { transactions, categories, importProfiles };
-  }, [transactions, categories, importProfiles]);
+    backupDataRef.current = { transactions, categories, importProfiles, categoryResolutions };
+  }, [transactions, categories, importProfiles, categoryResolutions]);
 
   useEffect(() => {
     if (window.electronAPI?.onRequestBackupData) {
@@ -2145,7 +2145,7 @@ export default function MoneyFlow() {
             if (result.success) showToast("Disconnesso da Google Drive");
           }}
           onUpload={async () => {
-            const data = { transactions, categories, importProfiles };
+            const data = { transactions, categories, importProfiles, categoryResolutions };
             const result = await googleDrive.uploadBackup(data);
             if (result.success) showToast("Backup salvato su Google Drive");
             else showToast(result.error, "error");
@@ -2161,6 +2161,7 @@ export default function MoneyFlow() {
                 setTransactions(result.data.transactions || []);
                 setCategories(result.data.categories || DEFAULT_CATEGORIES);
                 setImportProfiles(result.data.importProfiles || {});
+                setCategoryResolutions(result.data.categoryResolutions || {});
                 showToast("Dati ripristinati da Google Drive");
               }
             } else {
