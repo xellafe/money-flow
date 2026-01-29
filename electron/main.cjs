@@ -161,6 +161,16 @@ ipcMain.handle('google-drive:is-authenticated', async () => {
   }
 });
 
+// Verifica permessi Drive
+ipcMain.handle('google-drive:has-drive-permission', async () => {
+  try {
+    return googleDrive.hasDrivePermission();
+  } catch (error) {
+    console.error('Errore verifica permessi Drive:', error);
+    return false;
+  }
+});
+
 // Login
 ipcMain.handle('google-drive:sign-in', async () => {
   try {

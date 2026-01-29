@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Google Drive
   googleDrive: {
     isAuthenticated: () => ipcRenderer.invoke('google-drive:is-authenticated'),
+    hasDrivePermission: () => ipcRenderer.invoke('google-drive:has-drive-permission'),
     isSigningIn: () => ipcRenderer.invoke('google-drive:is-signing-in'),
     signIn: () => ipcRenderer.invoke('google-drive:sign-in'),
     cancelSignIn: () => ipcRenderer.invoke('google-drive:cancel-sign-in'),

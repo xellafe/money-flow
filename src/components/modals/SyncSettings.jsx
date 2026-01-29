@@ -7,6 +7,7 @@ import GoogleSignInButton from '../GoogleSignInButton';
  */
 export default function SyncSettings({
   isAuthenticated,
+  hasDrivePermission = true,
   isLoading,
   userInfo,
   backupInfo,
@@ -177,6 +178,30 @@ export default function SyncSettings({
               )}
             </div>
           </div>
+
+          {/* Warning permessi mancanti */}
+          {isAuthenticated && !hasDrivePermission && (
+            <div style={{ 
+              padding: '1rem', 
+              borderRadius: '8px', 
+              backgroundColor: '#fef3c7',
+              border: '1px solid #f59e0b',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.75rem'
+            }}>
+              <AlertCircle size={20} style={{ color: '#d97706', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <div style={{ fontWeight: 500, color: '#92400e', marginBottom: '0.25rem' }}>
+                  Permessi mancanti
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#a16207' }}>
+                  Non hai concesso i permessi per Google Drive. Disconnettiti e rifai il login, assicurandoti di selezionare <strong>tutti i permessi richiesti</strong>.
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Sezione azioni (solo se autenticato) */}
           {isAuthenticated && (

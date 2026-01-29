@@ -91,6 +91,18 @@ function isAuthenticated() {
 }
 
 /**
+ * Verifica se i token salvati hanno i permessi necessari per Drive
+ * @returns {boolean} true se ha i permessi Drive
+ */
+function hasDrivePermission() {
+  const tokens = store.get('tokens');
+  if (!tokens || !tokens.scope) return false;
+  
+  const grantedScopes = tokens.scope.split(' ');
+  return grantedScopes.some(s => s.includes('drive.appdata'));
+}
+
+/**
  * Ottiene l'URL per l'autenticazione OAuth
  */
 function getAuthUrl() {
@@ -160,6 +172,34 @@ async function signIn() {
           }
 
           if (code) {
+            // Scambia il codice per i token
+            const { tokens } = await oauth2Client.getToken(code);
+            
+            // Verifica che l'utente abbia concesso i permessi per Drive
+            const grantedScopes = tokens.scope ? tokens.scope.split(' ') : [];
+            const hasDriveScope = grantedScopes.some(s => s.includes('drive.appdata'));
+            
+            if (!hasDriveScope) {
+              res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+              res.end(`
+                <html>
+                  <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #fef2f2;">
+                    <div style="text-align: center; padding: 2rem; max-width: 500px;">
+                      <h1 style="color: #dc2626;">⚠️ Permessi mancanti</h1>
+                      <p>Per utilizzare la sincronizzazione, devi selezionare il permesso <strong>"Visualizza e gestisci i dati di configurazione dell'applicazione"</strong> durante il login.</p>
+                      <p style="color: #666;">Riprova il login e assicurati di selezionare tutti i permessi richiesti.</p>
+                    </div>
+                  </body>
+                </html>
+              `);
+              cleanup();
+              reject(new Error('Permessi Google Drive non concessi. Riprova e seleziona tutti i permessi.'));
+              return;
+            }
+            
+            oauth2Client.setCredentials(tokens);
+            store.set('tokens', tokens);
+
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
             res.end(`
               <html>
@@ -172,11 +212,6 @@ async function signIn() {
                 </body>
               </html>
             `);
-
-            // Scambia il codice per i token
-            const { tokens } = await oauth2Client.getToken(code);
-            oauth2Client.setCredentials(tokens);
-            store.set('tokens', tokens);
             
             cleanup();
             resolve(tokens);
@@ -448,6 +483,7 @@ async function getUserInfo() {
 module.exports = {
   initializeOAuth,
   isAuthenticated,
+  hasDrivePermission,
   isSigningIn,
   signIn,
   cancelSignIn,

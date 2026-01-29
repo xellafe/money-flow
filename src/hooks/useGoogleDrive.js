@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 export function useGoogleDrive() {
   const [isElectron, setIsElectron] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasDrivePermission, setHasDrivePermission] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   const [backupInfo, setBackupInfo] = useState(null);
@@ -53,6 +54,10 @@ export function useGoogleDrive() {
       setIsAuthenticated(authenticated);
       
       if (authenticated) {
+        // Verifica anche che abbia i permessi per Drive
+        const hasPermission = await window.electronAPI.googleDrive.hasDrivePermission();
+        setHasDrivePermission(hasPermission);
+        
         await refreshUserInfo();
         await refreshBackupInfo();
       }
@@ -231,6 +236,7 @@ export function useGoogleDrive() {
     // Stato
     isElectron,
     isAuthenticated,
+    hasDrivePermission,
     isLoading,
     userInfo,
     backupInfo,

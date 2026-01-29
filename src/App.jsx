@@ -2126,6 +2126,7 @@ export default function MoneyFlow() {
       {showSyncSettings && (
         <SyncSettings
           isAuthenticated={googleDrive.isAuthenticated}
+          hasDrivePermission={googleDrive.hasDrivePermission}
           isLoading={googleDrive.isLoading}
           userInfo={googleDrive.userInfo}
           backupInfo={googleDrive.backupInfo}
