@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 release
+
+# Sensitive credentials
+electron/google-credentials.json
+*.env
+.env.*
