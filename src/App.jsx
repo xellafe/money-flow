@@ -550,11 +550,12 @@ export default function MoneyFlow() {
   // Export backup (JSON completo)
   const exportBackup = useCallback(() => {
     const backup = {
-      version: "1.1",
+      version: "1.2",
       exportDate: new Date().toISOString(),
       transactions,
       categories,
       importProfiles,
+      categoryResolutions,
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], {
       type: "application/json",
@@ -566,7 +567,7 @@ export default function MoneyFlow() {
     a.click();
     URL.revokeObjectURL(url);
     showToast("Backup esportato con successo");
-  }, [transactions, categories, importProfiles, showToast]);
+  }, [transactions, categories, importProfiles, categoryResolutions, showToast]);
 
   // Import backup (JSON)
   const importBackup = useCallback(
@@ -595,6 +596,9 @@ export default function MoneyFlow() {
         if (backup.importProfiles) {
           setImportProfiles(backup.importProfiles);
         }
+        if (backup.categoryResolutions) {
+          setCategoryResolutions(backup.categoryResolutions);
+        }
 
         localStorage.setItem(
           "moneyFlow",
@@ -602,6 +606,7 @@ export default function MoneyFlow() {
             transactions: backup.transactions,
             categories: backup.categories || categories,
             importProfiles: backup.importProfiles || importProfiles,
+            categoryResolutions: backup.categoryResolutions || categoryResolutions,
           }),
         );
 
@@ -613,7 +618,7 @@ export default function MoneyFlow() {
         showToast("Errore nel ripristino del backup", "error");
       }
     },
-    [transactions, categories, importProfiles, showToast],
+    [transactions, categories, importProfiles, categoryResolutions, showToast],
   );
 
   // Delete transaction
