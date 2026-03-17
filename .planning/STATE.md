@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-17T14:57:49.056Z"
+last_updated: "2026-03-17T15:19:59.200Z"
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
-  percent: 83
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State: MoneyFlow UI/UX Redesign
 
-**Last Updated:** 2026-03-17 (plan 02-03 execution)
+**Last Updated:** 2026-03-17 (plan 02-04 execution)
 
 ## Project Reference
 
@@ -22,14 +22,14 @@ progress:
 
 **Mission:** Transform MoneyFlow from custom CSS chaos (2,127-line App.jsx monolith) to a modern, maintainable UI/UX with Tailwind v4, preserving all existing functionality while introducing light clean minimal design (Notion/Apple inspiration).
 
-**Current Focus:** Phase 2 — State Extraction (extract 7 custom hooks from App.jsx monolith)
+**Current Focus:** Phase 2 — State Extraction COMPLETE (all 6 hooks extracted from App.jsx)
 
 ## Current Position
 
-**Active Phase:** Phase 2: State Extraction (in progress — 02-03 complete)
-**Active Plan:** Phase 2 Plan 04 (02-04 — next)
+**Active Phase:** Phase 2: State Extraction (complete — 02-04 task 1 done; human smoke test pending)
+**Active Plan:** Phase 2 Plan 04 (02-04 — checkpoint:human-verify pending)
 **Status:** In progress
-**Progress:** [████████░░] 83%
+**Progress:** [██████████] 100%
 
 ## Performance Metrics
 
@@ -56,6 +56,8 @@ progress:
 | 02-state-extraction | P01 | 15m | 2 | 4 |
 | 02-state-extraction | P02 | 14m | 2 | 4 |
 | Phase 02-state-extraction PP03 | 18m | 2 tasks | 3 files |
+| 02-state-extraction | P04 | 15m | 1 | 3 |
+| Phase 02-state-extraction PP04 | 15m | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -77,7 +79,8 @@ progress:
 | 2026-03-17 | useCategories: lazy localStorage initializers for categories + importProfiles | Reads state at mount time without useEffect anti-pattern; avoids double-render on load | ✓ Implemented |
 | 2026-03-17 | useCategories recategorizeAll takes (transactions, categoryResolutions, setTransactions) as fn params | useCategories instantiated before useTransactionData; closure would capture stale/uninitialized state | ✓ Implemented |
 | 2026-03-17 | XLSX import kept in App.jsx through Plan 02-03 — handleFile/handlePayPalFile still use it | Plan 02-03 incorrectly stated XLSX was hook-only; moves to useImport hook in Plan 02-04 | ✓ Auto-fixed |
-| 2026-03-17 | isInitialized simplified to useState(false) + trivial useEffect | Lazy initializers in hooks load localStorage synchronously before first render; isInitialized just gates first frame | ✓ Implemented |
+| 2026-03-17 | useImportLogic constructor params: transactions/setTransactions/categories/importProfiles/setImportProfiles/showToast | Same dependency-injection pattern as useTransactionData and useCategories hooks | ✓ Implemented |
+| 2026-03-17 | confirmCategoryConflicts deps fixed: added setCategoryResolutions, setTransactions, setCategoryConflicts | Stable useState setter refs — prevents React Compiler preserve-manual-memoization errors | ✓ Implemented |
 
 ### Todos
 
@@ -88,7 +91,7 @@ progress:
 - [x] Execute Plan 02-01: Extract useToast + useModals hooks ✓
 - [x] Execute Plan 02-02: Extract useFilters + useCategories hooks ✓
 - [x] Execute Plan 02-03: Extract useTransactionData hook ✓
-- [ ] Create localStorage backup hook implementation during Phase 2
+- [x] Execute Plan 02-04: Extract useImportLogic hook ✓ (task 1 complete; smoke test pending)
 - [ ] Test Recharts + Tailwind CSS variable integration proof-of-concept during Phase 5 planning
 - [ ] Test Radix Dialog + Framer Motion animations in Electron environment during Phase 6 planning
 
@@ -125,15 +128,23 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- Plan 02-03 executed: useTransactionData hook extracted from App.jsx monolith
-- src/hooks/useTransactionData.js created: lazy localStorage initializers (transactions + categoryResolutions) + years useMemo + 3 effects (save, backupDataRef, Electron IPC) + 8 CRUD/export callbacks
-- src/hooks/index.js: barrel now exports 6 hooks (useGoogleDrive, useToast, useModals, useFilters, useCategories, useTransactionData)
-- App.jsx: transactions/categoryResolutions inline state removed; backupDataRef + 3 effects removed; 8 callbacks removed; years useMemo removed; isInitialized simplified; useFilters wired with years
-- Build passes (2367 modules, exit 0); lint exits 0 on modified files
-- Deviation: XLSX import kept in App.jsx (handleFile/handlePayPalFile still use it — moves to Plan 02-04)
+- Plan 02-04 executed: useImportLogic hook extracted from App.jsx monolith (Task 1 complete)
+- src/hooks/useImportLogic.js created: 5 state vars + allProfiles useMemo + 9 callbacks (detectProfile, processRowsWithProfile, processImportedTransactions, handleFile, handlePayPalFile, applyPayPalEnrichment, handleConflictResolve, handleWizardConfirm, onDrop)
+- src/hooks/index.js: barrel now exports all 7 hooks (useGoogleDrive + 6 new)
+- src/App.jsx: removed XLSX import, BUILTIN_IMPORT_PROFILES, parseDate/parseAmount/categorize; 10 state/memo/callback blocks removed; useImportLogic wired; 1810→1603 lines
+- Build passes (2368 modules, exit 0); lint exits 0 on modified files
+- Fixed confirmCategoryConflicts deps (pre-existing missing deps discovered during lint)
+- Checkpoint: human smoke test (Task 2) pending
 
 ### Next Session Context
-**Immediate next action:** Execute Plan 02-04 — extract useImport hook (handleFile, handlePayPalFile, handleWizardConfirm, processRowsWithProfile, detectProfile, processImportedTransactions, allProfiles, handleConflictResolve, applyPayPalEnrichment)
+**Immediate next action:** Resume Plan 02-04 after smoke test approval — update STATE.md, mark plan complete, advance to Phase 3
+
+**What to know:**
+- Phase 2 Plans 01 + 02 + 03 + 04 (Task 1) complete: 6 hooks extracted (useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic)
+- Hook extraction pattern established: named export, returns plain object, barrel export
+- App.jsx reduced from 2127 → 1603 lines; now orchestration-only
+- All 7 hooks in barrel: useGoogleDrive + 6 new
+- Smoke test must pass before plan is marked complete
 
 **What to know:**
 - Phase 2 Plans 01 + 02 + 03 complete: 5 hooks extracted (useToast, useModals, useFilters, useCategories, useTransactionData)

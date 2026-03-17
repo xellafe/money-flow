@@ -14,7 +14,7 @@
 ## Phases
 
 - [x] **Phase 1: Foundation & Setup** - Tailwind v4, CSP, design tokens, font setup ✅
-- [ ] **Phase 2: State Extraction** - Extract 7 custom hooks from App.jsx monolith
+- [x] **Phase 2: State Extraction** - Extract 7 custom hooks from App.jsx monolith (completed 2026-03-17)
 - [ ] **Phase 3: Navigation & Layout** - Sidebar, header, main content routing
 - [ ] **Phase 4: Dashboard Redesign** - Stats cards, Recharts theming, cross-filtering
 - [ ] **Phase 5: Transaction List Redesign** - Table, filters, inline editing, pagination
@@ -58,7 +58,7 @@ Plans:
 4. localStorage backup file exists with timestamped data before refactoring steps (recovery point)
 5. Developer can use any hook (`useTransactionData`, `useCategories`, `useFilters`, `useModals`, `useImportLogic`, `useToast`) in isolation without touching App.jsx
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 02-01-PLAN.md — Extract useToast + useModals (zero-dependency hooks)
@@ -166,7 +166,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Setup | 2/2 | ✅ Complete | 2026-03-17 |
-| 2. State Extraction | 3/4 | In Progress|  |
+| 2. State Extraction | 4/4 | Complete   | 2026-03-17 |
 | 3. Navigation & Layout | 0/? | Not started | - |
 | 4. Dashboard Redesign | 0/? | Not started | - |
 | 5. Transaction List Redesign | 0/? | Not started | - |
