@@ -22,9 +22,9 @@ decisions:
   - "confirmCategoryConflicts deps array fixed: added setCategoryResolutions, setTransactions, setCategoryConflicts (stable useState setters — no re-creation overhead)"
   - "isInitialized eslint-disable-next-line react-hooks/set-state-in-effect: gates first render frame, same accepted pattern as useFilters"
 metrics:
-  duration: "~15m"
+  duration: "~20m"
   completed: "2026-03-17"
-  tasks_completed: 1
+  tasks_completed: 2
   files_modified: 3
 ---
 
@@ -113,7 +113,11 @@ export { useImportLogic } from './useImportLogic';
 
 ## Checkpoint Status
 
-Task 2 (`checkpoint:human-verify`) is pending. Smoke test required before plan is marked complete.
+Task 2 (`checkpoint:human-verify`) — **APPROVED ✅**
+
+All 13 smoke test checks passed. Human verified: import wizard flow, conflict resolution, PayPal enrichment, drag-and-drop, all 6 hooks functional end-to-end.
+
+Final build+lint re-run post-approval: ✓ 2368 modules, exit 0; lint exit 0.
 
 ## Self-Check: PASSED
 
@@ -121,3 +125,4 @@ Task 2 (`checkpoint:human-verify`) is pending. Smoke test required before plan i
 - `src/hooks/index.js` — FOUND (7 exports)
 - `src/App.jsx` — FOUND (1603 lines, no XLSX import, no allProfiles useMemo)
 - Commit e0dbd4d — FOUND
+- Human smoke test — APPROVED ✅ (all 13 checks passed)
