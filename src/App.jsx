@@ -71,13 +71,24 @@ import {
 } from "./components";
 
 // Hooks
-import { useGoogleDrive, useToast } from "./hooks";
+import { useGoogleDrive, useToast, useModals } from "./hooks";
 
 import "./App.css";
 
 export default function MoneyFlow() {
   // Hooks
   const { toast, setToast, showToast } = useToast();
+  const {
+    confirmDelete, setConfirmDelete,
+    editingTx, setEditingTx,
+    editingDescription, setEditingDescription,
+    newDescription, setNewDescription,
+    showAddTransaction, setShowAddTransaction,
+    showCategoryManager, setShowCategoryManager,
+    showSyncSettings, setShowSyncSettings,
+    openDropdown, setOpenDropdown,
+    newTransaction, setNewTransaction,
+  } = useModals();
 
   // State
   const [transactions, setTransactions] = useState([]);
@@ -86,31 +97,15 @@ export default function MoneyFlow() {
   const [view, setView] = useState("dashboard");
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [editingTx, setEditingTx] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(null);
-  const [editingDescription, setEditingDescription] = useState(null);
-  const [newDescription, setNewDescription] = useState("");
   // State per wizard import
   const [wizardData, setWizardData] = useState(null);
   // State per conflitti import
   const [importConflicts, setImportConflicts] = useState(null);
   // State per risoluzioni conflitti categoria memorizzate
   const [categoryResolutions, setCategoryResolutions] = useState({});
-  // State per dropdown menu
-  const [openDropdown, setOpenDropdown] = useState(null);
-  // State per nuova transazione manuale
-  const [showAddTransaction, setShowAddTransaction] = useState(false);
-  // State per modale gestione categorie
-  const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const [newTransaction, setNewTransaction] = useState({
-    date: "",
-    description: "",
-    amount: "",
-    category: "Altro",
-  });
   // State per paginazione transazioni
   const [currentPage, setCurrentPage] = useState(1);
   // State per filtri dashboard
@@ -128,7 +123,6 @@ export default function MoneyFlow() {
   // State per conflitti categoria durante ricategorizzazione
   const [categoryConflicts, setCategoryConflicts] = useState(null);
   // State per modale sincronizzazione
-  const [showSyncSettings, setShowSyncSettings] = useState(false);
   // State per indicare se i dati iniziali sono stati caricati
   const [isInitialized, setIsInitialized] = useState(false);
   // State per wizard PayPal
