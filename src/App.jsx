@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import * as XLSX from "xlsx";
 import {
   PieChart,
@@ -70,7 +70,7 @@ import {
 } from "./components";
 
 // Hooks
-import { useGoogleDrive, useToast, useModals, useFilters, useCategories } from "./hooks";
+import { useGoogleDrive, useToast, useModals, useFilters, useCategories, useTransactionData } from "./hooks";
 
 import "./App.css";
 
@@ -90,19 +90,6 @@ export default function MoneyFlow() {
   } = useModals();
 
   const {
-    view, setView,
-    selectedMonth, setSelectedMonth,
-    selectedYear, setSelectedYear,
-    searchQuery, setSearchQuery,
-    currentPage, setCurrentPage,
-    dashboardTypeFilter, setDashboardTypeFilter,
-    dashboardCategoryFilter, setDashboardCategoryFilter,
-    transactionsCategoryFilter, setTransactionsCategoryFilter,
-    expandedCategory, setExpandedCategory,
-    showCategoryPercentage, setShowCategoryPercentage,
-  } = useFilters();
-
-  const {
     categories, setCategories,
     importProfiles, setImportProfiles,
     categoriesChanged,
@@ -114,17 +101,53 @@ export default function MoneyFlow() {
     recategorizeAll,
   } = useCategories({ showToast });
 
+  const {
+    transactions, setTransactions,
+    categoryResolutions, setCategoryResolutions,
+    years,
+    exportData,
+    exportBackup,
+    importBackup,
+    deleteTransaction,
+    clearAllData,
+    addManualTransaction,
+    updateTxCategory,
+    updateTxDescription,
+  } = useTransactionData({
+    categories,
+    importProfiles,
+    setCategories,
+    setImportProfiles,
+    showToast,
+    setConfirmDelete,
+    newTransaction,
+    setShowAddTransaction,
+    setNewTransaction,
+    setEditingTx,
+    setEditingDescription,
+    setNewDescription,
+  });
+
+  const {
+    view, setView,
+    selectedMonth, setSelectedMonth,
+    selectedYear, setSelectedYear,
+    searchQuery, setSearchQuery,
+    currentPage, setCurrentPage,
+    dashboardTypeFilter, setDashboardTypeFilter,
+    dashboardCategoryFilter, setDashboardCategoryFilter,
+    transactionsCategoryFilter, setTransactionsCategoryFilter,
+    expandedCategory, setExpandedCategory,
+    showCategoryPercentage, setShowCategoryPercentage,
+  } = useFilters({ years });
+
   // State
-  const [transactions, setTransactions] = useState([]);
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
   // State per wizard import
   const [wizardData, setWizardData] = useState(null);
   // State per conflitti import
   const [importConflicts, setImportConflicts] = useState(null);
-  // State per risoluzioni conflitti categoria memorizzate
-  const [categoryResolutions, setCategoryResolutions] = useState({});
-  // State per modale sincronizzazione
   // State per indicare se i dati iniziali sono stati caricati
   const [isInitialized, setIsInitialized] = useState(false);
   // State per wizard PayPal
@@ -133,65 +156,11 @@ export default function MoneyFlow() {
   // Google Drive sync hook
   const googleDrive = useGoogleDrive();
 
-  // Backup automatico alla chiusura dell'app (solo Electron)
-  // Usa ref per evitare di ricreare listener ad ogni cambio di stato
-  const backupDataRef = useRef({ transactions, categories, importProfiles, categoryResolutions });
+  // isInitialized: lazy initializers in hooks load localStorage synchronously;
+  // this effect just gates the first render frame
   useEffect(() => {
-    backupDataRef.current = { transactions, categories, importProfiles, categoryResolutions };
-  }, [transactions, categories, importProfiles, categoryResolutions]);
-
-  useEffect(() => {
-    if (window.electronAPI?.onRequestBackupData) {
-      const cleanup = window.electronAPI.onRequestBackupData(() => {
-        window.electronAPI.sendBackupDataForClose(backupDataRef.current);
-      });
-      return cleanup;
-    }
+    setIsInitialized(true);
   }, []);
-
-  // Carica dati salvati
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("moneyFlow");
-      if (saved) {
-        const data = JSON.parse(saved);
-        setTransactions(data.transactions || []);
-        if (data.categories)
-          setCategories({ ...DEFAULT_CATEGORIES, ...data.categories });
-        if (data.importProfiles) setImportProfiles(data.importProfiles);
-        if (data.categoryResolutions)
-          setCategoryResolutions(data.categoryResolutions);
-      }
-    } catch (error) {
-      console.error("Errore caricamento dati:", error);
-      showToast("Errore nel caricamento dei dati salvati", "error");
-    } finally {
-      setIsInitialized(true);
-    }
-  }, [showToast]);
-
-  // Salva dati
-  useEffect(() => {
-    if (
-      transactions.length > 0 ||
-      Object.keys(importProfiles).length > 0 ||
-      Object.keys(categoryResolutions).length > 0
-    ) {
-      try {
-        localStorage.setItem(
-          "moneyFlow",
-          JSON.stringify({
-            transactions,
-            categories,
-            importProfiles,
-            categoryResolutions,
-          }),
-        );
-      } catch (error) {
-        console.error("Errore salvataggio:", error);
-      }
-    }
-  }, [transactions, categories, importProfiles, categoryResolutions]);
 
   // Tutti i profili disponibili (built-in + custom)
   const allProfiles = useMemo(
@@ -510,117 +479,6 @@ export default function MoneyFlow() {
     [handleFile],
   );
 
-  // Export data (Excel)
-  const exportData = useCallback(() => {
-    const dataToExport = transactions.map((t) => ({
-      Data: new Date(t.date).toLocaleDateString("it-IT"),
-      Descrizione: t.description,
-      Categoria: t.category,
-      Importo: t.amount,
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Transazioni");
-    XLSX.writeFile(
-      wb,
-      `moneyflow-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
-    );
-    showToast("File Excel esportato con successo");
-  }, [transactions, showToast]);
-
-  // Export backup (JSON completo)
-  const exportBackup = useCallback(() => {
-    const backup = {
-      version: "1.2",
-      exportDate: new Date().toISOString(),
-      transactions,
-      categories,
-      importProfiles,
-      categoryResolutions,
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `moneyflow-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("Backup esportato con successo");
-  }, [transactions, categories, importProfiles, categoryResolutions, showToast]);
-
-  // Import backup (JSON)
-  const importBackup = useCallback(
-    async (file) => {
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const backup = JSON.parse(text);
-
-        if (!backup.transactions || !Array.isArray(backup.transactions)) {
-          showToast("File di backup non valido", "error");
-          return;
-        }
-
-        if (transactions.length > 0) {
-          const confirmed = window.confirm(
-            `Questo sostituirà tutti i dati attuali (${transactions.length} transazioni).\nVuoi continuare?`,
-          );
-          if (!confirmed) return;
-        }
-
-        setTransactions(backup.transactions);
-        if (backup.categories) {
-          setCategories({ ...DEFAULT_CATEGORIES, ...backup.categories });
-        }
-        if (backup.importProfiles) {
-          setImportProfiles(backup.importProfiles);
-        }
-        if (backup.categoryResolutions) {
-          setCategoryResolutions(backup.categoryResolutions);
-        }
-
-        localStorage.setItem(
-          "moneyFlow",
-          JSON.stringify({
-            transactions: backup.transactions,
-            categories: backup.categories || categories,
-            importProfiles: backup.importProfiles || importProfiles,
-            categoryResolutions: backup.categoryResolutions || categoryResolutions,
-          }),
-        );
-
-        showToast(
-          `Backup ripristinato: ${backup.transactions.length} transazioni`,
-        );
-      } catch (error) {
-        console.error("Errore import backup:", error);
-        showToast("Errore nel ripristino del backup", "error");
-      }
-    },
-    [transactions, categories, importProfiles, categoryResolutions, showToast],
-  );
-
-  // Delete transaction
-  const deleteTransaction = useCallback(
-    (id) => {
-      setTransactions((prev) => prev.filter((t) => t.id !== id));
-      setConfirmDelete(null);
-      showToast("Transazione eliminata");
-    },
-    [showToast],
-  );
-
-  // Clear all data
-  const clearAllData = useCallback(() => {
-    setTransactions([]);
-    localStorage.removeItem("moneyFlow");
-    setConfirmDelete(null);
-    showToast("Tutti i dati sono stati eliminati");
-  }, [showToast]);
-
   // Conferma scelte conflitti categoria
   const confirmCategoryConflicts = useCallback(
     (resolutions) => {
@@ -648,40 +506,6 @@ export default function MoneyFlow() {
     },
     [showToast],
   );
-
-  // Aggiungi transazione manuale
-  const addManualTransaction = useCallback(() => {
-    const { date, description, amount, category } = newTransaction;
-    if (!date || !description.trim() || !amount) {
-      showToast("Compila tutti i campi obbligatori", "error");
-      return;
-    }
-    const parsedAmount = parseFloat(amount.replace(",", "."));
-    if (isNaN(parsedAmount) || parsedAmount === 0) {
-      showToast("Importo non valido", "error");
-      return;
-    }
-    const tx = {
-      id: `manual-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      bankId: null,
-      date: new Date(date).toISOString(),
-      description: description.trim(),
-      amount: parsedAmount,
-      category: category || "Altro",
-      note: "Inserito manualmente",
-    };
-    setTransactions((prev) =>
-      [tx, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)),
-    );
-    setNewTransaction({
-      date: "",
-      description: "",
-      amount: "",
-      category: "Altro",
-    });
-    setShowAddTransaction(false);
-    showToast("Transazione aggiunta");
-  }, [newTransaction, showToast]);
 
   // Calcoli statistiche
   const stats = useMemo(() => {
@@ -880,53 +704,6 @@ export default function MoneyFlow() {
     dashboardCategoryFilter,
     transactionsCategoryFilter,
   ]);
-
-  // Update categoria transazione
-  const updateTxCategory = useCallback(
-    (id, category) => {
-      const tx = transactions.find((t) => t.id === id);
-      if (tx) {
-        setCategoryResolutions((prev) => ({
-          ...prev,
-          [tx.description]: category,
-        }));
-      }
-      setTransactions((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, category } : t)),
-      );
-      setEditingTx(null);
-    },
-    [transactions],
-  );
-
-  // Update descrizione transazione
-  const updateTxDescription = useCallback(
-    (id, description) => {
-      if (!description.trim()) {
-        setEditingDescription(null);
-        setNewDescription("");
-        return;
-      }
-      setTransactions((prev) =>
-        prev.map((t) =>
-          t.id === id ? { ...t, description: description.trim() } : t,
-        ),
-      );
-      setEditingDescription(null);
-      setNewDescription("");
-      showToast("Descrizione aggiornata");
-    },
-    [showToast],
-  );
-
-  // Anni disponibili
-  const years = useMemo(
-    () =>
-      [
-        ...new Set(transactions.map((t) => new Date(t.date).getFullYear())),
-      ].sort((a, b) => b - a),
-    [transactions],
-  );
 
   // Mostra nulla finché i dati iniziali non sono caricati
   if (!isInitialized) {
