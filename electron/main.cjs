@@ -89,16 +89,18 @@ function createWindow() {
 // Quando Electron è pronto
 app.whenReady().then(() => {
   // Imposta Content Security Policy
+  // CSP: dev keeps 'unsafe-inline' for Tailwind v4 HMR; prod is strict
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const styleUnsafe = isDev ? " 'unsafe-inline'" : "";
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
           "default-src 'self'; " +
           "script-src 'self' 'unsafe-inline'; " +
-          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-          "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-          "font-src 'self' https://fonts.gstatic.com; " +
+          `style-src 'self'${styleUnsafe}; ` +
+          `style-src-elem 'self'${styleUnsafe}; ` +
+          "font-src 'self' data:; " +
           "img-src 'self' data: https:; " +
           "connect-src 'self' http://localhost:* ws://localhost:* https://www.googleapis.com https://oauth2.googleapis.com"
         ]
