@@ -14,9 +14,9 @@
 - [ ] **FOUND-05**: `useTransactionData` hook estratto da App.jsx (stato transazioni, CRUD, persistenza localStorage)
 - [ ] **FOUND-06**: `useCategories` hook estratto da App.jsx (categorie, keyword mapping, conflitti)
 - [ ] **FOUND-07**: `useFilters` hook estratto da App.jsx (month/year/search/category filter state)
-- [ ] **FOUND-08**: `useModals` hook estratto da App.jsx (visibilità modali, dati apertura)
+- [x] **FOUND-08**: `useModals` hook estratto da App.jsx (visibilità modali, dati apertura)
 - [ ] **FOUND-09**: `useImportLogic` hook estratto da App.jsx (import profiles, wizard flow, conflict resolution)
-- [ ] **FOUND-10**: `useToast` hook estratto da App.jsx (notifiche toast)
+- [x] **FOUND-10**: `useToast` hook estratto da App.jsx (notifiche toast)
 - [ ] **FOUND-11**: Backup localStorage automatico prima di ogni refactor step (recovery point)
 
 ### Navigation & Layout
@@ -109,9 +109,9 @@
 | FOUND-05 | Phase 2 | Pending |
 | FOUND-06 | Phase 2 | Pending |
 | FOUND-07 | Phase 2 | Pending |
-| FOUND-08 | Phase 2 | Pending |
+| FOUND-08 | Phase 2 | Complete |
 | FOUND-09 | Phase 2 | Pending |
-| FOUND-10 | Phase 2 | Pending |
+| FOUND-10 | Phase 2 | Complete |
 | FOUND-11 | Phase 2 | Pending |
 | NAV-01 | Phase 3 | Pending |
 | NAV-02 | Phase 3 | Pending |

@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-last_updated: "2026-03-17T13:11:10.040Z"
+last_updated: "2026-03-17T14:24:08.432Z"
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
+  total_plans: 6
+  completed_plans: 3
+  percent: 50
 ---
 
 # Project State: MoneyFlow UI/UX Redesign
 
-**Last Updated:** 2026-03-17 (plan 01-02 execution)
+**Last Updated:** 2026-03-17 (plan 02-01 execution)
 
 ## Project Reference
 
@@ -22,14 +22,14 @@ progress:
 
 **Mission:** Transform MoneyFlow from custom CSS chaos (2,127-line App.jsx monolith) to a modern, maintainable UI/UX with Tailwind v4, preserving all existing functionality while introducing light clean minimal design (Notion/Apple inspiration).
 
-**Current Focus:** Phase 1 — Foundation & Setup (Tailwind v4, CSP, design tokens, font setup)
+**Current Focus:** Phase 2 — State Extraction (extract 7 custom hooks from App.jsx monolith)
 
 ## Current Position
 
-**Active Phase:** Phase 1: Foundation & Setup ✅ COMPLETE
-**Active Plan:** Phase 2 (02-xx — next)
-**Status:** Ready to plan
-**Progress:** `[██████████] 100%` — 2/2 Phase 1 plans complete
+**Active Phase:** Phase 2: State Extraction (in progress — 02-01 complete)
+**Active Plan:** Phase 2 Plan 02 (02-02 — next)
+**Status:** In progress
+**Progress:** [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ progress:
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 01-foundation-setup | P01 | 15m | 2 | 2 |
+| 02-state-extraction | P01 | 15m | 2 | 4 |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ progress:
 | 2026-03-17 | Used @tailwindcss/vite plugin (no PostCSS config) for Tailwind v4 native Vite integration | No tailwind.config.js or postcss.config.js needed with v4 Vite plugin | ✓ Implemented |
 | 2026-03-17 | Compat aliases in :root map old var names to @theme tokens | App.css has 57+ old var references; migration deferred to Phase 3+ | ✓ Implemented |
 | 2026-03-17 | Electron CSP dev/prod split: isDev ternary gates 'unsafe-inline' to dev mode only; production CSP strict | Tailwind v4 HMR requires unsafe-inline in dev; production must be strict | ✓ Implemented |
+| 2026-03-17 | All variable names preserved identically during hook extraction — zero JSX changes needed for useToast and useModals | Renamed variables would cascade through hundreds of JSX references; same names = safe extraction | ✓ Implemented |
+| 2026-03-17 | useState setters from extracted hooks are stable references; exhaustive-deps warnings are benign | useState setters never change between renders; warnings are ESLint false positives for destructured returns | ✓ Accepted |
 
 ### Todos
 
@@ -75,6 +78,7 @@ progress:
 - [x] Verify Tailwind v4 stability with Electron before starting Phase 1 ✓ (build passes)
 - [x] Execute Plan 01-01: Tailwind v4 + design tokens + font setup ✓
 - [x] Execute Plan 01-02: CSP / Electron security headers ✓
+- [x] Execute Plan 02-01: Extract useToast + useModals hooks ✓
 - [ ] Create localStorage backup hook implementation during Phase 2
 - [ ] Test Recharts + Tailwind CSS variable integration proof-of-concept during Phase 5 planning
 - [ ] Test Radix Dialog + Framer Motion animations in Electron environment during Phase 6 planning
@@ -86,6 +90,7 @@ None.
 ### Deferred Issues
 
 - **Pre-existing lint error:** `src/components/modals/PayPalEnrichWizard.jsx` line 200 — `react-hooks/set-state-in-effect`. Unrelated to CSS/Tailwind work. See `deferred-items.md`.
+- **useCallback exhaustive-deps warnings in App.jsx** (5 warnings): setters from useModals are stable useState refs. Warnings surface after extraction because ESLint can't prove stability for destructured hook returns. Benign — exit 0, no errors.
 
 ### Active Risks
 
@@ -111,32 +116,34 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- Plan 01-02 executed: Electron CSP updated with isDev-based dev/prod split, Google Fonts CDN removed
-- electron/main.cjs CSP: style-src/style-src-elem now conditional, font-src updated to 'self' data:
-- Human verification passed: zero CSP violations, Inter Variable renders, no CDN requests, design tokens accessible
-- Phase 1 (Foundation & Setup) COMPLETE — all 4 FOUND requirements verified ✅
+- Plan 02-01 executed: useToast and useModals hooks extracted from App.jsx monolith
+- src/hooks/useToast.js created: useState + useCallback showToast, returns { toast, setToast, showToast }
+- src/hooks/useModals.js created: 9 modal/form state variables, pure state bag, zero logic
+- src/hooks/index.js: barrel now exports all three hooks (useGoogleDrive, useToast, useModals)
+- App.jsx: 10 inline useState declarations + 1 showToast useCallback removed; hook calls added
+- Build passes (2364 modules, exit 0); lint exits 0 on modified files
 
 ### Next Session Context
-**Immediate next action:** Plan Phase 2 — State Extraction (extract 7 custom hooks from App.jsx monolith)
+**Immediate next action:** Execute Plan 02-02 — next hook extraction (useFilters, useTransactions, or useLocalStorage)
 
 **What to know:**
-- Phase 1 Tailwind v4 CSS foundation is complete and Electron-verified
-- Design tokens accessible as CSS vars AND Tailwind utility classes
-- Compat aliases in :root preserve App.css backwards compatibility
-- Electron CSP: dev allows unsafe-inline for HMR, prod is strict (no CDN, local fonts only)
-- Build pipeline: vite build → 7 .woff2 font files + 52KB CSS with all tokens
+- Phase 2 Plan 01 complete: useToast + useModals extracted (commits 9aac86c, 7c86edc)
+- Hook extraction pattern established: named export function, returns plain object, barrel export
+- Variable name preservation strategy confirmed: zero JSX changes needed when names are identical
+- App.jsx still has ~5 more hooks to extract (useLocalStorage, useFilters, useTransactions, useImport, useCategories)
+- Pre-existing exhaustive-deps warnings (5) in App.jsx for useModals setters — benign, accepted
 
 ### Environment State
 - Working directory: `D:\Generale\budget-tracker`
-- Git repository: 2 commits ahead of origin (plan 01-01 tasks)
+- Git repository: 4 commits in phase-2 work
 - Key files:
-  - `vite.config.js` — Tailwind v4 Vite plugin configured
-  - `src/index.css` — Full design token system + compat aliases
-  - `.planning/ROADMAP.md` — Phase structure and success criteria
-  - `.planning/REQUIREMENTS.md` — 47 v1 requirements with traceability
-  - `.planning/phases/01-foundation-setup/01-01-SUMMARY.md` — Plan 01-01 complete
+  - `src/hooks/useToast.js` — NEW: toast state + showToast callback
+  - `src/hooks/useModals.js` — NEW: 9 modal/form state variables
+  - `src/hooks/index.js` — Updated: exports useGoogleDrive, useToast, useModals
+  - `src/App.jsx` — Modified: calls useToast() and useModals(), inline states removed
 
 ### Recent Changes
+- **2026-03-17:** Plan 02-01 executed — useToast + useModals extracted (commits 9aac86c, 7c86edc)
 - **2026-03-17:** Plan 01-02 executed — Electron CSP hardened, Google Fonts CDN removed, Phase 1 verified (commit 2823f84)
 - **2026-03-17:** Plan 01-01 executed — Tailwind v4 + design tokens + Inter Variable font (commits 89a3022, 9249d6e)
 - **2026-03-17:** Roadmap created with 7 phases
