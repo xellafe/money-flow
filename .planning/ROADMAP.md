@@ -36,7 +36,11 @@
 3. Inter Variable font renders correctly in all text elements (no FOUT, no CDN requests)
 4. Design tokens (`--color-income`, `--color-expense`, `--spacing-*`) are accessible via CSS variables and apply consistently across the app
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Tailwind v4 + Design Tokens + Inter Variable Font
+- [ ] 01-02-PLAN.md — CSP Hardening + Foundation Smoke Test
 
 ---
 
