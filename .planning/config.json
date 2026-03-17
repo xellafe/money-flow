@@ -7,7 +7,8 @@
     "research": true,
     "plan_check": true,
     "nyquist_validation": true,
-    "verifier": true
+    "verifier": true,
+    "_auto_chain_active": false
   },
   "granularity": "standard"
 }
