@@ -71,11 +71,14 @@ import {
 } from "./components";
 
 // Hooks
-import { useGoogleDrive } from "./hooks";
+import { useGoogleDrive, useToast } from "./hooks";
 
 import "./App.css";
 
 export default function MoneyFlow() {
+  // Hooks
+  const { toast, setToast, showToast } = useToast();
+
   // State
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
@@ -86,7 +89,6 @@ export default function MoneyFlow() {
   const [editingTx, setEditingTx] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [editingDescription, setEditingDescription] = useState(null);
@@ -161,11 +163,6 @@ export default function MoneyFlow() {
     view,
     transactionsCategoryFilter,
   ]);
-
-  // Toast helper
-  const showToast = useCallback((message, type = "success") => {
-    setToast({ message, type });
-  }, []);
 
   // Carica dati salvati
   useEffect(() => {
