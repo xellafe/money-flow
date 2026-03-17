@@ -7,9 +7,9 @@
 
 ### Foundation
 
-- [ ] **FOUND-01**: Tailwind CSS v4 installato e configurato con Vite plugin (senza PostCSS)
-- [ ] **FOUND-02**: Design tokens definiti come CSS variables via `@theme`: colori semantici (`income`, `expense`, `neutral`), tipografia (Inter Variable), spacing scale
-- [ ] **FOUND-03**: Font Inter Variable bundlato localmente via Fontsource (no CDN)
+- [x] **FOUND-01**: Tailwind CSS v4 installato e configurato con Vite plugin (senza PostCSS)
+- [x] **FOUND-02**: Design tokens definiti come CSS variables via `@theme`: colori semantici (`income`, `expense`, `neutral`), tipografia (Inter Variable), spacing scale
+- [x] **FOUND-03**: Font Inter Variable bundlato localmente via Fontsource (no CDN)
 - [ ] **FOUND-04**: CSP in `electron/main.cjs` aggiornata per compatibilità Tailwind v4
 - [ ] **FOUND-05**: `useTransactionData` hook estratto da App.jsx (stato transazioni, CRUD, persistenza localStorage)
 - [ ] **FOUND-06**: `useCategories` hook estratto da App.jsx (categorie, keyword mapping, conflitti)
@@ -102,9 +102,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
+| FOUND-01 | Phase 1 | Complete |
+| FOUND-02 | Phase 1 | Complete |
+| FOUND-03 | Phase 1 | Complete |
 | FOUND-04 | Phase 1 | Pending |
 | FOUND-05 | Phase 2 | Pending |
 | FOUND-06 | Phase 2 | Pending |

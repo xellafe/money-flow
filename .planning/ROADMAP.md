@@ -36,7 +36,7 @@
 3. Inter Variable font renders correctly in all text elements (no FOUT, no CDN requests)
 4. Design tokens (`--color-income`, `--color-expense`, `--spacing-*`) are accessible via CSS variables and apply consistently across the app
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 01-01-PLAN.md — Tailwind v4 + Design Tokens + Inter Variable Font
@@ -159,7 +159,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Setup | 0/? | Not started | - |
+| 1. Foundation & Setup | 1/2 | In Progress|  |
 | 2. State Extraction | 0/? | Not started | - |
 | 3. Navigation & Layout | 0/? | Not started | - |
 | 4. Dashboard Redesign | 0/? | Not started | - |
