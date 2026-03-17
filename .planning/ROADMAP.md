@@ -58,7 +58,13 @@ Plans:
 4. localStorage backup file exists with timestamped data before refactoring steps (recovery point)
 5. Developer can use any hook (`useTransactionData`, `useCategories`, `useFilters`, `useModals`, `useImportLogic`, `useToast`) in isolation without touching App.jsx
 
-**Plans:** TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Extract useToast + useModals (zero-dependency hooks)
+- [ ] 02-02-PLAN.md — Extract useFilters + useCategories (filter state + category CRUD)
+- [ ] 02-03-PLAN.md — Extract useTransactionData (CRUD, localStorage, Electron backup)
+- [ ] 02-04-PLAN.md — Extract useImportLogic + finalize barrel + smoke test
 
 ---
 
@@ -160,7 +166,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Setup | 2/2 | ✅ Complete | 2026-03-17 |
-| 2. State Extraction | 0/? | Not started | - |
+| 2. State Extraction | 0/4 | Planned | - |
 | 3. Navigation & Layout | 0/? | Not started | - |
 | 4. Dashboard Redesign | 0/? | Not started | - |
 | 5. Transaction List Redesign | 0/? | Not started | - |
