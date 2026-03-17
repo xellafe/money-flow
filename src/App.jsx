@@ -71,7 +71,7 @@ import {
 } from "./components";
 
 // Hooks
-import { useGoogleDrive, useToast, useModals } from "./hooks";
+import { useGoogleDrive, useToast, useModals, useFilters } from "./hooks";
 
 import "./App.css";
 
@@ -90,34 +90,31 @@ export default function MoneyFlow() {
     newTransaction, setNewTransaction,
   } = useModals();
 
+  const {
+    view, setView,
+    selectedMonth, setSelectedMonth,
+    selectedYear, setSelectedYear,
+    searchQuery, setSearchQuery,
+    currentPage, setCurrentPage,
+    dashboardTypeFilter, setDashboardTypeFilter,
+    dashboardCategoryFilter, setDashboardCategoryFilter,
+    transactionsCategoryFilter, setTransactionsCategoryFilter,
+    expandedCategory, setExpandedCategory,
+    showCategoryPercentage, setShowCategoryPercentage,
+  } = useFilters();
+
   // State
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [importProfiles, setImportProfiles] = useState({});
-  const [view, setView] = useState("dashboard");
-  const [selectedMonth, setSelectedMonth] = useState(null);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   // State per wizard import
   const [wizardData, setWizardData] = useState(null);
   // State per conflitti import
   const [importConflicts, setImportConflicts] = useState(null);
   // State per risoluzioni conflitti categoria memorizzate
   const [categoryResolutions, setCategoryResolutions] = useState({});
-  // State per paginazione transazioni
-  const [currentPage, setCurrentPage] = useState(1);
-  // State per filtri dashboard
-  const [dashboardTypeFilter, setDashboardTypeFilter] = useState("all");
-  const [dashboardCategoryFilter, setDashboardCategoryFilter] = useState([]);
-  // State per categoria espansa nel dettaglio dashboard
-  const [expandedCategory, setExpandedCategory] = useState(null);
-  // State per visualizzazione percentuale nel dettaglio categorie
-  const [showCategoryPercentage, setShowCategoryPercentage] = useState(false);
-  // State per filtro categoria nei movimenti
-  const [transactionsCategoryFilter, setTransactionsCategoryFilter] =
-    useState(null);
   // State per segnalare modifiche categorie non applicate
   const [categoriesChanged, setCategoriesChanged] = useState(false);
   // State per conflitti categoria durante ricategorizzazione
@@ -146,17 +143,6 @@ export default function MoneyFlow() {
       return cleanup;
     }
   }, []);
-
-  // Reset pagina quando cambiano i filtri
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
-    selectedYear,
-    selectedMonth,
-    searchQuery,
-    view,
-    transactionsCategoryFilter,
-  ]);
 
   // Carica dati salvati
   useEffect(() => {
@@ -1032,12 +1018,6 @@ export default function MoneyFlow() {
       ].sort((a, b) => b - a),
     [transactions],
   );
-
-  useEffect(() => {
-    if (years.length > 0 && !years.includes(selectedYear)) {
-      setSelectedYear(years[0]);
-    }
-  }, [years, selectedYear]);
 
   // Mostra nulla finché i dati iniziali non sono caricati
   if (!isInitialized) {
