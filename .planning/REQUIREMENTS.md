@@ -12,8 +12,8 @@
 - [x] **FOUND-03**: Font Inter Variable bundlato localmente via Fontsource (no CDN)
 - [x] **FOUND-04**: CSP in `electron/main.cjs` aggiornata per compatibilità Tailwind v4
 - [ ] **FOUND-05**: `useTransactionData` hook estratto da App.jsx (stato transazioni, CRUD, persistenza localStorage)
-- [ ] **FOUND-06**: `useCategories` hook estratto da App.jsx (categorie, keyword mapping, conflitti)
-- [ ] **FOUND-07**: `useFilters` hook estratto da App.jsx (month/year/search/category filter state)
+- [x] **FOUND-06**: `useCategories` hook estratto da App.jsx (categorie, keyword mapping, conflitti)
+- [x] **FOUND-07**: `useFilters` hook estratto da App.jsx (month/year/search/category filter state)
 - [x] **FOUND-08**: `useModals` hook estratto da App.jsx (visibilità modali, dati apertura)
 - [ ] **FOUND-09**: `useImportLogic` hook estratto da App.jsx (import profiles, wizard flow, conflict resolution)
 - [x] **FOUND-10**: `useToast` hook estratto da App.jsx (notifiche toast)
@@ -107,8 +107,8 @@
 | FOUND-03 | Phase 1 | Complete |
 | FOUND-04 | Phase 1 | Pending |
 | FOUND-05 | Phase 2 | Pending |
-| FOUND-06 | Phase 2 | Pending |
-| FOUND-07 | Phase 2 | Pending |
+| FOUND-06 | Phase 2 | Complete |
+| FOUND-07 | Phase 2 | Complete |
 | FOUND-08 | Phase 2 | Complete |
 | FOUND-09 | Phase 2 | Pending |
 | FOUND-10 | Phase 2 | Complete |
