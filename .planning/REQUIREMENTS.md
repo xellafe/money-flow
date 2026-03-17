@@ -102,13 +102,53 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01–04 | Phase 1 | Pending |
-| FOUND-05–11 | Phase 2 | Pending |
-| NAV-01–06 | Phase 3 | Pending |
-| DASH-01–08 | Phase 4 | Pending |
-| TRNS-01–08 | Phase 5 | Pending |
-| MOD-01–07 | Phase 6 | Pending |
-| UX-01–07 | Phase 7 | Pending |
+| FOUND-01 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Pending |
+| FOUND-03 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Pending |
+| FOUND-05 | Phase 2 | Pending |
+| FOUND-06 | Phase 2 | Pending |
+| FOUND-07 | Phase 2 | Pending |
+| FOUND-08 | Phase 2 | Pending |
+| FOUND-09 | Phase 2 | Pending |
+| FOUND-10 | Phase 2 | Pending |
+| FOUND-11 | Phase 2 | Pending |
+| NAV-01 | Phase 3 | Pending |
+| NAV-02 | Phase 3 | Pending |
+| NAV-03 | Phase 3 | Pending |
+| NAV-04 | Phase 3 | Pending |
+| NAV-05 | Phase 3 | Pending |
+| NAV-06 | Phase 3 | Pending |
+| DASH-01 | Phase 4 | Pending |
+| DASH-02 | Phase 4 | Pending |
+| DASH-03 | Phase 4 | Pending |
+| DASH-04 | Phase 4 | Pending |
+| DASH-05 | Phase 4 | Pending |
+| DASH-06 | Phase 4 | Pending |
+| DASH-07 | Phase 4 | Pending |
+| DASH-08 | Phase 4 | Pending |
+| TRNS-01 | Phase 5 | Pending |
+| TRNS-02 | Phase 5 | Pending |
+| TRNS-03 | Phase 5 | Pending |
+| TRNS-04 | Phase 5 | Pending |
+| TRNS-05 | Phase 5 | Pending |
+| TRNS-06 | Phase 5 | Pending |
+| TRNS-07 | Phase 5 | Pending |
+| TRNS-08 | Phase 5 | Pending |
+| MOD-01 | Phase 6 | Pending |
+| MOD-02 | Phase 6 | Pending |
+| MOD-03 | Phase 6 | Pending |
+| MOD-04 | Phase 6 | Pending |
+| MOD-05 | Phase 6 | Pending |
+| MOD-06 | Phase 6 | Pending |
+| MOD-07 | Phase 6 | Pending |
+| UX-01 | Phase 7 | Pending |
+| UX-02 | Phase 7 | Pending |
+| UX-03 | Phase 7 | Pending |
+| UX-04 | Phase 7 | Pending |
+| UX-05 | Phase 7 | Pending |
+| UX-06 | Phase 7 | Pending |
+| UX-07 | Phase 7 | Pending |
 
 **Coverage:**
 - v1 requirements: 47 total
