@@ -52,7 +52,6 @@ import {
   formatCurrency,
   parseDate,
   parseAmount,
-  findMatchingCategories,
   categorize,
 } from "./utils";
 
@@ -71,7 +70,7 @@ import {
 } from "./components";
 
 // Hooks
-import { useGoogleDrive, useToast, useModals, useFilters } from "./hooks";
+import { useGoogleDrive, useToast, useModals, useFilters, useCategories } from "./hooks";
 
 import "./App.css";
 
@@ -103,10 +102,20 @@ export default function MoneyFlow() {
     showCategoryPercentage, setShowCategoryPercentage,
   } = useFilters();
 
+  const {
+    categories, setCategories,
+    importProfiles, setImportProfiles,
+    categoriesChanged,
+    categoryConflicts, setCategoryConflicts,
+    addCategory,
+    deleteCategory,
+    addKeyword,
+    removeKeyword,
+    recategorizeAll,
+  } = useCategories({ showToast });
+
   // State
   const [transactions, setTransactions] = useState([]);
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
-  const [importProfiles, setImportProfiles] = useState({});
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
   // State per wizard import
@@ -115,10 +124,6 @@ export default function MoneyFlow() {
   const [importConflicts, setImportConflicts] = useState(null);
   // State per risoluzioni conflitti categoria memorizzate
   const [categoryResolutions, setCategoryResolutions] = useState({});
-  // State per segnalare modifiche categorie non applicate
-  const [categoriesChanged, setCategoriesChanged] = useState(false);
-  // State per conflitti categoria durante ricategorizzazione
-  const [categoryConflicts, setCategoryConflicts] = useState(null);
   // State per modale sincronizzazione
   // State per indicare se i dati iniziali sono stati caricati
   const [isInitialized, setIsInitialized] = useState(false);
@@ -615,102 +620,6 @@ export default function MoneyFlow() {
     setConfirmDelete(null);
     showToast("Tutti i dati sono stati eliminati");
   }, [showToast]);
-
-  // Aggiungi nuova categoria
-  const addCategory = useCallback(
-    (name) => {
-      if (!name.trim()) return;
-      if (categories[name]) {
-        showToast("Categoria già esistente", "error");
-        return;
-      }
-      setCategories((prev) => ({ ...prev, [name.trim()]: [] }));
-      setCategoriesChanged(true);
-      showToast(`Categoria "${name}" creata`);
-    },
-    [categories, showToast],
-  );
-
-  // Elimina categoria
-  const deleteCategory = useCallback(
-    (name) => {
-      setCategories((prev) => {
-        const updated = { ...prev };
-        delete updated[name];
-        return updated;
-      });
-      setCategoriesChanged(true);
-      showToast(`Categoria "${name}" eliminata`);
-    },
-    [showToast],
-  );
-
-  // Aggiungi keyword a categoria
-  const addKeyword = useCallback(
-    (category, keyword) => {
-      if (!keyword.trim()) return;
-      const upperKeyword = keyword.trim().toUpperCase();
-      if (categories[category]?.includes(upperKeyword)) {
-        showToast("Keyword già presente", "error");
-        return;
-      }
-      setCategories((prev) => ({
-        ...prev,
-        [category]: [...(prev[category] || []), upperKeyword],
-      }));
-      setCategoriesChanged(true);
-      showToast(`Keyword "${upperKeyword}" aggiunta`);
-    },
-    [categories, showToast],
-  );
-
-  // Rimuovi keyword da categoria
-  const removeKeyword = useCallback((category, keyword) => {
-    setCategories((prev) => ({
-      ...prev,
-      [category]: prev[category].filter((k) => k !== keyword),
-    }));
-    setCategoriesChanged(true);
-  }, []);
-
-  // Ri-categorizza tutte le transazioni
-  const recategorizeAll = useCallback(() => {
-    const conflicts = [];
-    const updated = transactions.map((t) => {
-      const savedResolution = categoryResolutions[t.description];
-      if (savedResolution) {
-        return { ...t, category: savedResolution };
-      }
-
-      const matches = findMatchingCategories(t.description, categories);
-      if (matches.length <= 1) {
-        return {
-          ...t,
-          category: matches.length === 1 ? matches[0].category : "Altro",
-        };
-      }
-
-      const best = matches.reduce((a, b) =>
-        a.keyword.length >= b.keyword.length ? a : b,
-      );
-      conflicts.push({
-        txId: t.id,
-        description: t.description,
-        matches,
-        currentChoice: best.category,
-      });
-      return { ...t, category: best.category };
-    });
-
-    setTransactions(updated);
-    setCategoriesChanged(false);
-
-    if (conflicts.length > 0) {
-      setCategoryConflicts(conflicts);
-    } else {
-      showToast("Transazioni ri-categorizzate");
-    }
-  }, [transactions, categories, showToast, categoryResolutions]);
 
   // Conferma scelte conflitti categoria
   const confirmCategoryConflicts = useCallback(
@@ -2093,7 +2002,7 @@ export default function MoneyFlow() {
           onDeleteCategory={deleteCategory}
           onAddKeyword={addKeyword}
           onRemoveKeyword={removeKeyword}
-          onRecategorize={recategorizeAll}
+          onRecategorize={() => recategorizeAll(transactions, categoryResolutions, setTransactions)}
           onClose={() => setShowCategoryManager(false)}
         />
       )}
