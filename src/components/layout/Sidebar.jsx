@@ -28,8 +28,8 @@ export function Sidebar({ collapsed, onToggle, view, setView }) {
         )}
       </div>
 
-      {/* Nav items — no container padding; each button owns px-4 to match header */}
-      <nav className="flex-1 py-4 space-y-1">
+      {/* Nav items — px-4 on container mirrors header; buttons remove their own px */}
+      <nav className="flex-1 py-4 space-y-1 px-4">
         {NAV_ITEMS.map(({ id, label, Icon }) => (
           <button
             key={id}
@@ -38,7 +38,7 @@ export function Sidebar({ collapsed, onToggle, view, setView }) {
             className={`
               w-full flex items-center py-2 rounded-lg text-sm font-semibold
               transition-colors duration-150 cursor-pointer
-              ${collapsed ? 'justify-center' : 'px-4 gap-3'}
+              ${collapsed ? 'justify-center' : 'gap-3'}
               ${view === id
                 ? 'bg-brand-500/10 text-brand-500'
                 : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}
