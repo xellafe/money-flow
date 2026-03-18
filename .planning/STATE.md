@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-18T14:07:35.422Z"
+last_updated: "2026-03-18T14:22:24.218Z"
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State: MoneyFlow UI/UX Redesign
 
-**Last Updated:** 2026-03-17 (plan 02-04 execution)
+**Last Updated:** 2026-03-18 (plan 04-03 execution)
 
 ## Project Reference
 
@@ -22,14 +22,14 @@ progress:
 
 **Mission:** Transform MoneyFlow from custom CSS chaos (2,127-line App.jsx monolith) to a modern, maintainable UI/UX with Tailwind v4, preserving all existing functionality while introducing light clean minimal design (Notion/Apple inspiration).
 
-**Current Focus:** Phase 4 — Dashboard Redesign IN PROGRESS (Plan 01 done: chart tokens, skeleton components, DashboardStatCard)
+**Current Focus:** Phase 4 — Dashboard Redesign COMPLETE (Plans 01+02+03 done — Electron smoke test pending ✅)
 
 ## Current Position
 
-**Active Phase:** Phase 4: Dashboard Redesign — IN PROGRESS
-**Active Plan:** Phase 4 Plan 02 (04-02 — COMPLETE ✅)
+**Active Phase:** Phase 4: Dashboard Redesign — COMPLETE (awaiting human smoke test)
+**Active Plan:** Phase 4 Plan 03 (04-03 — COMPLETE, human smoke test pending)
 **Status:** In progress
-**Progress:** [█████████░] 91%
+**Progress:** [██████████] 100%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ progress:
 | Phase 03-navigation-layout PP02 | 18m | 3 tasks | 6 files |
 | Phase 04-dashboard-redesign P01 | 8m | 3 tasks | 5 files |
 | Phase 04-dashboard-redesign P02 | 12m | 3 tasks | 3 files |
+| Phase 04-dashboard-redesign P03 | 20m | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,9 @@ progress:
 | 2026-03-18 | DashboardStatCard delegates loading state to SkeletonStatCard via isLoading prop | Single source of loading UI; avoids duplicate shimmer code; consistent skeleton appearance | ✓ Implemented |
 | 2026-03-18 | DashboardView: eslint-disable set-state-in-effect on setIsLoading — same accepted pattern as useFilters; correct React pattern for derived state reset | setIsLoading(true) sync in effect is intentional for skeleton swap; pattern already accepted in codebase | ✓ Accepted |
 | 2026-03-18 | DonutChartCard: chartColors resolved via useMemo(() => getChartColors(), []) at mount | Reads CSS vars once at mount, avoids per-render recompute; safe because CSS vars don't change at runtime | ✓ Implemented |
+| 2026-03-18 | MONTHS_IT[selectedMonth] is 0-indexed (Jan=0, Dec=11) — NOT selectedMonth-1 | Months from JS Date.getMonth() are 0-indexed; MONTHS_IT array is 0-indexed; no offset needed | ✓ Implemented |
+| 2026-03-18 | dashboardTypeFilter removed from stats useMemo — new DashboardView uses DonutChartCard cross-filter instead | New dashboard design dropped income/expense type toggle; category cross-filter via DonutChart handles filtering | ✓ Implemented |
+| 2026-03-18 | Period navigation handlers declared before isInitialized early return — required for React rules of hooks | useCallback must be called unconditionally; moved above the early return guard | ✓ Auto-fixed |
 
 ### Todos
 
@@ -110,6 +114,7 @@ progress:
 - [x] Execute Plan 03-02: Create Sidebar, AppHeader, AppLayout, SettingsView; integrate into App.jsx ✅ (human smoke test approved — all 13 items passed)
 - [x] Execute Plan 04-01: Chart color tokens, chartColors utility, SkeletonStatCard, SkeletonChart, DashboardStatCard ✅
 - [x] Execute Plan 04-02: AreaChartCard, DonutChartCard, DashboardView with skeleton loading ✅
+- [ ] Execute Plan 04-03: Human Electron smoke test — awaiting user verification
 - [ ] Test Radix Dialog + Framer Motion animations in Electron environment during Phase 6 planning
 
 ### Known Blockers
@@ -145,30 +150,22 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- Plan 04-02 COMPLETE: AreaChartCard, DonutChartCard, DashboardView created
-- AreaChartCard: income vs expenses area chart with gradient fills + Electron resize workaround
-- DonutChartCard: category breakdown donut with cross-filter click, center overlay, keyboard accessibility
-- DashboardView: root layout with AnimatePresence skeleton transitions, 300ms loading gate, % change calculation
-- Auto-fix: eslint-disable set-state-in-effect on DashboardView (same accepted pattern as useFilters)
-- Build: ✓ exit 0; Lint: ✓ exit 0; Self-check: ✓ PASSED
+- Plan 04-03 COMPLETE (awaiting Electron smoke test): PeriodSelector in AppHeader + AppLayout prop threading + DashboardView wired in App.jsx
+- AppHeader: ChevronLeft/Right + MONTHS_IT[selectedMonth] label + Tutti button (aria-pressed, blue when active)
+- AppLayout: 5 period props forwarded to AppHeader
+- App.jsx: DashboardView replaces ~400 lines inline dashboard JSX; stats useMemo null-year fix; prevIncome/prevExpenses added; 3 period handlers
+- Auto-fixed: hooks called before early return, dashboardTypeFilter removed from useMemo
+- Build: ✓ 2778 modules exit 0; Lint: ✓ exit 0
 
 ### Next Session Context
-**Immediate next action:** Execute Plan 04-03 (wire DashboardView into App.jsx)
+**Immediate next action:** Human Electron smoke test for full Phase 4 Dashboard Redesign (see 04-03-PLAN.md Task 4 checklist)
 
 **What to know:**
-- Phase 2 Plans 01 + 02 + 03 + 04 (Task 1) complete: 6 hooks extracted (useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic)
-- Hook extraction pattern established: named export, returns plain object, barrel export
-- App.jsx reduced from 2127 → 1603 lines; now orchestration-only
-- All 7 hooks in barrel: useGoogleDrive + 6 new
-- Smoke test must pass before plan is marked complete
-
-**What to know:**
-- Phase 2 Plans 01 + 02 + 03 complete: 5 hooks extracted (useToast, useModals, useFilters, useCategories, useTransactionData)
-- Hook extraction pattern established: named export, returns plain object, barrel export
-- Variable name preservation strategy: zero JSX changes needed when names are identical
-- App.jsx still has 1 more hook to extract (useImport in Plan 02-04)
-- XLSX import still in App.jsx — handleFile/handlePayPalFile use it; will move with useImport
-- Pre-existing exhaustive-deps warnings (5) in App.jsx — benign, accepted
+- Phase 4 Plans 01+02+03 all done — smoke test is the final gate
+- DashboardView renders: 2 stat cards (income/expense with % change) + AreaChart + DonutChart
+- Period selector in AppHeader: prev/next arrows + month label + Tutti button
+- Stats null-year mode: selectedYear=null shows ALL transactions (Tutti mode)
+- Cross-filter: DonutChart segments → sets dashboardCategoryFilter array → filters stats
 
 ### Environment State
 - Working directory: `D:\Generale\budget-tracker`
