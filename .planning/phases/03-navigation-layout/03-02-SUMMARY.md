@@ -86,9 +86,19 @@ Four new components created from scratch per UI-SPEC:
 - Old header, tab-bar, filters-bar completely removed
 - Settings view accessible via `view === 'settings'`
 
-## Checkpoint Status
+## Checkpoint Result
 
-Task 3 (human smoke test) is a `checkpoint:human-verify` gate. Awaiting manual Electron verification.
+Task 3 (human smoke test) — **APPROVED** ✅
+
+All 13 verification items passed by user in Electron:
+- Sidebar renders at correct widths (240px expanded / 64px collapsed)
+- Sidebar collapses/expands with smooth 200ms animation (no jank)
+- Active nav item highlighted correctly (`bg-brand-500/10 text-brand-500`)
+- Header title updates on view navigation
+- "Aggiungi transazione" button visible only on Transazioni view
+- Main content reflows smoothly when sidebar toggles
+- Settings view shows placeholder content
+- No CSP violations, no console errors
 
 ## Self-Check: PASSED
 
@@ -99,3 +109,4 @@ Task 3 (human smoke test) is a `checkpoint:human-verify` gate. Awaiting manual E
 - ✓ `03-02-SUMMARY.md` — exists
 - ✓ commit 32bfdc8 — Task 1 (layout components)
 - ✓ commit 7ddf949 — Task 2 (App.jsx integration)
+- ✓ Task 3 — Electron smoke test approved by user
