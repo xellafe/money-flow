@@ -58,6 +58,7 @@ import {
 } from "./components";
 import { AppLayout } from './components/layout/AppLayout';
 import { SettingsView } from './views/SettingsView';
+import { DashboardView } from './views/DashboardView';
 
 // Hooks
 import { useGoogleDrive, useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic, useViewState } from "./hooks";
@@ -117,15 +118,12 @@ export default function MoneyFlow() {
   });
 
   const {
-    selectedMonth,
-    selectedYear,
+    selectedMonth, setSelectedMonth,
+    selectedYear, setSelectedYear,
     searchQuery, setSearchQuery,
     currentPage, setCurrentPage,
-    dashboardTypeFilter, setDashboardTypeFilter,
     dashboardCategoryFilter, setDashboardCategoryFilter,
     transactionsCategoryFilter, setTransactionsCategoryFilter,
-    expandedCategory, setExpandedCategory,
-    showCategoryPercentage, setShowCategoryPercentage,
   } = useFilters({ years });
 
   // State per indicare se i dati iniziali sono stati caricati
@@ -192,11 +190,9 @@ export default function MoneyFlow() {
 
   // Calcoli statistiche
   const stats = useMemo(() => {
-    let filtered = transactions;
-
-    filtered = transactions.filter(
-      (t) => new Date(t.date).getFullYear() === selectedYear,
-    );
+    let filtered = selectedYear !== null
+      ? transactions.filter((t) => new Date(t.date).getFullYear() === selectedYear)
+      : [...transactions];
 
     if (selectedMonth !== null) {
       filtered = filtered.filter(
@@ -205,12 +201,6 @@ export default function MoneyFlow() {
     }
 
     let dashboardFiltered = filtered;
-
-    if (dashboardTypeFilter === "income") {
-      dashboardFiltered = dashboardFiltered.filter((t) => t.amount > 0);
-    } else if (dashboardTypeFilter === "expenses") {
-      dashboardFiltered = dashboardFiltered.filter((t) => t.amount < 0);
-    }
 
     if (dashboardCategoryFilter.length > 0) {
       dashboardFiltered = dashboardFiltered.filter((t) =>
@@ -260,14 +250,9 @@ export default function MoneyFlow() {
       .sort((a, b) => b.value - a.value);
 
     const byMonth = {};
-    let monthlyFiltered = transactions.filter(
-      (t) => new Date(t.date).getFullYear() === selectedYear,
-    );
-    if (dashboardTypeFilter === "income") {
-      monthlyFiltered = monthlyFiltered.filter((t) => t.amount > 0);
-    } else if (dashboardTypeFilter === "expenses") {
-      monthlyFiltered = monthlyFiltered.filter((t) => t.amount < 0);
-    }
+    let monthlyFiltered = selectedYear !== null
+      ? transactions.filter((t) => new Date(t.date).getFullYear() === selectedYear)
+      : [...transactions];
     if (dashboardCategoryFilter.length > 0) {
       monthlyFiltered = monthlyFiltered.filter((t) =>
         dashboardCategoryFilter.includes(t.category),
@@ -365,6 +350,20 @@ export default function MoneyFlow() {
       );
     }
 
+    // Previous period stats for % change calculation
+    let prevIncome = null;
+    let prevExpenses = null;
+    if (selectedMonth !== null && selectedYear !== null) {
+      const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
+      const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
+      const prevTxs = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getFullYear() === prevYear && d.getMonth() === prevMonth;
+      });
+      prevIncome = prevTxs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+      prevExpenses = prevTxs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+    }
+
     return {
       income,
       expenses,
@@ -377,16 +376,55 @@ export default function MoneyFlow() {
       dailyData,
       filtered,
       allCategories,
+      prevIncome,
+      prevExpenses,
     };
   }, [
     transactions,
     selectedMonth,
     selectedYear,
     searchQuery,
-    dashboardTypeFilter,
     dashboardCategoryFilter,
     transactionsCategoryFilter,
   ]);
+
+  // Period navigation handlers (must be before early return to follow rules of hooks)
+  const handlePrevMonth = useCallback(() => {
+    if (selectedMonth === null || selectedYear === null) {
+      // In "Tutti" mode — initialize to current year, December
+      const currentYear = new Date().getFullYear();
+      setSelectedYear(currentYear);
+      setSelectedMonth(11);
+      return;
+    }
+    if (selectedMonth === 0) {
+      setSelectedYear(y => y - 1);
+      setSelectedMonth(11);
+    } else {
+      setSelectedMonth(m => m - 1);
+    }
+  }, [selectedMonth, selectedYear, setSelectedMonth, setSelectedYear]);
+
+  const handleNextMonth = useCallback(() => {
+    if (selectedMonth === null || selectedYear === null) {
+      // In "Tutti" mode — initialize to current year, January
+      const currentYear = new Date().getFullYear();
+      setSelectedYear(currentYear);
+      setSelectedMonth(0);
+      return;
+    }
+    if (selectedMonth === 11) {
+      setSelectedYear(y => y + 1);
+      setSelectedMonth(0);
+    } else {
+      setSelectedMonth(m => m + 1);
+    }
+  }, [selectedMonth, selectedYear, setSelectedMonth, setSelectedYear]);
+
+  const handleClearPeriod = useCallback(() => {
+    setSelectedMonth(null);
+    setSelectedYear(null);
+  }, [setSelectedMonth, setSelectedYear]);
 
   // Mostra nulla finché i dati iniziali non sono caricati
   if (!isInitialized) {
@@ -400,6 +438,11 @@ export default function MoneyFlow() {
       collapsed={sidebarCollapsed}
       onToggle={toggleSidebar}
       onAddTransaction={() => setShowAddTransaction(true)}
+      selectedMonth={selectedMonth}
+      selectedYear={selectedYear}
+      onPrevMonth={handlePrevMonth}
+      onNextMonth={handleNextMonth}
+      onClearPeriod={handleClearPeriod}
     >
       {/* Drop Zone iniziale */}
         {transactions.length === 0 && (
@@ -569,395 +612,13 @@ export default function MoneyFlow() {
 
         {/* Dashboard View */}
         {transactions.length > 0 && view === "dashboard" && (
-          <div style={{ animation: "fadeIn 0.3s ease" }}>
-            {/* Filtri Dashboard */}
-            <div className="dashboard-filters">
-              <div className="filter-group">
-                <span className="filter-label">Mostra:</span>
-                <div className="filter-toggle">
-                  <button
-                    className={`filter-btn ${dashboardTypeFilter === "all" ? "active" : ""}`}
-                    onClick={() => setDashboardTypeFilter("all")}
-                  >
-                    Tutto
-                  </button>
-                  <button
-                    className={`filter-btn ${dashboardTypeFilter === "income" ? "active" : ""}`}
-                    onClick={() => setDashboardTypeFilter("income")}
-                  >
-                    Entrate
-                  </button>
-                  <button
-                    className={`filter-btn ${dashboardTypeFilter === "expenses" ? "active" : ""}`}
-                    onClick={() => setDashboardTypeFilter("expenses")}
-                  >
-                    Uscite
-                  </button>
-                </div>
-              </div>
-              <div className="filter-group">
-                <span className="filter-label">Categorie:</span>
-                <div className="category-filter-chips">
-                  {dashboardCategoryFilter.length === 0 ? (
-                    <span className="filter-placeholder">
-                      Tutte le categorie
-                    </span>
-                  ) : (
-                    dashboardCategoryFilter.map((cat) => (
-                      <span key={cat} className="filter-chip">
-                        {cat}
-                        <button
-                          onClick={() =>
-                            setDashboardCategoryFilter((prev) =>
-                              prev.filter((c) => c !== cat),
-                            )
-                          }
-                        >
-                          <X size={12} />
-                        </button>
-                      </span>
-                    ))
-                  )}
-                  <select
-                    className="category-filter-select"
-                    value=""
-                    onChange={(e) => {
-                      if (
-                        e.target.value &&
-                        !dashboardCategoryFilter.includes(e.target.value)
-                      ) {
-                        setDashboardCategoryFilter((prev) => [
-                          ...prev,
-                          e.target.value,
-                        ]);
-                      }
-                    }}
-                  >
-                    <option value="">+ Aggiungi</option>
-                    {stats.allCategories
-                      .filter((c) => !dashboardCategoryFilter.includes(c))
-                      .sort((a, b) => a.localeCompare(b, "it"))
-                      .map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                  </select>
-                  {dashboardCategoryFilter.length > 0 && (
-                    <button
-                      className="filter-clear"
-                      onClick={() => setDashboardCategoryFilter([])}
-                    >
-                      Azzera
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Stats Cards */}
-            <div
-              className="stats-grid"
-              style={{ gridTemplateColumns: "repeat(2, 1fr)" }}
-            >
-              <StatCard
-                label="Entrate"
-                value={stats.income}
-                icon={TrendingUp}
-                type="positive"
-              />
-              <StatCard
-                label="Uscite"
-                value={stats.expenses}
-                icon={TrendingDown}
-                type="negative"
-              />
-            </div>
-
-            {/* Charts */}
-            <div className="charts-grid">
-              {/* Category Bar Chart */}
-              <div className="chart-container">
-                <h3 className="chart-title">
-                  {dashboardTypeFilter === "income"
-                    ? "Entrate per categoria"
-                    : dashboardTypeFilter === "expenses"
-                      ? "Uscite per categoria"
-                      : "Uscite per categoria"}
-                </h3>
-                {(dashboardTypeFilter === "income"
-                  ? stats.categoryDataIncome
-                  : stats.categoryData
-                ).length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    {/* Anno intero + uscite: mostra stacked area chart */}
-                    {selectedMonth === null && dashboardTypeFilter !== "income" ? (
-                      <AreaChart data={stats.monthlyCategoryData} margin={{ left: -40, right: 0 }}>
-                        <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                        <YAxis 
-                          tick={{ fontSize: 10 }} 
-                          tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
-                        />
-                        <Tooltip
-                          formatter={(v) => formatCurrency(v)}
-                          contentStyle={{
-                            borderRadius: "8px",
-                            border: "none",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                          }}
-                        />
-                        {stats.chartCategories.map((cat, i) => (
-                          <Area
-                            key={cat}
-                            type="monotone"
-                            dataKey={cat}
-                            stackId="1"
-                            fill={COLORS[i % COLORS.length]}
-                            stroke={COLORS[i % COLORS.length]}
-                            fillOpacity={0.8}
-                          />
-                        ))}
-                      </AreaChart>
-                    ) : (
-                      <BarChart
-                        data={(dashboardTypeFilter === "income"
-                          ? stats.categoryDataIncome
-                          : stats.categoryData
-                        ).slice(0, 8)}
-                        layout="vertical"
-                        margin={{ left: 10, right: 20 }}
-                      >
-                        <XAxis 
-                          type="number" 
-                          tick={{ fontSize: 10 }}
-                          tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
-                        />
-                        <YAxis 
-                          type="category" 
-                          dataKey="name" 
-                          tick={{ fontSize: 11 }}
-                          width={70}
-                          tickFormatter={(name) => name.length > 12 ? `${name.slice(0, 11)}…` : name}
-                        />
-                        <Tooltip
-                          formatter={(v) => formatCurrency(v)}
-                          contentStyle={{
-                            borderRadius: "8px",
-                            border: "none",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                          }}
-                        />
-                        <Bar 
-                          dataKey="value" 
-                          radius={[0, 4, 4, 0]}
-                        >
-                          {(dashboardTypeFilter === "income"
-                            ? stats.categoryDataIncome
-                            : stats.categoryData
-                          ).slice(0, 8).map((_, i) => (
-                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    )}
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="chart-empty">
-                    {dashboardTypeFilter === "income"
-                      ? "Nessuna entrata nel periodo"
-                      : "Nessuna uscita nel periodo"}
-                  </div>
-                )}
-              </div>
-
-              {/* Bar/Line Chart */}
-              <div className="chart-container">
-                <h3 className="chart-title">
-                  {selectedMonth !== null
-                    ? `Trend ${MONTHS_IT[selectedMonth]}`
-                    : "Andamento annuale"}
-                </h3>
-                <ResponsiveContainer width="100%" height={220}>
-                  {selectedMonth !== null ? (
-                    <LineChart data={stats.dailyData}>
-                      <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                      <YAxis
-                        tick={{ fontSize: 11 }}
-                        tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                      />
-                      <Tooltip
-                        formatter={(v) => formatCurrency(v)}
-                        labelFormatter={(day) => `${day} ${MONTHS_IT[selectedMonth]}`}
-                        contentStyle={{
-                          borderRadius: "8px",
-                          border: "none",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="Saldo"
-                        stroke="#3b82f6"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    </LineChart>
-                  ) : (
-                    <BarChart data={stats.monthlyData} margin={{ left: -35, right: 0 }}>
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                      <YAxis
-                        tick={{ fontSize: 11 }}
-                        tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                      />
-                      <Tooltip
-                        formatter={(v) => formatCurrency(v)}
-                        contentStyle={{
-                          borderRadius: "8px",
-                          border: "none",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                        }}
-                      />
-                      <Bar
-                        dataKey="Entrate"
-                        fill="#10b981"
-                        radius={[4, 4, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="Uscite"
-                        fill="#ef4444"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  )}
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Category breakdown */}
-            <div className="card">
-              <div className="card-header">
-                <h3 className="card-title">
-                  {dashboardTypeFilter === "income"
-                    ? "Dettaglio entrate per categoria"
-                    : "Dettaglio uscite per categoria"}
-                </h3>
-                <button
-                  className={`btn btn-sm ${showCategoryPercentage ? "btn-primary" : "btn-secondary"}`}
-                  onClick={() =>
-                    setShowCategoryPercentage(!showCategoryPercentage)
-                  }
-                  title={
-                    showCategoryPercentage
-                      ? "Mostra valori assoluti"
-                      : "Mostra percentuali"
-                  }
-                  style={{
-                    height: "32px",
-                    textAlign: "center",
-                    lineHeight: "1",
-                  }}
-                >
-                  {showCategoryPercentage ? "€" : "%"}
-                </button>
-              </div>
-              <div className="card-body" style={{ padding: 0 }}>
-                {(dashboardTypeFilter === "income"
-                  ? stats.categoryDataIncome
-                  : stats.categoryData
-                ).length > 0 ? (
-                  <div className="category-list-expandable">
-                    {(() => {
-                      const categoryList =
-                        dashboardTypeFilter === "income"
-                          ? stats.categoryDataIncome
-                          : stats.categoryData;
-                      const total = categoryList.reduce(
-                        (sum, cat) => sum + cat.value,
-                        0,
-                      );
-                      return categoryList.map((cat, i) => (
-                        <div
-                          key={cat.name}
-                          className="category-item-expandable"
-                        >
-                          <div
-                            className={`category-item-header ${expandedCategory === cat.name ? "expanded" : ""}`}
-                            onClick={() =>
-                              setExpandedCategory(
-                                expandedCategory === cat.name ? null : cat.name,
-                              )
-                            }
-                          >
-                            <div
-                              className="category-dot"
-                              style={{
-                                backgroundColor: COLORS[i % COLORS.length],
-                              }}
-                            />
-                            <span className="category-name">{cat.name}</span>
-                            <span className="category-count">
-                              {cat.count} mov.
-                            </span>
-                            <span className="category-amount">
-                              {showCategoryPercentage
-                                ? `${((cat.value / total) * 100).toFixed(1)}%`
-                                : formatCurrency(cat.value)}
-                            </span>
-                            <ChevronDown
-                              size={16}
-                              className={`category-chevron ${expandedCategory === cat.name ? "rotated" : ""}`}
-                            />
-                          </div>
-                          <div className={`category-transactions ${expandedCategory === cat.name ? "expanded" : ""}`}>
-                            {cat.transactions.slice(0, 10).map((tx) => (
-                              <div
-                                key={tx.id}
-                                className="category-transaction-item"
-                              >
-                                <span className="category-tx-date">
-                                  {new Date(tx.date).toLocaleDateString(
-                                    "it-IT",
-                                  )}
-                                </span>
-                                <span className="category-tx-description">
-                                  {tx.description}
-                                </span>
-                                <span
-                                  className={`category-tx-amount ${tx.amount >= 0 ? "positive" : "negative"}`}
-                                >
-                                  {tx.amount >= 0 ? "+" : ""}
-                                  {formatCurrency(tx.amount)}
-                                </span>
-                              </div>
-                            ))}
-                            {cat.transactions.length > 10 && (
-                              <button
-                                className="category-view-all"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTransactionsCategoryFilter(cat.name);
-                                  setView("transactions");
-                                }}
-                              >
-                                Vedi tutti i {cat.transactions.length}{" "}
-                                movimenti →
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ));
-                    })()}
-                  </div>
-                ) : (
-                  <div className="empty-state" style={{ padding: "2rem" }}>
-                    {dashboardTypeFilter === "income"
-                      ? "Nessuna entrata nel periodo"
-                      : "Nessuna uscita nel periodo"}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <DashboardView
+            stats={stats}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            dashboardCategoryFilter={dashboardCategoryFilter}
+            onCategoryFilterChange={setDashboardCategoryFilter}
+          />
         )}
 
         {/* Transactions View */}
