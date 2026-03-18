@@ -89,7 +89,7 @@ Not required in this phase — no code or data-table columns.
 | **30% Secondary** | Skeleton base | `bg-gray-100` | `#f3f4f6` | Skeleton loading placeholder base color |
 | **30% Secondary** | Borders | `border-gray-200` | `#e5e7eb` | Card borders, AppHeader bottom border, chart separators |
 | **30% Secondary** | Muted text | `text-gray-500` | `#6b7280` | Stat card labels, axis labels, secondary copy |
-| **10% Accent** | Interactive primary | `bg-brand-500` / `text-brand-500` | `#3b82f6` | "Tutti" active button fill; focus rings on period arrows; AreaChart income area stroke (shared with brand) |
+| **10% Accent** | Interactive primary | `bg-brand-500` / `text-brand-500` | `#3b82f6` | "Tutti" active button fill; focus rings on period arrows |
 
 ### Semantic Colors (this phase only)
 
@@ -198,7 +198,7 @@ All new components for this phase. Existing `StatCard.jsx` is **replaced** by `D
 
 **Visual spec:**
 - Container: `flex items-center gap-2` — positioned in AppHeader between title and right-side actions
-- Prev arrow: `<button>` with `ChevronLeft` icon (size 16), `p-1.5 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors duration-150 cursor-pointer` + `aria-label="Mese precedente"`
+- Prev arrow: `<button>` with `ChevronLeft` icon (size 16), `p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors duration-150 cursor-pointer` + `aria-label="Mese precedente"`
 - Label: `text-sm font-semibold text-gray-700 min-w-[120px] text-center` — shows "Gennaio 2025" when month selected; shows nothing (hidden) when "Tutti" active
 - Next arrow: same as prev but `ChevronRight`, `aria-label="Mese successivo"`
 - "Tutti" button: 
