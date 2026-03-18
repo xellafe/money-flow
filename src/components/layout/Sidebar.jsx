@@ -36,9 +36,9 @@ export function Sidebar({ collapsed, onToggle, view, setView }) {
             onClick={() => setView(id)}
             aria-label={label}
             className={`
-              w-full flex items-center py-2 rounded-lg text-sm font-semibold
+              w-full flex items-center px-3 py-2 rounded-lg text-sm font-semibold
               transition-colors duration-150 cursor-pointer
-              ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'}
+              ${collapsed ? 'justify-center' : 'justify-start gap-3'}
               ${view === id
                 ? 'bg-brand-500/10 text-brand-500'
                 : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}

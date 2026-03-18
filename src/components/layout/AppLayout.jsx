@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { AppHeader } from './AppHeader';
 
@@ -12,11 +11,7 @@ export function AppLayout({ view, setView, collapsed, onToggle, onAddTransaction
         setView={setView}
       />
 
-      <motion.div
-        layout
-        transition={{ layout: { duration: 0.2, ease: 'easeInOut' } }}
-        className="flex-1 flex flex-col min-w-0 overflow-hidden"
-      >
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-200 ease-in-out">
         <AppHeader
           view={view}
           onAddTransaction={onAddTransaction}
@@ -24,7 +19,7 @@ export function AppLayout({ view, setView, collapsed, onToggle, onAddTransaction
         <main className="flex-1 overflow-auto">
           {children}
         </main>
-      </motion.div>
+      </div>
     </div>
   );
 }
