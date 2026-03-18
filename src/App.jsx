@@ -28,13 +28,8 @@ import {
   Check,
   Loader2,
   Plus,
-  Save,
-  FolderOpen,
-  Settings,
   ChevronDown,
   Cloud,
-  CloudOff,
-  CreditCard,
 } from "lucide-react";
 
 // Constants
@@ -61,6 +56,8 @@ import {
   PayPalEnrichWizard,
   GoogleSignInButton,
 } from "./components";
+import { AppLayout } from './components/layout/AppLayout';
+import { SettingsView } from './views/SettingsView';
 
 // Hooks
 import { useGoogleDrive, useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic, useViewState } from "./hooks";
@@ -78,11 +75,10 @@ export default function MoneyFlow() {
     showAddTransaction, setShowAddTransaction,
     showCategoryManager, setShowCategoryManager,
     showSyncSettings, setShowSyncSettings,
-    openDropdown, setOpenDropdown,
     newTransaction, setNewTransaction,
   } = useModals();
 
-  const { view, setView } = useViewState();
+  const { view, setView, sidebarCollapsed, toggleSidebar } = useViewState();
 
   const {
     categories, setCategories,
@@ -100,9 +96,6 @@ export default function MoneyFlow() {
     transactions, setTransactions,
     categoryResolutions, setCategoryResolutions,
     years,
-    exportData,
-    exportBackup,
-    importBackup,
     deleteTransaction,
     clearAllData,
     addManualTransaction,
@@ -124,8 +117,8 @@ export default function MoneyFlow() {
   });
 
   const {
-    selectedMonth, setSelectedMonth,
-    selectedYear, setSelectedYear,
+    selectedMonth,
+    selectedYear,
     searchQuery, setSearchQuery,
     currentPage, setCurrentPage,
     dashboardTypeFilter, setDashboardTypeFilter,
@@ -149,7 +142,6 @@ export default function MoneyFlow() {
     dragOver, setDragOver,
     loading,
     handleFile,
-    handlePayPalFile,
     applyPayPalEnrichment,
     handleConflictResolve,
     handleWizardConfirm,
@@ -402,211 +394,14 @@ export default function MoneyFlow() {
   }
 
   return (
-    <div className="app-container" onClick={() => setOpenDropdown(null)}>
-      {/* Header */}
-      <header className="app-header">
-        <div className="header-content">
-          <h1 className="app-logo">MoneyFlow</h1>
-
-          <div className="header-controls">
-            {transactions.length > 0 && (
-              <>
-                <div className="dropdown" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    className={`btn-secondary dropdown-toggle ${openDropdown === "file" ? "active" : ""}`}
-                    onClick={() =>
-                      setOpenDropdown(openDropdown === "file" ? null : "file")
-                    }
-                  >
-                    <FileSpreadsheet size={16} /> File <ChevronDown size={14} />
-                  </button>
-                  {openDropdown === "file" && (
-                    <div className="dropdown-menu">
-                      <label className="dropdown-item">
-                        <Upload size={16} /> Importa movimenti
-                        <input
-                          type="file"
-                          style={{ display: "none" }}
-                          accept=".xlsx,.xls,.csv"
-                          onChange={(e) => {
-                            if (e.target.files[0])
-                              handleFile(e.target.files[0]);
-                            e.target.value = "";
-                            setOpenDropdown(null);
-                          }}
-                        />
-                      </label>
-                      <button
-                        className="dropdown-item"
-                        onClick={() => {
-                          exportData();
-                          setOpenDropdown(null);
-                        }}
-                      >
-                        <Download size={16} /> Esporta Excel
-                      </button>
-                      <div className="dropdown-divider" />
-                      <button
-                        className="dropdown-item"
-                        onClick={() => {
-                          exportBackup();
-                          setOpenDropdown(null);
-                        }}
-                      >
-                        <Save size={16} /> Backup completo
-                      </button>
-                      <label className="dropdown-item">
-                        <FolderOpen size={16} /> Ripristina backup
-                        <input
-                          type="file"
-                          accept=".json"
-                          style={{ display: "none" }}
-                          onChange={(e) => {
-                            if (e.target.files?.[0])
-                              importBackup(e.target.files[0]);
-                            e.target.value = "";
-                            setOpenDropdown(null);
-                          }}
-                        />
-                      </label>
-                    </div>
-                  )}
-                </div>
-
-                <div className="dropdown" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    className={`btn-secondary dropdown-toggle ${openDropdown === "actions" ? "active" : ""}`}
-                    onClick={() =>
-                      setOpenDropdown(
-                        openDropdown === "actions" ? null : "actions",
-                      )
-                    }
-                  >
-                    <Settings size={16} /> Azioni <ChevronDown size={14} />
-                  </button>
-                  {openDropdown === "actions" && (
-                    <div className="dropdown-menu">
-                      <button
-                        className="dropdown-item"
-                        onClick={() => {
-                          setShowCategoryManager(true);
-                          setOpenDropdown(null);
-                        }}
-                      >
-                        <Tag size={16} /> Gestione Categorie
-                      </button>
-                      <label
-                        className="dropdown-item"
-                        style={{ cursor: "pointer" }}
-                      >
-                        <CreditCard size={16} /> Arricchisci da PayPal
-                        <input
-                          type="file"
-                          style={{ display: "none" }}
-                          accept=".csv"
-                          onChange={(e) => {
-                            if (e.target.files[0]) {
-                              handlePayPalFile(e.target.files[0]);
-                            }
-                            e.target.value = "";
-                            setOpenDropdown(null);
-                          }}
-                        />
-                      </label>
-                      {googleDrive.isElectron && (
-                        <button
-                          className="dropdown-item"
-                          onClick={() => {
-                            setShowSyncSettings(true);
-                            setOpenDropdown(null);
-                          }}
-                        >
-                          <Cloud size={16} /> Sincronizzazione Cloud
-                        </button>
-                      )}
-                      <div className="dropdown-divider" />
-                      <button
-                        className="dropdown-item danger"
-                        onClick={() => {
-                          if (confirm("Eliminare TUTTI i dati?")) {
-                            setTransactions([]);
-                            setCategories(DEFAULT_CATEGORIES);
-                          }
-                          setOpenDropdown(null);
-                        }}
-                      >
-                        <Trash2 size={16} /> Elimina tutti i dati
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {transactions.length > 0 &&
-        (view === "dashboard" || view === "transactions") && (
-          <div className="filters-bar">
-            <div className="filters-content">
-              <div className="month-buttons">
-                <button
-                  onClick={() => setSelectedMonth(null)}
-                  className={`month-btn ${selectedMonth === null ? "active" : ""}`}
-                >
-                  Tutto
-                </button>
-                {MONTHS_IT.map((m, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedMonth(i)}
-                    className={`month-btn ${selectedMonth === i ? "active" : ""}`}
-                  >
-                    {m.substring(0, 3)}
-                  </button>
-                ))}
-              </div>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="year-select"
-              >
-                {(years.length ? years : [new Date().getFullYear()]).map(
-                  (y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ),
-                )}
-              </select>
-            </div>
-          </div>
-        )}
-
-      {transactions.length > 0 && (
-        <nav className="tab-bar">
-          <div className="tab-bar-content">
-            <div className="tab-bar-tabs">
-              {[
-                ["dashboard", "Dashboard"],
-                ["transactions", "Movimenti"],
-              ].map(([k, l]) => (
-                <button
-                  key={k}
-                  onClick={() => setView(k)}
-                  className={`tab-item ${view === k ? "active" : ""}`}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
-          </div>
-        </nav>
-      )}
-
-      <main className="main-content">
-        {/* Drop Zone iniziale */}
+    <AppLayout
+      view={view}
+      setView={setView}
+      collapsed={sidebarCollapsed}
+      onToggle={toggleSidebar}
+      onAddTransaction={() => setShowAddTransaction(true)}
+    >
+      {/* Drop Zone iniziale */}
         {transactions.length === 0 && (
           <div
             onDragOver={(e) => {
@@ -1459,7 +1254,9 @@ export default function MoneyFlow() {
             </div>
           </div>
         )}
-      </main>
+
+      {/* Settings View */}
+      {view === 'settings' && <SettingsView />}
 
       {/* Category Manager Modal */}
       {showCategoryManager && (
@@ -1599,6 +1396,6 @@ export default function MoneyFlow() {
           onClose={() => setCategoryConflicts(null)}
         />
       )}
-    </div>
+    </AppLayout>
   );
 }
