@@ -33,10 +33,10 @@
 - [x] **DASH-01**: Tre stat cards in evidenza: Saldo totale, Entrate mese, Uscite mese
 - [x] **DASH-02**: Cards con colore semantico (income verde, expense rosso, balance neutro)
 - [x] **DASH-03**: Grafici Recharts con tema Tailwind (colori CSS variables, no hardcoded hex)
-- [ ] **DASH-04**: Grafico a ciambella/torta per breakdown categorie (con metric centrale)
-- [ ] **DASH-05**: Grafico area/barre per andamento mensile entrate vs uscite
+- [x] **DASH-04**: Grafico a ciambella/torta per breakdown categorie (con metric centrale)
+- [x] **DASH-05**: Grafico area/barre per andamento mensile entrate vs uscite
 - [ ] **DASH-06**: Selettore periodo (mese/anno) cliccabile in top della dashboard
-- [ ] **DASH-07**: Cross-filtering: click su categoria nel grafico filtra la lista transazioni
+- [x] **DASH-07**: Cross-filtering: click su categoria nel grafico filtra la lista transazioni
 - [x] **DASH-08**: Skeleton loading cards durante l'inizializzazione dell'app
 
 ### Transactions
@@ -122,10 +122,10 @@
 | DASH-01 | Phase 4 | Complete |
 | DASH-02 | Phase 4 | Complete |
 | DASH-03 | Phase 4 | Complete |
-| DASH-04 | Phase 4 | Pending |
-| DASH-05 | Phase 4 | Pending |
+| DASH-04 | Phase 4 | Complete |
+| DASH-05 | Phase 4 | Complete |
 | DASH-06 | Phase 4 | Pending |
-| DASH-07 | Phase 4 | Pending |
+| DASH-07 | Phase 4 | Complete |
 | DASH-08 | Phase 4 | Complete |
 | TRNS-01 | Phase 5 | Pending |
 | TRNS-02 | Phase 5 | Pending |

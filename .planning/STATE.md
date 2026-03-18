@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-03-18T14:03:11.290Z"
+status: executing
+last_updated: "2026-03-18T14:07:35.422Z"
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 11
-  completed_plans: 9
-  percent: 82
+  completed_plans: 10
+  percent: 91
 ---
 
 # Project State: MoneyFlow UI/UX Redesign
@@ -27,9 +27,9 @@ progress:
 ## Current Position
 
 **Active Phase:** Phase 4: Dashboard Redesign — IN PROGRESS
-**Active Plan:** Phase 4 Plan 01 (04-01 — COMPLETE ✅)
+**Active Plan:** Phase 4 Plan 02 (04-02 — COMPLETE ✅)
 **Status:** In progress
-**Progress:** [████████░░] 82%
+**Progress:** [█████████░] 91%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ progress:
 | Phase 03-navigation-layout P02 | 18m | 2 tasks | 6 files |
 | Phase 03-navigation-layout PP02 | 18m | 3 tasks | 6 files |
 | Phase 04-dashboard-redesign P01 | 8m | 3 tasks | 5 files |
+| Phase 04-dashboard-redesign P02 | 12m | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,8 @@ progress:
 | 2026-03-18 | Phase 3 Navigation & Layout COMPLETE — all 13 Electron smoke test items passed | Sidebar/AppHeader/AppLayout/SettingsView verified in production Electron build | ✓ Approved |
 | 2026-03-18 | Chart colors read at runtime via getComputedStyle — compatible with Tailwind v4 @theme CSS variables | CSS vars from @theme are resolved at runtime; getComputedStyle works correctly in Electron/browser | ✓ Implemented |
 | 2026-03-18 | DashboardStatCard delegates loading state to SkeletonStatCard via isLoading prop | Single source of loading UI; avoids duplicate shimmer code; consistent skeleton appearance | ✓ Implemented |
+| 2026-03-18 | DashboardView: eslint-disable set-state-in-effect on setIsLoading — same accepted pattern as useFilters; correct React pattern for derived state reset | setIsLoading(true) sync in effect is intentional for skeleton swap; pattern already accepted in codebase | ✓ Accepted |
+| 2026-03-18 | DonutChartCard: chartColors resolved via useMemo(() => getChartColors(), []) at mount | Reads CSS vars once at mount, avoids per-render recompute; safe because CSS vars don't change at runtime | ✓ Implemented |
 
 ### Todos
 
@@ -106,6 +109,7 @@ progress:
 - [x] Execute Plan 03-01: Install framer-motion, create useViewState hook, migrate view/setView, add brand-600 token ✅
 - [x] Execute Plan 03-02: Create Sidebar, AppHeader, AppLayout, SettingsView; integrate into App.jsx ✅ (human smoke test approved — all 13 items passed)
 - [x] Execute Plan 04-01: Chart color tokens, chartColors utility, SkeletonStatCard, SkeletonChart, DashboardStatCard ✅
+- [x] Execute Plan 04-02: AreaChartCard, DonutChartCard, DashboardView with skeleton loading ✅
 - [ ] Test Radix Dialog + Framer Motion animations in Electron environment during Phase 6 planning
 
 ### Known Blockers
@@ -123,7 +127,7 @@ None.
 |------|--------|------------|-------|
 | CSP blocks Tailwind JIT during development | High | Keep `'unsafe-inline'` in CSP during dev; test production builds early | Phase 1 |
 | localStorage data loss during refactoring | Critical | Backup localStorage before refactoring (FOUND-11); extract localStorage logic to dedicated hook FIRST | Phase 2 |
-| Recharts doesn't redraw on Electron window resize | Medium | Force remount on debounced resize; add Electron-specific resize handler | Phase 4 |
+| Recharts doesn't redraw on Electron window resize | Medium | ✅ MITIGATED: debounced key remount in AreaChartCard + DonutChartCard (200ms timeout → setChartKey) | Phase 4 |
 | React 19 concurrent rendering breaks import callbacks | Medium | Use `useTransition` for non-urgent updates; wrap critical mutations in `flushSync` | Phase 2 |
 
 ### Research Insights
@@ -141,15 +145,15 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- Plan 04-01 COMPLETE: Dashboard foundation built (chart tokens, skeleton components, DashboardStatCard)
-- 10 chart color tokens (--color-chart-01..10) added to @theme in index.css
-- getChartColors() utility reads CSS vars at runtime via getComputedStyle
-- SkeletonStatCard + SkeletonChart created with animate-pulse shimmer and accessibility attributes
-- DashboardStatCard renders income/expense KPIs with semantic colors, formatted EUR amount, % change text
-- Build: ✓ 2771 modules, exit 0; Lint: ✓ exit 0; No deviations
+- Plan 04-02 COMPLETE: AreaChartCard, DonutChartCard, DashboardView created
+- AreaChartCard: income vs expenses area chart with gradient fills + Electron resize workaround
+- DonutChartCard: category breakdown donut with cross-filter click, center overlay, keyboard accessibility
+- DashboardView: root layout with AnimatePresence skeleton transitions, 300ms loading gate, % change calculation
+- Auto-fix: eslint-disable set-state-in-effect on DashboardView (same accepted pattern as useFilters)
+- Build: ✓ exit 0; Lint: ✓ exit 0; Self-check: ✓ PASSED
 
 ### Next Session Context
-**Immediate next action:** Execute Plan 04-02 (charts) then Plan 04-03 (dashboard wiring)
+**Immediate next action:** Execute Plan 04-03 (wire DashboardView into App.jsx)
 
 **What to know:**
 - Phase 2 Plans 01 + 02 + 03 + 04 (Task 1) complete: 6 hooks extracted (useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic)
