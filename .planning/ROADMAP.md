@@ -98,13 +98,18 @@ Plans:
 **Requirements:** DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, DASH-06, DASH-07, DASH-08
 
 **Success Criteria** (what must be TRUE):
-1. User sees three stat cards (Saldo totale, Entrate mese, Uscite mese) with semantic color coding (green income, red expense, neutral balance)
+1. User sees two stat cards (Entrate, Uscite) with semantic color coding (green income, red expense)
 2. Charts use Tailwind CSS variables for colors (no hardcoded hex values) and render with clean tooltips
-3. User can click on a category in the pie/donut chart and see the transaction list filter to that category automatically
+3. User can click on a category in the donut chart and see the transaction list filter to that category automatically
 4. User can select different time periods (month/year) from dashboard controls and all stats update immediately
 5. Skeleton loading cards appear during initial app load (no flash of empty content)
 
-**Plans:** TBD
+**Plans:** 3 plans in 3 waves
+
+Plans:
+- [ ] 04-01-PLAN.md — Foundation: chart tokens, chartColors utility, skeleton components, DashboardStatCard
+- [ ] 04-02-PLAN.md — Charts: AreaChartCard, DonutChartCard, DashboardView
+- [ ] 04-03-PLAN.md — Wiring: PeriodSelector in AppHeader, AppLayout prop threading, App.jsx integration
 
 ---
 
@@ -172,7 +177,7 @@ Plans:
 | 1. Foundation & Setup | 2/2 | ✅ Complete | 2026-03-17 |
 | 2. State Extraction | 4/4 | Complete   | 2026-03-17 |
 | 3. Navigation & Layout | 2/2 | Complete    | 2026-03-18 |
-| 4. Dashboard Redesign | 0/? | Not started | - |
+| 4. Dashboard Redesign | 0/3 | Planned | - |
 | 5. Transaction List Redesign | 0/? | Not started | - |
 | 6. Modals Redesign | 0/? | Not started | - |
 | 7. UX Polish | 0/? | Not started | - |
