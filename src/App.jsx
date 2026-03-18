@@ -605,6 +605,7 @@ export default function MoneyFlow() {
             selectedYear={selectedYear}
             dashboardCategoryFilter={dashboardCategoryFilter}
             onCategoryFilterChange={setDashboardCategoryFilter}
+            onTransactionsCategoryChange={setTransactionsCategoryFilter}
           />
         )}
 

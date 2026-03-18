@@ -14,7 +14,8 @@ import { MONTHS_IT } from '../constants';
  *   selectedMonth: number|null,
  *   selectedYear: number|null,
  *   dashboardCategoryFilter: string[],
- *   onCategoryFilterChange: (categories: string[]) => void
+ *   onCategoryFilterChange: (categories: string[]) => void,
+ *   onTransactionsCategoryChange: (category: string|null) => void
  * }} props
  */
 export function DashboardView({
@@ -23,6 +24,7 @@ export function DashboardView({
   selectedYear,
   dashboardCategoryFilter,
   onCategoryFilterChange,
+  onTransactionsCategoryChange,
 }) {
   // Skeleton loading state: show on mount and on period change
   const [isLoading, setIsLoading] = useState(true);
@@ -32,10 +34,12 @@ export function DashboardView({
     setIsLoading(true);
     // Clear category filter when period changes
     onCategoryFilterChange([]);
+    // DASH-07: clear transaction list filter when period changes
+    onTransactionsCategoryChange(null);
     // Minimum 300ms skeleton display
     const timer = setTimeout(() => setIsLoading(false), 300);
     return () => clearTimeout(timer);
-  }, [selectedMonth, selectedYear, onCategoryFilterChange]);
+  }, [selectedMonth, selectedYear, onCategoryFilterChange, onTransactionsCategoryChange]);
 
   // Calculate % change vs previous period
   const incomeChange = useMemo(() => {
@@ -59,10 +63,14 @@ export function DashboardView({
     // setDashboardCategoryFilter expects array: [name] or []
     if (categoryName) {
       onCategoryFilterChange([categoryName]);
+      // DASH-07: also filter the transaction list to this category
+      onTransactionsCategoryChange(categoryName);
     } else {
       onCategoryFilterChange([]);
+      // DASH-07: clear transaction list filter when deselecting
+      onTransactionsCategoryChange(null);
     }
-  }, [onCategoryFilterChange]);
+  }, [onCategoryFilterChange, onTransactionsCategoryChange]);
 
   return (
     <motion.div
