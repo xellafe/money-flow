@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-last_updated: "2026-03-18T11:56:09.896Z"
+last_updated: "2026-03-18T14:03:11.290Z"
 progress:
   total_phases: 7
   completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
-  percent: 100
+  total_plans: 11
+  completed_plans: 9
+  percent: 82
 ---
 
 # Project State: MoneyFlow UI/UX Redesign
@@ -22,14 +22,14 @@ progress:
 
 **Mission:** Transform MoneyFlow from custom CSS chaos (2,127-line App.jsx monolith) to a modern, maintainable UI/UX with Tailwind v4, preserving all existing functionality while introducing light clean minimal design (Notion/Apple inspiration).
 
-**Current Focus:** Phase 3 — Navigation Layout COMPLETE (Plans 01+02 done: sidebar navigation, AppLayout shell, SettingsView)
+**Current Focus:** Phase 4 — Dashboard Redesign IN PROGRESS (Plan 01 done: chart tokens, skeleton components, DashboardStatCard)
 
 ## Current Position
 
-**Active Phase:** Phase 3: Navigation Layout — COMPLETE
-**Active Plan:** Phase 3 Plan 02 (03-02 — COMPLETE, human smoke test approved ✅)
-**Status:** Ready to plan
-**Progress:** [██████████] 100%
+**Active Phase:** Phase 4: Dashboard Redesign — IN PROGRESS
+**Active Plan:** Phase 4 Plan 01 (04-01 — COMPLETE ✅)
+**Status:** In progress
+**Progress:** [████████░░] 82%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ progress:
 | 03-navigation-layout | P02 | 18m | 2 | 6 |
 | Phase 03-navigation-layout P02 | 18m | 2 tasks | 6 files |
 | Phase 03-navigation-layout PP02 | 18m | 3 tasks | 6 files |
+| Phase 04-dashboard-redesign P01 | 8m | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,8 @@ progress:
 | 2026-03-18 | Removed exportData/exportBackup/importBackup/handlePayPalFile from App.jsx destructuring | Old header UI removed; features will re-surface in Settings view (Phase 6) | ✓ Auto-fixed |
 | 2026-03-18 | Added eslint-plugin-react + react/jsx-uses-vars to eslint config | JSX variable tracking requires React ESLint plugin; motion/Icon falsely reported unused without it | ✓ Auto-fixed |
 | 2026-03-18 | Phase 3 Navigation & Layout COMPLETE — all 13 Electron smoke test items passed | Sidebar/AppHeader/AppLayout/SettingsView verified in production Electron build | ✓ Approved |
+| 2026-03-18 | Chart colors read at runtime via getComputedStyle — compatible with Tailwind v4 @theme CSS variables | CSS vars from @theme are resolved at runtime; getComputedStyle works correctly in Electron/browser | ✓ Implemented |
+| 2026-03-18 | DashboardStatCard delegates loading state to SkeletonStatCard via isLoading prop | Single source of loading UI; avoids duplicate shimmer code; consistent skeleton appearance | ✓ Implemented |
 
 ### Todos
 
@@ -102,6 +105,7 @@ progress:
 - [x] Execute Plan 02-04: Extract useImportLogic hook ✅ (human smoke test approved — all 6 hooks complete)
 - [x] Execute Plan 03-01: Install framer-motion, create useViewState hook, migrate view/setView, add brand-600 token ✅
 - [x] Execute Plan 03-02: Create Sidebar, AppHeader, AppLayout, SettingsView; integrate into App.jsx ✅ (human smoke test approved — all 13 items passed)
+- [x] Execute Plan 04-01: Chart color tokens, chartColors utility, SkeletonStatCard, SkeletonChart, DashboardStatCard ✅
 - [ ] Test Radix Dialog + Framer Motion animations in Electron environment during Phase 6 planning
 
 ### Known Blockers
@@ -137,15 +141,15 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- Plan 03-02 COMPLETE: Layout shell components created + App.jsx integrated + Electron smoke test APPROVED (all 13 items ✅)
-- Sidebar (animated 240/64px), AppHeader (view title + CTA), AppLayout (root wrapper), SettingsView (placeholder) created
-- Old header/tab-bar/filters-bar removed from App.jsx; AppLayout now wraps all content
-- Auto-fix: added eslint-plugin-react for JSX var tracking; cleaned unused destructured vars
-- Build: ✓ 2369 modules, exit 0; Lint: ✓ exit 0
-- Phase 3 Navigation & Layout COMPLETE — ready for Phase 4
+- Plan 04-01 COMPLETE: Dashboard foundation built (chart tokens, skeleton components, DashboardStatCard)
+- 10 chart color tokens (--color-chart-01..10) added to @theme in index.css
+- getChartColors() utility reads CSS vars at runtime via getComputedStyle
+- SkeletonStatCard + SkeletonChart created with animate-pulse shimmer and accessibility attributes
+- DashboardStatCard renders income/expense KPIs with semantic colors, formatted EUR amount, % change text
+- Build: ✓ 2771 modules, exit 0; Lint: ✓ exit 0; No deviations
 
 ### Next Session Context
-**Immediate next action:** Begin Phase 4 (Dashboard Redesign) or Phase 5 (Transaction List) — parallel work possible
+**Immediate next action:** Execute Plan 04-02 (charts) then Plan 04-03 (dashboard wiring)
 
 **What to know:**
 - Phase 2 Plans 01 + 02 + 03 + 04 (Task 1) complete: 6 hooks extracted (useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic)
