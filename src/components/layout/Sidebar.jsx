@@ -14,8 +14,8 @@ export function Sidebar({ collapsed, onToggle, view, setView }) {
       transition={{ duration: 0.2, ease: 'easeInOut' }}
       className="h-screen flex flex-col bg-white border-r border-gray-200 overflow-hidden shrink-0"
     >
-      {/* Header: hamburger flush at px-4, same as nav items */}
-      <div className={`h-14 flex items-center border-b border-gray-200 shrink-0 ${collapsed ? 'justify-center' : 'px-4 gap-3'}`}>
+      {/* Header: always px-4, no justify-center flip */}
+      <div className="h-14 flex items-center gap-3 px-4 border-b border-gray-200 shrink-0">
         <button
           onClick={onToggle}
           aria-label={collapsed ? 'Espandi sidebar' : 'Comprimi sidebar'}
@@ -28,7 +28,7 @@ export function Sidebar({ collapsed, onToggle, view, setView }) {
         )}
       </div>
 
-      {/* Nav items — px-4 on container mirrors header; buttons remove their own px */}
+      {/* Nav items — always left-aligned at px-4, icon never moves */}
       <nav className="flex-1 py-4 space-y-1 px-4">
         {NAV_ITEMS.map(({ id, label, Icon }) => (
           <button
@@ -36,9 +36,8 @@ export function Sidebar({ collapsed, onToggle, view, setView }) {
             onClick={() => setView(id)}
             aria-label={label}
             className={`
-              w-full flex items-center py-2 rounded-lg text-sm font-semibold
+              w-full flex items-center gap-3 py-2 rounded-lg text-sm font-semibold
               transition-colors duration-150 cursor-pointer
-              ${collapsed ? 'justify-center' : 'gap-3'}
               ${view === id
                 ? 'bg-brand-500/10 text-brand-500'
                 : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}
