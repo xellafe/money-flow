@@ -197,6 +197,7 @@ export default function PayPalEnrichWizard({
     matches.forEach((_, idx) => {
       initial[idx] = true;
     });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedMatches(initial);
   }, [matches]);
 

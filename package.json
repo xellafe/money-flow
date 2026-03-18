@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "electron-store": "^8.2.0",
+    "framer-motion": "^12.38.0",
     "google-auth-library": "^10.5.0",
     "googleapis": "^170.1.0",
     "lucide-react": "^0.563.0",
