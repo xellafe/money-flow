@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-18T15:32:13.890Z"
+last_updated: "2026-03-18T16:26:59.708Z"
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 12
+  completed_plans: 12
   percent: 100
 ---
 
 # Project State: MoneyFlow UI/UX Redesign
 
-**Last Updated:** 2026-03-18 (plan 04-03 execution)
+**Last Updated:** 2026-03-18 (plan 04-04 gap closure execution)
 
 ## Project Reference
 
@@ -66,6 +66,8 @@ progress:
 | Phase 04-dashboard-redesign P02 | 12m | 3 tasks | 3 files |
 | Phase 04-dashboard-redesign P03 | 20m | 3 tasks | 3 files |
 | Phase 04-dashboard-redesign PP03 | 20m | 4 tasks | 3 files |
+| Phase 04-dashboard-redesign P04 | 12m | 2 tasks | 4 files |
+| Phase 04-dashboard-redesign P04 | 12m | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -97,7 +99,8 @@ progress:
 | 2026-03-18 | DashboardStatCard delegates loading state to SkeletonStatCard via isLoading prop | Single source of loading UI; avoids duplicate shimmer code; consistent skeleton appearance | ✓ Implemented |
 | 2026-03-18 | DashboardView: eslint-disable set-state-in-effect on setIsLoading — same accepted pattern as useFilters; correct React pattern for derived state reset | setIsLoading(true) sync in effect is intentional for skeleton swap; pattern already accepted in codebase | ✓ Accepted |
 | 2026-03-18 | DonutChartCard: chartColors resolved via useMemo(() => getChartColors(), []) at mount | Reads CSS vars once at mount, avoids per-render recompute; safe because CSS vars don't change at runtime | ✓ Implemented |
-| 2026-03-18 | MONTHS_IT[selectedMonth] is 0-indexed (Jan=0, Dec=11) — NOT selectedMonth-1 | Months from JS Date.getMonth() are 0-indexed; MONTHS_IT array is 0-indexed; no offset needed | ✓ Implemented |
+| 2026-03-18 | getSemanticColors() reads CSS vars --color-income-500/--color-expense-500 at mount via useMemo — DASH-03 gap closed | Zero hardcoded hex for data colors in AreaChartCard; consistent with getChartColors() pattern | ✓ Implemented |
+| 2026-03-18 | onTransactionsCategoryChange prop threads setTransactionsCategoryFilter from App.jsx through DashboardView — DASH-07 gap closed | Donut click now filters both dashboard stats AND transaction list; period change clears both | ✓ Implemented |
 | 2026-03-18 | dashboardTypeFilter removed from stats useMemo — new DashboardView uses DonutChartCard cross-filter instead | New dashboard design dropped income/expense type toggle; category cross-filter via DonutChart handles filtering | ✓ Implemented |
 | 2026-03-18 | Period navigation handlers declared before isInitialized early return — required for React rules of hooks | useCallback must be called unconditionally; moved above the early return guard | ✓ Auto-fixed |
 
@@ -116,6 +119,7 @@ progress:
 - [x] Execute Plan 04-01: Chart color tokens, chartColors utility, SkeletonStatCard, SkeletonChart, DashboardStatCard ✅
 - [x] Execute Plan 04-02: AreaChartCard, DonutChartCard, DashboardView with skeleton loading ✅
 - [x] Execute Plan 04-03: Wire DashboardView + PeriodSelector + period handlers in App.jsx ✅ (Electron smoke test approved — all 7 verification categories passed)
+- [x] Execute Plan 04-04: Gap closure — DASH-03 (CSS var colors in AreaChartCard) + DASH-07 (donut cross-filter to transaction list) ✅
 - [ ] Test Radix Dialog + Framer Motion animations in Electron environment during Phase 6 planning
 
 ### Known Blockers
@@ -151,21 +155,20 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- **Last session:** Plan 04-03 COMPLETE — Electron smoke test approved. Phase 4 Dashboard Redesign fully complete.
-- AppHeader: ChevronLeft/Right + MONTHS_IT[selectedMonth] label + Tutti button (aria-pressed, blue when active)
-- AppLayout: 5 period props forwarded to AppHeader
-- App.jsx: DashboardView replaces ~400 lines inline dashboard JSX; stats useMemo null-year fix; prevIncome/prevExpenses added; 3 period handlers
-- Build: ✓ 2778 modules exit 0; Lint: ✓ exit 0; Smoke test: ✓ all items approved
+- **Last session:** Plan 04-04 COMPLETE — gap closure for DASH-03 and DASH-07.
+- getSemanticColors() added to chartColors.js; AreaChartCard reads income/expense colors from CSS vars at mount
+- onTransactionsCategoryChange wired from App.jsx through DashboardView; donut cross-filter now filters transaction list
+- Build: ✓ exit 0; Lint: ✓ exit 0 on all 4 modified files
 
 ### Next Session Context
 **Immediate next action:** Phase 5 — Transaction List Redesign (planning phase)
 
 **What to know:**
-- Phase 4 Plans 01+02+03 all done — smoke test is the final gate
+- Phase 4 Plans 01+02+03+04 all done — Phase 4 fully complete including gap closure
 - DashboardView renders: 2 stat cards (income/expense with % change) + AreaChart + DonutChart
 - Period selector in AppHeader: prev/next arrows + month label + Tutti button
 - Stats null-year mode: selectedYear=null shows ALL transactions (Tutti mode)
-- Cross-filter: DonutChart segments → sets dashboardCategoryFilter array → filters stats
+- Cross-filter: DonutChart segments → sets BOTH dashboardCategoryFilter AND transactionsCategoryFilter
 
 ### Environment State
 - Working directory: `D:\Generale\budget-tracker`

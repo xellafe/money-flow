@@ -104,7 +104,7 @@ Plans:
 4. User can select different time periods (month/year) from dashboard controls and all stats update immediately
 5. Skeleton loading cards appear during initial app load (no flash of empty content)
 
-**Plans:** 4 plans (3 complete + 1 gap closure)
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 04-01-PLAN.md — Foundation: chart tokens, chartColors utility, skeleton components, DashboardStatCard
@@ -178,7 +178,7 @@ Plans:
 | 1. Foundation & Setup | 2/2 | ✅ Complete | 2026-03-17 |
 | 2. State Extraction | 4/4 | Complete   | 2026-03-17 |
 | 3. Navigation & Layout | 2/2 | Complete    | 2026-03-18 |
-| 4. Dashboard Redesign | 3/3 | Complete   | 2026-03-18 |
+| 4. Dashboard Redesign | 4/4 | Complete   | 2026-03-18 |
 | 5. Transaction List Redesign | 0/? | Not started | - |
 | 6. Modals Redesign | 0/? | Not started | - |
 | 7. UX Polish | 0/? | Not started | - |
