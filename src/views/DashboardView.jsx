@@ -4,6 +4,7 @@ import { DashboardStatCard } from '../components/dashboard/DashboardStatCard';
 import { SkeletonStatCard } from '../components/dashboard/SkeletonStatCard';
 import { AreaChartCard } from '../components/dashboard/AreaChartCard';
 import { DonutChartCard } from '../components/dashboard/DonutChartCard';
+import { MONTHS_IT } from '../constants';
 
 /**
  * Root layout container for the dashboard.
@@ -12,8 +13,8 @@ import { DonutChartCard } from '../components/dashboard/DonutChartCard';
  *   stats: { income: number, expenses: number, categoryData: Array, monthlyData: Array, prevIncome?: number, prevExpenses?: number },
  *   selectedMonth: number|null,
  *   selectedYear: number|null,
- *   dashboardCategoryFilter: string|null,
- *   onCategoryFilterChange: (category: string|null) => void
+ *   dashboardCategoryFilter: string[],
+ *   onCategoryFilterChange: (categories: string[]) => void
  * }} props
  */
 export function DashboardView({
@@ -30,7 +31,7 @@ export function DashboardView({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
     // Clear category filter when period changes
-    onCategoryFilterChange(null);
+    onCategoryFilterChange([]);
     // Minimum 300ms skeleton display
     const timer = setTimeout(() => setIsLoading(false), 300);
     return () => clearTimeout(timer);
@@ -68,8 +69,17 @@ export function DashboardView({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="p-6 pb-8"
+      className="p-6 pb-8 flex flex-col gap-6"
     >
+      {/* Period label */}
+      <h3 className="text-base font-semibold text-gray-700">
+        {selectedMonth !== null && selectedYear !== null
+          ? `${MONTHS_IT[selectedMonth]} ${selectedYear}`
+          : selectedYear !== null
+            ? `Anno ${selectedYear}`
+            : 'Tutti gli anni'}
+      </h3>
+
       {/* Stat cards row */}
       <div className="grid grid-cols-2 gap-4">
         <AnimatePresence mode="wait">
@@ -125,17 +135,15 @@ export function DashboardView({
         </AnimatePresence>
       </div>
 
-      {/* Area chart row */}
-      <div className="mt-6">
-        <AreaChartCard
-          monthlyData={stats.monthlyData}
-          isLoading={isLoading}
-          selectedYear={selectedYear}
-        />
-      </div>
+      {/* Area chart */}
+      <AreaChartCard
+        monthlyData={stats.monthlyData}
+        isLoading={isLoading}
+        selectedYear={selectedYear}
+      />
 
-      {/* Donut chart row (right-aligned) */}
-      <div className="mt-6 flex justify-end">
+      {/* Donut chart */}
+      <div className="flex justify-end">
         <DonutChartCard
           categoryData={stats.categoryData}
           selectedCategory={selectedCategory}

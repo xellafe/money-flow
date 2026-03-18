@@ -80,25 +80,27 @@ export function DonutChartCard({ categoryData, selectedCategory, onCategorySelec
     onCategorySelect(selectedCategory === entry.name ? null : entry.name);
   };
 
-  const handleCenterClick = () => {
-    if (selectedCategory) {
-      onCategorySelect(null);
-    }
-  };
-
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 w-full max-w-sm">
-      <p className="text-sm font-semibold text-gray-700 mb-4">Spese per categoria</p>
+      <p className="text-sm font-semibold text-gray-700">Spese per categoria</p>
+
+      {/* Total below title */}
+      <div className="mb-3 mt-1">
+        <p className="text-2xl font-semibold text-gray-800">{formatCurrency(centerAmount)}</p>
+        <p className="text-xs text-gray-500 mt-0.5">
+          {selectedCategory ? selectedCategory : 'Tutte le categorie'}
+        </p>
+      </div>
 
       <div className="relative" aria-label="Grafico spese per categoria">
-        <ResponsiveContainer key={chartKey} width="100%" height={240}>
+        <ResponsiveContainer key={chartKey} width="100%" height={220}>
           <PieChart>
             <Pie
               data={categoryData}
               cx="50%"
               cy="50%"
-              innerRadius={70}
-              outerRadius={100}
+              innerRadius={60}
+              outerRadius={90}
               paddingAngle={2}
               dataKey="value"
               onClick={(_, index) => handleSegmentClick(categoryData[index])}
@@ -126,23 +128,6 @@ export function DonutChartCard({ categoryData, selectedCategory, onCategorySelec
             <Tooltip content={<CustomDonutTooltip />} />
           </PieChart>
         </ResponsiveContainer>
-
-        {/* Center text overlay */}
-        <div
-          className="absolute inset-0 flex flex-col items-center justify-center"
-          style={{ pointerEvents: selectedCategory ? 'auto' : 'none' }}
-          onClick={handleCenterClick}
-        >
-          <span className="text-3xl font-semibold text-gray-800">
-            {formatCurrency(centerAmount)}
-          </span>
-          <span className="text-xs font-normal text-gray-500">
-            {selectedCategory
-              ? selectedCategory.substring(0, 16)
-              : 'Totale uscite'
-            }
-          </span>
-        </div>
       </div>
     </div>
   );

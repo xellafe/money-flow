@@ -1,46 +1,50 @@
-import { motion } from 'framer-motion';
-import { LayoutDashboard, ArrowLeftRight, Settings, Menu } from 'lucide-react';
+import { motion } from "framer-motion";
+import { LayoutDashboard, ArrowLeftRight, Settings, Menu } from "lucide-react";
 
 const NAV_ITEMS = [
-  { id: 'dashboard',    label: 'Dashboard',    Icon: LayoutDashboard },
-  { id: 'transactions', label: 'Transazioni',  Icon: ArrowLeftRight },
-  { id: 'settings',     label: 'Impostazioni', Icon: Settings },
+  { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
+  { id: "transactions", label: "Transazioni", Icon: ArrowLeftRight },
+  { id: "settings", label: "Impostazioni", Icon: Settings },
 ];
 
 export function Sidebar({ collapsed, onToggle, view, setView }) {
   return (
     <motion.div
-      animate={{ width: collapsed ? 64 : 240 }}
-      transition={{ duration: 0.2, ease: 'easeInOut' }}
+      animate={{ width: collapsed ? "auto" : 200 }}
+      transition={{ duration: 0.2, ease: "easeInOut" }}
       className="h-screen flex flex-col bg-white border-r border-gray-200 overflow-hidden shrink-0"
     >
       {/* Header: always px-4, no justify-center flip */}
       <div className="h-14 flex items-center gap-3 px-4 border-b border-gray-200 shrink-0">
         <button
           onClick={onToggle}
-          aria-label={collapsed ? 'Espandi sidebar' : 'Comprimi sidebar'}
+          aria-label={collapsed ? "Espandi sidebar" : "Comprimi sidebar"}
           className="p-1 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors duration-150 cursor-pointer shrink-0"
         >
           <Menu size={20} />
         </button>
         {!collapsed && (
-          <span className="text-brand-500 font-semibold truncate">MoneyFlow</span>
+          <span className="text-brand-500 font-semibold truncate">
+            MoneyFlow
+          </span>
         )}
       </div>
 
       {/* Nav items — always left-aligned at px-4, icon never moves */}
-      <nav className="flex-1 py-4 space-y-1 px-4">
+      <nav className="flex-1 py-3 space-y-1 px-4">
         {NAV_ITEMS.map(({ id, label, Icon }) => (
           <button
             key={id}
             onClick={() => setView(id)}
             aria-label={label}
             className={`
-              w-full h-10 flex items-center gap-3 rounded-lg text-sm font-semibold
+              w-full h-7 flex items-center gap-3 rounded-lg text-sm font-semibold
               transition-colors duration-150 cursor-pointer
-              ${view === id
-                ? 'bg-brand-500/10 text-brand-500'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}
+              ${
+                view === id
+                  ? "bg-brand-500/10 text-brand-500"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              }
             `}
           >
             <Icon size={20} className="shrink-0" />

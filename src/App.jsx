@@ -388,43 +388,29 @@ export default function MoneyFlow() {
     transactionsCategoryFilter,
   ]);
 
+  // Months that actually have transactions in the selected year (for period selector)
+  const availableMonths = useMemo(() => {
+    const base = selectedYear !== null
+      ? transactions.filter(t => new Date(t.date).getFullYear() === selectedYear)
+      : transactions;
+    return new Set(base.map(t => new Date(t.date).getMonth()));
+  }, [transactions, selectedYear]);
+
   // Period navigation handlers (must be before early return to follow rules of hooks)
-  const handlePrevMonth = useCallback(() => {
-    if (selectedMonth === null || selectedYear === null) {
-      // In "Tutti" mode — initialize to current year, December
-      const currentYear = new Date().getFullYear();
-      setSelectedYear(currentYear);
-      setSelectedMonth(11);
-      return;
-    }
-    if (selectedMonth === 0) {
-      setSelectedYear(y => y - 1);
-      setSelectedMonth(11);
-    } else {
-      setSelectedMonth(m => m - 1);
-    }
-  }, [selectedMonth, selectedYear, setSelectedMonth, setSelectedYear]);
-
-  const handleNextMonth = useCallback(() => {
-    if (selectedMonth === null || selectedYear === null) {
-      // In "Tutti" mode — initialize to current year, January
-      const currentYear = new Date().getFullYear();
-      setSelectedYear(currentYear);
-      setSelectedMonth(0);
-      return;
-    }
-    if (selectedMonth === 11) {
-      setSelectedYear(y => y + 1);
-      setSelectedMonth(0);
-    } else {
-      setSelectedMonth(m => m + 1);
-    }
-  }, [selectedMonth, selectedYear, setSelectedMonth, setSelectedYear]);
-
-  const handleClearPeriod = useCallback(() => {
+  const handlePrevYear = useCallback(() => {
+    setSelectedYear(y => (y ?? new Date().getFullYear()) - 1);
     setSelectedMonth(null);
-    setSelectedYear(null);
-  }, [setSelectedMonth, setSelectedYear]);
+  }, [setSelectedYear, setSelectedMonth]);
+
+  const handleNextYear = useCallback(() => {
+    setSelectedYear(y => (y ?? new Date().getFullYear()) + 1);
+    setSelectedMonth(null);
+  }, [setSelectedYear, setSelectedMonth]);
+
+  const handleSelectMonth = useCallback((month) => {
+    if (selectedYear === null) setSelectedYear(new Date().getFullYear());
+    setSelectedMonth(prev => (prev === month ? null : month));
+  }, [selectedYear, setSelectedYear, setSelectedMonth]);
 
   // Mostra nulla finché i dati iniziali non sono caricati
   if (!isInitialized) {
@@ -440,9 +426,10 @@ export default function MoneyFlow() {
       onAddTransaction={() => setShowAddTransaction(true)}
       selectedMonth={selectedMonth}
       selectedYear={selectedYear}
-      onPrevMonth={handlePrevMonth}
-      onNextMonth={handleNextMonth}
-      onClearPeriod={handleClearPeriod}
+      onPrevYear={handlePrevYear}
+      onNextYear={handleNextYear}
+      onSelectMonth={handleSelectMonth}
+      availableMonths={availableMonths}
     >
       {/* Drop Zone iniziale */}
         {transactions.length === 0 && (

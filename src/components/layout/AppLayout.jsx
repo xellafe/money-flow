@@ -11,10 +11,11 @@ import { AppHeader } from './AppHeader';
  *   onToggle: () => void,
  *   onAddTransaction: () => void,
  *   selectedMonth: number|null,
- *   selectedYear: number|null,
- *   onPrevMonth: () => void,
- *   onNextMonth: () => void,
- *   onClearPeriod: () => void,
+ *   selectedYear: number,
+ *   onPrevYear: () => void,
+ *   onNextYear: () => void,
+ *   onSelectMonth: (month: number) => void,
+ *   availableMonths: Set<number>,
  *   children: React.ReactNode
  * }} props
  */
@@ -26,9 +27,10 @@ export function AppLayout({
   onAddTransaction,
   selectedMonth,
   selectedYear,
-  onPrevMonth,
-  onNextMonth,
-  onClearPeriod,
+  onPrevYear,
+  onNextYear,
+  onSelectMonth,
+  availableMonths,
   children,
 }) {
   return (
@@ -50,9 +52,10 @@ export function AppLayout({
           onAddTransaction={onAddTransaction}
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
-          onPrevMonth={onPrevMonth}
-          onNextMonth={onNextMonth}
-          onClearPeriod={onClearPeriod}
+          onPrevYear={onPrevYear}
+          onNextYear={onNextYear}
+          onSelectMonth={onSelectMonth}
+          availableMonths={availableMonths}
         />
         <main className="flex-1 overflow-auto">
           {children}
