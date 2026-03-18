@@ -63,7 +63,7 @@ import {
 } from "./components";
 
 // Hooks
-import { useGoogleDrive, useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic } from "./hooks";
+import { useGoogleDrive, useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic, useViewState } from "./hooks";
 
 import "./App.css";
 
@@ -81,6 +81,8 @@ export default function MoneyFlow() {
     openDropdown, setOpenDropdown,
     newTransaction, setNewTransaction,
   } = useModals();
+
+  const { view, setView } = useViewState();
 
   const {
     categories, setCategories,
@@ -122,7 +124,6 @@ export default function MoneyFlow() {
   });
 
   const {
-    view, setView,
     selectedMonth, setSelectedMonth,
     selectedYear, setSelectedYear,
     searchQuery, setSearchQuery,

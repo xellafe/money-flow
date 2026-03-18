@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
  * @param {number[]} options.years - Anni disponibili dalle transazioni (default: [])
  */
 export function useFilters({ years = [] } = {}) {
-  const [view, setView] = useState('dashboard');
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,7 +20,7 @@ export function useFilters({ years = [] } = {}) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
-  }, [selectedYear, selectedMonth, searchQuery, view, transactionsCategoryFilter]);
+  }, [selectedYear, selectedMonth, searchQuery, transactionsCategoryFilter]);
 
   // Auto-update selectedYear quando cambiano gli anni disponibili
   useEffect(() => {
@@ -32,7 +31,6 @@ export function useFilters({ years = [] } = {}) {
   }, [years, selectedYear]);
 
   return {
-    view, setView,
     selectedMonth, setSelectedMonth,
     selectedYear, setSelectedYear,
     searchQuery, setSearchQuery,
