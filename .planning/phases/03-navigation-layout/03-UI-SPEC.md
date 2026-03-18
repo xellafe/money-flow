@@ -64,9 +64,11 @@ Declared values (multiples of 4 only):
 | Role | Size | Weight | Line Height | Tailwind Class | Usage |
 |------|------|--------|-------------|----------------|-------|
 | Body | 16px | 400 (regular) | 1.5 | `text-base` | Settings placeholder body text, general content |
-| Label / Nav item | 14px | 500 (medium) | 1.2 | `text-sm font-medium` | Sidebar nav item labels, toggle aria-labels |
+| Label / Nav item | 14px | 600 (semibold) | 1.2 | `text-sm font-semibold` | Sidebar nav item labels, toggle aria-labels |
 | Heading (header) | 18px | 600 (semibold) | 1.2 | `text-lg font-semibold` | `<AppHeader>` view title ("Dashboard", "Transazioni", "Impostazioni") |
 | Display (page h2) | 24px | 600 (semibold) | 1.2 | `text-2xl font-semibold` | Settings placeholder `<h2>` heading |
+
+**Declared weights (2 max):** `400` (regular) — body prose · `600` (semibold) — all headings, nav labels, CTA label, logo. No third weight exists in this phase.
 
 **Logo / App name area:** Uses `font-semibold text-brand-500`. Expanded: "MoneyFlow" (truncated with `truncate`). Collapsed: "M". No separate token — inherits base size from parent `px-4` container.
 
@@ -89,6 +91,8 @@ Declared values (multiples of 4 only):
 3. "Aggiungi transazione" CTA button background (`bg-brand-500`)
 4. Logo / app name text (`text-brand-500`)
 5. Focus ring on interactive elements (`outline-brand-500` — already in `index.css` `button:focus-visible`)
+
+**Primary focal point:** Active nav item (brand-500 tint background + brand-500 text) and the "Aggiungi transazione" CTA button (brand-500 solid fill) are the two visual anchors. In the Transazioni view both are simultaneously visible, making the current context and the primary action immediately scannable.
 
 **Neutral palette for layout surfaces:**
 
@@ -136,7 +140,8 @@ Declared values (multiples of 4 only):
 
 **Each nav item button:**
 - Layout: `w-full flex items-center gap-3 px-3 py-2 rounded-lg`
-- Typography: `text-sm font-medium`
+- Typography: `text-sm font-semibold`
+- `aria-label`: always present (static, matches label copy — see Icon Map). Required for screen readers when sidebar is collapsed and the label `<span>` is conditionally hidden.
 - Hover transition: `transition-colors duration-150 cursor-pointer`
 - **Default state:** `text-gray-600`
 - **Hover state:** `hover:bg-gray-100 hover:text-gray-900`
@@ -173,7 +178,7 @@ Declared values (multiples of 4 only):
 - Shown ONLY when `view === 'transactions'`
 - Layout: `flex items-center gap-2 px-4 py-2`
 - Background: `bg-brand-500`
-- Text: `text-white text-sm font-medium`
+- Text: `text-white text-sm font-semibold`
 - Border radius: `rounded-lg`
 - Hover: `hover:bg-brand-600`
 - Transition: `transition-colors duration-150 cursor-pointer`
@@ -303,15 +308,17 @@ transition={{ duration: 0.2, ease: 'easeInOut' }}
 
 ## Icon Map
 
-| Location | Lucide Icon | Size | Color when active | Color when inactive |
-|----------|-------------|------|-------------------|---------------------|
-| Dashboard nav item | `LayoutDashboard` | 20px | `text-brand-500` (inherits) | `text-gray-600` (inherits) |
-| Transazioni nav item | `ArrowLeftRight` | 20px | `text-brand-500` (inherits) | `text-gray-600` (inherits) |
-| Impostazioni nav item | `Settings` | 20px | `text-brand-500` (inherits) | `text-gray-600` (inherits) |
-| Sidebar toggle | `ChevronLeft` | 20px | — | `text-gray-500` (inherits) |
-| CTA button | `Plus` | 16px | — | `text-white` (inherits) |
+| Location | Lucide Icon | Size | `aria-label` (static) | Color when active | Color when inactive |
+|----------|-------------|------|-----------------------|-------------------|---------------------|
+| Dashboard nav item | `LayoutDashboard` | 20px | `"Dashboard"` | `text-brand-500` (inherits) | `text-gray-600` (inherits) |
+| Transazioni nav item | `ArrowLeftRight` | 20px | `"Transazioni"` | `text-brand-500` (inherits) | `text-gray-600` (inherits) |
+| Impostazioni nav item | `Settings` | 20px | `"Impostazioni"` | `text-brand-500` (inherits) | `text-gray-600` (inherits) |
+| Sidebar toggle | `ChevronLeft` | 20px | Dynamic (see Copywriting) | — | `text-gray-500` (inherits) |
+| CTA button | `Plus` | 16px | Self-describing (button text) | — | `text-white` (inherits) |
 
 All icons use `className="shrink-0"` to prevent compression in flex containers.
+
+**Note on nav item `aria-label`:** The `aria-label` must be present on the `<button>` element at all times (not just when collapsed) so screen readers announce the destination consistently regardless of sidebar state. When the label `<span>` is conditionally hidden (`!collapsed && <span>`), `aria-label` becomes the sole accessible name.
 
 ---
 
