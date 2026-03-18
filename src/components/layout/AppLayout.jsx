@@ -16,7 +16,7 @@ export function AppLayout({ view, setView, collapsed, onToggle, onAddTransaction
           view={view}
           onAddTransaction={onAddTransaction}
         />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto p-6">
           {children}
         </main>
       </div>
