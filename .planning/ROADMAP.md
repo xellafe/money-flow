@@ -104,12 +104,13 @@ Plans:
 4. User can select different time periods (month/year) from dashboard controls and all stats update immediately
 5. Skeleton loading cards appear during initial app load (no flash of empty content)
 
-**Plans:** 3/3 plans complete
+**Plans:** 4 plans (3 complete + 1 gap closure)
 
 Plans:
-- [ ] 04-01-PLAN.md — Foundation: chart tokens, chartColors utility, skeleton components, DashboardStatCard
-- [ ] 04-02-PLAN.md — Charts: AreaChartCard, DonutChartCard, DashboardView
-- [ ] 04-03-PLAN.md — Wiring: PeriodSelector in AppHeader, AppLayout prop threading, App.jsx integration
+- [x] 04-01-PLAN.md — Foundation: chart tokens, chartColors utility, skeleton components, DashboardStatCard
+- [x] 04-02-PLAN.md — Charts: AreaChartCard, DonutChartCard, DashboardView
+- [x] 04-03-PLAN.md — Wiring: PeriodSelector in AppHeader, AppLayout prop threading, App.jsx integration
+- [ ] 04-04-PLAN.md — Gap closure: CSS variable colors in AreaChartCard (DASH-03) + cross-filter to transaction list (DASH-07)
 
 ---
 
