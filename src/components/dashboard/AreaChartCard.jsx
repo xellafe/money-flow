@@ -1,14 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { formatCurrency } from '../../utils';
+import { getSemanticColors } from '../../utils/chartColors';
 import { SkeletonChart } from './SkeletonChart';
-
-// Resolved semantic colors from @theme
-const INCOME_COLOR = '#059669';  // --color-income-500
-const EXPENSE_COLOR = '#f43f5e'; // --color-expense-500
 
 /**
  * Custom tooltip for AreaChart
@@ -32,6 +29,9 @@ function CustomAreaTooltip({ active, payload, label }) {
  * @param {{ monthlyData: Array, isLoading?: boolean, selectedYear: number|null }} props
  */
 export function AreaChartCard({ monthlyData, isLoading = false, selectedYear }) {
+  // Read semantic colors from CSS variables at mount (same pattern as DonutChartCard)
+  const { income: INCOME_COLOR, expense: EXPENSE_COLOR } = useMemo(() => getSemanticColors(), []);
+
   // Recharts resize workaround for Electron (debounced key change forces remount)
   const [chartKey, setChartKey] = useState(0);
 
