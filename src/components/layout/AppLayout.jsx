@@ -2,7 +2,35 @@ import { motion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { AppHeader } from './AppHeader';
 
-export function AppLayout({ view, setView, collapsed, onToggle, onAddTransaction, children }) {
+/**
+ * Root layout wrapper: sidebar + header + main content area.
+ * @param {{
+ *   view: string,
+ *   setView: (v: string) => void,
+ *   collapsed: boolean,
+ *   onToggle: () => void,
+ *   onAddTransaction: () => void,
+ *   selectedMonth: number|null,
+ *   selectedYear: number|null,
+ *   onPrevMonth: () => void,
+ *   onNextMonth: () => void,
+ *   onClearPeriod: () => void,
+ *   children: React.ReactNode
+ * }} props
+ */
+export function AppLayout({
+  view,
+  setView,
+  collapsed,
+  onToggle,
+  onAddTransaction,
+  selectedMonth,
+  selectedYear,
+  onPrevMonth,
+  onNextMonth,
+  onClearPeriod,
+  children,
+}) {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar
@@ -20,6 +48,11 @@ export function AppLayout({ view, setView, collapsed, onToggle, onAddTransaction
         <AppHeader
           view={view}
           onAddTransaction={onAddTransaction}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          onPrevMonth={onPrevMonth}
+          onNextMonth={onNextMonth}
+          onClearPeriod={onClearPeriod}
         />
         <main className="flex-1 overflow-auto">
           {children}
