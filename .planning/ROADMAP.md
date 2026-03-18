@@ -82,7 +82,11 @@ Plans:
 4. Header shows current view title and contextual actions (e.g., "Aggiungi transazione" button)
 5. Main content area resizes smoothly when sidebar expands/collapses
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Hook foundation: install Framer Motion, create useViewState, migrate view from useFilters, add brand-600 token
+- [ ] 03-02-PLAN.md — Layout shell: create Sidebar, AppHeader, AppLayout, SettingsView components + integrate into App.jsx
 
 ---
 
@@ -167,7 +171,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation & Setup | 2/2 | ✅ Complete | 2026-03-17 |
 | 2. State Extraction | 4/4 | Complete   | 2026-03-17 |
-| 3. Navigation & Layout | 0/? | Not started | - |
+| 3. Navigation & Layout | 0/2 | Not started | - |
 | 4. Dashboard Redesign | 0/? | Not started | - |
 | 5. Transaction List Redesign | 0/? | Not started | - |
 | 6. Modals Redesign | 0/? | Not started | - |
