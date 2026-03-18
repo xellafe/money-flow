@@ -35,6 +35,18 @@
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
 
+  /* Chart category colors (10 discrete) */
+  --color-chart-01: #3b82f6;
+  --color-chart-02: #10b981;
+  --color-chart-03: #f59e0b;
+  --color-chart-04: #ef4444;
+  --color-chart-05: #8b5cf6;
+  --color-chart-06: #ec4899;
+  --color-chart-07: #06b6d4;
+  --color-chart-08: #84cc16;
+  --color-chart-09: #f97316;
+  --color-chart-10: #6366f1;
+
   /* Box shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
