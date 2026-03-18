@@ -24,8 +24,8 @@
 - [x] **NAV-01**: Sidebar fissa a sinistra (240px espansa, 64px collassata) con icone Lucide
 - [x] **NAV-02**: Sidebar collassabile via toggle button con animazione smooth (Framer Motion)
 - [x] **NAV-03**: Active state visivo sulla voce di navigazione corrente
-- [ ] **NAV-04**: Voci navigazione: Dashboard, Transazioni, Impostazioni
-- [ ] **NAV-05**: Header/top bar con titolo della view corrente e azioni contestuali (es. "Aggiungi transazione")
+- [x] **NAV-04**: Voci navigazione: Dashboard, Transazioni, Impostazioni
+- [x] **NAV-05**: Header/top bar con titolo della view corrente e azioni contestuali (es. "Aggiungi transazione")
 - [x] **NAV-06**: Layout main content che si adatta alla sidebar espansa/collassata
 
 ### Dashboard
@@ -116,8 +116,8 @@
 | NAV-01 | Phase 3 | Complete |
 | NAV-02 | Phase 3 | Complete |
 | NAV-03 | Phase 3 | Complete |
-| NAV-04 | Phase 3 | Pending |
-| NAV-05 | Phase 3 | Pending |
+| NAV-04 | Phase 3 | Complete |
+| NAV-05 | Phase 3 | Complete |
 | NAV-06 | Phase 3 | Complete |
 | DASH-01 | Phase 4 | Pending |
 | DASH-02 | Phase 4 | Pending |

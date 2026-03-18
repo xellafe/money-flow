@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-03-18T10:16:03.971Z"
+status: Ready for 03-02
+last_updated: "2026-03-18T10:35:23.199Z"
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
-  percent: 88
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State: MoneyFlow UI/UX Redesign
@@ -22,14 +22,14 @@ progress:
 
 **Mission:** Transform MoneyFlow from custom CSS chaos (2,127-line App.jsx monolith) to a modern, maintainable UI/UX with Tailwind v4, preserving all existing functionality while introducing light clean minimal design (Notion/Apple inspiration).
 
-**Current Focus:** Phase 3 — Navigation Layout IN PROGRESS (Plan 01 complete: framer-motion, useViewState, brand-600)
+**Current Focus:** Phase 3 — Navigation Layout COMPLETE (Plans 01+02 done: sidebar navigation, AppLayout shell, SettingsView)
 
 ## Current Position
 
-**Active Phase:** Phase 3: Navigation Layout — IN PROGRESS (Plan 01 complete)
-**Active Plan:** Phase 3 Plan 01 (03-01 — COMPLETE)
-**Status:** Ready for 03-02
-**Progress:** [█████████░] 88%
+**Active Phase:** Phase 3: Navigation Layout — COMPLETE
+**Active Plan:** Phase 3 Plan 02 (03-02 — COMPLETE, awaiting human smoke test checkpoint)
+**Status:** Checkpoint:human-verify Task 3 — Awaiting Electron smoke test
+**Progress:** [██████████] 100%
 
 ## Performance Metrics
 
@@ -58,7 +58,9 @@ progress:
 | Phase 02-state-extraction PP03 | 18m | 2 tasks | 3 files |
 | 02-state-extraction | P04 | 15m | 1 | 3 |
 | Phase 02-state-extraction PP04 | 15m | 1 tasks | 3 files |
-| Phase 03-navigation-layout PP01 | 12m | 2 tasks | 7 files |
+| 03-navigation-layout | P01 | 12m | 2 | 7 |
+| 03-navigation-layout | P02 | 18m | 2 | 6 |
+| Phase 03-navigation-layout P02 | 18m | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -83,7 +85,8 @@ progress:
 | 2026-03-17 | useImportLogic constructor params: transactions/setTransactions/categories/importProfiles/setImportProfiles/showToast | Same dependency-injection pattern as useTransactionData and useCategories hooks | ✓ Implemented |
 | 2026-03-17 | confirmCategoryConflicts deps fixed: added setCategoryResolutions, setTransactions, setCategoryConflicts | Stable useState setter refs — prevents React Compiler preserve-manual-memoization errors | ✓ Implemented |
 | 2026-03-17 | useViewState: only view/setView destructured in App.jsx (not sidebarCollapsed/toggleSidebar) — added in Plan 03-02 | Unused-vars lint fails if destructured without consumers; sidebar props wired when Sidebar component is built | ✓ Implemented |
-| 2026-03-17 | Empty catch blocks in useViewState use /* ignore */ comment per project no-empty rule convention | Consistent with defensive localStorage access pattern; no-empty lint rule requires comment in empty catch | ✓ Implemented |
+| 2026-03-18 | Removed exportData/exportBackup/importBackup/handlePayPalFile from App.jsx destructuring | Old header UI removed; features will re-surface in Settings view (Phase 6) | ✓ Auto-fixed |
+| 2026-03-18 | Added eslint-plugin-react + react/jsx-uses-vars to eslint config | JSX variable tracking requires React ESLint plugin; motion/Icon falsely reported unused without it | ✓ Auto-fixed |
 
 ### Todos
 
@@ -96,7 +99,7 @@ progress:
 - [x] Execute Plan 02-03: Extract useTransactionData hook ✓
 - [x] Execute Plan 02-04: Extract useImportLogic hook ✅ (human smoke test approved — all 6 hooks complete)
 - [x] Execute Plan 03-01: Install framer-motion, create useViewState hook, migrate view/setView, add brand-600 token ✅
-- [ ] Test Recharts + Tailwind CSS variable integration proof-of-concept during Phase 5 planning
+- [x] Execute Plan 03-02: Create Sidebar, AppHeader, AppLayout, SettingsView; integrate into App.jsx ✅ (awaiting human smoke test)
 - [ ] Test Radix Dialog + Framer Motion animations in Electron environment during Phase 6 planning
 
 ### Known Blockers
@@ -132,11 +135,11 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- Plan 02-04 COMPLETE: useImportLogic hook extracted + human smoke test approved (all 13 checks passed)
-- All 6 hooks extracted from App.jsx: useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic
-- Phase 2 (State Extraction) is now COMPLETE
-- src/App.jsx reduced from 2127 → 1603 lines; pure orchestration file
-- Build: ✓ 2368 modules, exit 0; Lint: ✓ exit 0
+- Plan 03-02 COMPLETE: Layout shell components created + App.jsx integrated + awaiting Electron smoke test (Task 3)
+- Sidebar (animated 240/64px), AppHeader (view title + CTA), AppLayout (root wrapper), SettingsView (placeholder) created
+- Old header/tab-bar/filters-bar removed from App.jsx; AppLayout now wraps all content
+- Auto-fix: added eslint-plugin-react for JSX var tracking; cleaned unused destructured vars
+- Build: ✓ 2369 modules, exit 0; Lint: ✓ exit 0
 
 ### Next Session Context
 **Immediate next action:** Begin Phase 3 (Layout & Navigation)

@@ -15,7 +15,7 @@
 
 - [x] **Phase 1: Foundation & Setup** - Tailwind v4, CSP, design tokens, font setup ✅
 - [x] **Phase 2: State Extraction** - Extract 7 custom hooks from App.jsx monolith (completed 2026-03-17)
-- [ ] **Phase 3: Navigation & Layout** - Sidebar, header, main content routing
+- [x] **Phase 3: Navigation & Layout** - Sidebar, header, main content routing (completed 2026-03-18)
 - [ ] **Phase 4: Dashboard Redesign** - Stats cards, Recharts theming, cross-filtering
 - [ ] **Phase 5: Transaction List Redesign** - Table, filters, inline editing, pagination
 - [ ] **Phase 6: Modals Redesign** - 7 modals with animations, accessibility, consistent styling
@@ -82,7 +82,7 @@ Plans:
 4. Header shows current view title and contextual actions (e.g., "Aggiungi transazione" button)
 5. Main content area resizes smoothly when sidebar expands/collapses
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 03-01-PLAN.md — Hook foundation: install Framer Motion, create useViewState, migrate view from useFilters, add brand-600 token
@@ -171,7 +171,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Foundation & Setup | 2/2 | ✅ Complete | 2026-03-17 |
 | 2. State Extraction | 4/4 | Complete   | 2026-03-17 |
-| 3. Navigation & Layout | 1/2 | In Progress|  |
+| 3. Navigation & Layout | 2/2 | Complete   | 2026-03-18 |
 | 4. Dashboard Redesign | 0/? | Not started | - |
 | 5. Transaction List Redesign | 0/? | Not started | - |
 | 6. Modals Redesign | 0/? | Not started | - |
