@@ -51,6 +51,7 @@ import {
   PayPalEnrichWizard,
   GoogleSignInButton,
 } from "./components";
+import { AnimatePresence } from 'framer-motion';
 import { AppLayout } from './components/layout/AppLayout';
 import { SettingsView } from './views/SettingsView';
 import { DashboardView } from './views/DashboardView';
