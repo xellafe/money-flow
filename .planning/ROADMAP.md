@@ -129,7 +129,12 @@ Plans:
 5. Pagination shows clear counter ("Showing 1-100 of 342 transazioni") and navigation works smoothly
 6. Empty state appears when no transactions exist, with clear CTA to import or add manually
 
-**Plans:** TBD
+**Plans:** 3 plans in 2 waves
+
+Plans:
+- [ ] 05-01-PLAN.md — Foundation: useFilters sort state, categoryColors utility, CategoryBadge, FilterChip
+- [ ] 05-02-PLAN.md — Components: TransactionRow, TransactionFilterBar
+- [ ] 05-03-PLAN.md — View: TransactionsView + App.jsx wiring
 
 ---
 
