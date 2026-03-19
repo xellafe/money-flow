@@ -153,7 +153,7 @@ Plans:
 4. All modals use consistent button styles (primary/secondary/destructive) from design system
 5. Long-content modals (ImportWizard step 2) scroll internally without breaking layout
 
-**Plans:** 2/5 plans executed
+**Plans:** 3/5 plans executed
 
 Plans:
 - [ ] 06-01-PLAN.md — Foundation: Install Radix Dialog, create ModalShell wrapper, create ui/ barrel
@@ -192,7 +192,7 @@ Plans:
 | 3. Navigation & Layout | 2/2 | Complete    | 2026-03-18 |
 | 4. Dashboard Redesign | 4/4 | Complete   | 2026-03-18 |
 | 5. Transaction List Redesign | 4/4 | Complete    | 2026-03-19 |
-| 6. Modals Redesign | 2/5 | In Progress|  |
+| 6. Modals Redesign | 3/5 | In Progress|  |
 | 7. UX Polish | 0/? | Not started | - |
 
 ## Dependencies
