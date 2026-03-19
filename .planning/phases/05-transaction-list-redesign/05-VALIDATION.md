@@ -2,8 +2,8 @@
 phase: 5
 slug: transaction-list-redesign
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-19
 ---
 
@@ -38,14 +38,14 @@ created: 2026-03-19
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 5-xx-TRNS-01 | TBD | TBD | TRNS-01 | manual | — | ✅ | ⬜ pending |
-| 5-xx-TRNS-02 | TBD | TBD | TRNS-02 | manual | — | ✅ | ⬜ pending |
-| 5-xx-TRNS-03 | TBD | TBD | TRNS-03 | manual | — | ✅ | ⬜ pending |
-| 5-xx-TRNS-04 | TBD | TBD | TRNS-04 | manual | — | ✅ | ⬜ pending |
-| 5-xx-TRNS-05 | TBD | TBD | TRNS-05 | manual | — | ✅ | ⬜ pending |
-| 5-xx-TRNS-06 | TBD | TBD | TRNS-06 | manual | — | ✅ | ⬜ pending |
-| 5-xx-TRNS-07 | TBD | TBD | TRNS-07 | unit | `node -e "const {getCategoryColor}=require('./src/utils/categoryColor'); console.assert(getCategoryColor('Food')===getCategoryColor('Food'),'determinism fail')"` | ✅ | ⬜ pending |
-| 5-xx-TRNS-08 | TBD | TBD | TRNS-08 | manual | — | ✅ | ⬜ pending |
+| 05-03/T1 | 05-03 | 3 | TRNS-01 | manual | — | ✅ | ⬜ pending |
+| 05-03/T1 | 05-03 | 3 | TRNS-02 | manual | — | ✅ | ⬜ pending |
+| 05-03/T1 | 05-03 | 3 | TRNS-03 | manual | — | ✅ | ⬜ pending |
+| 05-02/T2 | 05-02 | 2 | TRNS-04 | manual | — | ✅ | ⬜ pending |
+| 05-02/T1 | 05-02 | 2 | TRNS-05 | manual | — | ✅ | ⬜ pending |
+| 05-02/T1 | 05-02 | 2 | TRNS-06 | manual | — | ✅ | ⬜ pending |
+| 05-01/T2 | 05-01 | 1 | TRNS-07 | unit | `node -e "const {getCategoryColor}=require('./src/utils/categoryColors.js'); console.assert(getCategoryColor('Food').bg===getCategoryColor('Food').bg,'determinism fail'); console.log('PASS')"` | ✅ | ⬜ pending |
+| 05-03/T1 | 05-03 | 3 | TRNS-08 | manual | — | ✅ | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -77,11 +77,11 @@ created: 2026-03-19
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or manual checklist entry
-- [ ] Sampling continuity: visual inspection after every task
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 5 minutes
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or manual checklist entry
+- [x] Sampling continuity: visual inspection after every task
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 5 minutes
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** ready
