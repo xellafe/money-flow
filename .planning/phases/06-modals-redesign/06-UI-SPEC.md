@@ -64,13 +64,13 @@ Exceptions:
 | Role    | Size   | Weight          | Line Height | Usage in Phase 6                                          |
 |---------|--------|-----------------|-------------|-----------------------------------------------------------|
 | Body    | 14px   | 400 (regular)   | 1.5         | Modal body text, descriptions, form hints, list items     |
-| Label   | 14px   | 500 (medium)    | 1.4         | Form field labels, button text, table column headers      |
+| Label   | 14px   | 600 (semibold)  | 1.4         | Form field labels, button text, table column headers      |
 | Heading | 18px   | 600 (semibold)  | 1.2         | Modal title (Dialog.Title in ModalShell header row)       |
 | Caption | 12px   | 400 (regular)   | 1.4         | Helper text, secondary info, character counts in forms    |
 
 **Font family:** `'Inter Variable', system-ui, -apple-system, sans-serif` (from `--font-sans` token)
 
-**Weights declared:** 400 (regular) + 500 (medium) + 600 (semibold) — sourced from Inter Variable single variable font file.
+**Weights declared:** 400 (regular) + 600 (semibold) — 2 weights only, sourced from Inter Variable single variable font file.
 
 ---
 
@@ -108,6 +108,8 @@ File: src/components/ui/ModalShell.jsx
 API: <ModalShell title={string} onClose={fn} size="sm|lg">{children}</ModalShell>
 ```
 
+**Primary visual anchor:** `Dialog.Title` (18px / weight 600) — rendered as the first visible element in the modal header row; the first element the user's eye lands on when a modal opens.
+
 **Structure:**
 ```
 Dialog.Root open={true} onOpenChange → onClose
@@ -140,7 +142,7 @@ Each conditional modal render in App.jsx is wrapped with `<AnimatePresence>` —
 
 ### Button Variants (MOD-06)
 
-All buttons share base: `rounded-lg px-4 py-2 text-sm font-medium transition-colors`
+All buttons share base: `rounded-lg px-4 py-2 text-sm font-semibold transition-colors`
 
 | Variant     | Class                                       | Reserved For                              |
 |-------------|---------------------------------------------|-------------------------------------------|
@@ -183,7 +185,7 @@ Both modals have multi-action footers. Declared layout:
 |-------------------------|-----------------------------------------------------------|
 | Title (passed via prop) | Contextual — set by caller (e.g., "Elimina transazione") |
 | Body (passed via prop)  | Contextual — set by caller                                |
-| Primary CTA             | "Conferma"                                                |
+| Primary CTA             | "Conferma eliminazione"                                   |
 | Secondary / cancel      | "Annulla"                                                 |
 
 ### CategoryManager
@@ -192,8 +194,8 @@ Both modals have multi-action footers. Declared layout:
 |-------------------------|-----------------------------------------------|
 | Modal title             | "Gestione Categorie"                          |
 | Add category CTA        | "Aggiungi categoria"                          |
-| Save button             | "Salva"                                       |
-| Delete button           | "Elimina"                                     |
+| Save button             | "Salva categoria"                             |
+| Delete button           | "Elimina categoria"                           |
 | Empty state heading     | "Nessuna categoria"                           |
 | Empty state body        | "Aggiungi la prima categoria per organizzare le transazioni." |
 | Input placeholder       | "Nome categoria"                              |
@@ -214,7 +216,7 @@ Both modals have multi-action footers. Declared layout:
 | Element                 | Copy                                          |
 |-------------------------|-----------------------------------------------|
 | Modal title             | "Importa transazioni"                         |
-| Primary CTA             | "Importa"                                     |
+| Primary CTA             | "Importa file"                                |
 | Cancel button           | "Annulla"                                     |
 | Empty state / no file   | "Seleziona un file CSV o XLSX da importare."  |
 | Error state             | "File non riconosciuto. Verifica il formato e riprova." |
@@ -234,7 +236,7 @@ Both modals have multi-action footers. Declared layout:
 | Element                 | Copy                                          |
 |-------------------------|-----------------------------------------------|
 | Modal title             | "Conflitto categorie"                         |
-| Apply button            | "Applica"                                     |
+| Apply button            | "Applica modifica"                            |
 | Cancel button           | "Annulla"                                     |
 
 ### PayPalEnrichWizard
@@ -329,7 +331,7 @@ All timings consistent with Phase 3 200ms animation standard.
 | Inter Variable font | src/index.css @theme |
 | Pre-existing lint issue PayPalEnrichWizard line 200 — do NOT fix | 06-CONTEXT.md Specifics |
 | Old .modal-overlay / .modal CSS classes — remove after all 7 migrated | 06-CONTEXT.md Specifics |
-| Typography (body 14px/400, label 14px/500, heading 18px/600) | Inferred from button text-sm + existing patterns |
+| Typography (body 14px/400, label 14px/600, heading 18px/600) | Inferred from existing patterns; label remapped 500→600 per checker (revision 2) |
 | Italian copywriting locale | Established across all prior phases |
 
 ---
