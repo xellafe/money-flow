@@ -19,9 +19,6 @@ import {
   Upload,
   TrendingUp,
   TrendingDown,
-  Tag,
-  Search,
-  Trash2,
   Download,
   FileSpreadsheet,
   X,
@@ -41,8 +38,6 @@ import {
 } from "./constants";
 
 // Utils
-import { formatCurrency } from "./utils";
-
 // Components
 import {
   Toast,
@@ -59,6 +54,7 @@ import {
 import { AppLayout } from './components/layout/AppLayout';
 import { SettingsView } from './views/SettingsView';
 import { DashboardView } from './views/DashboardView';
+import { TransactionsView } from './views/TransactionsView';
 
 // Hooks
 import { useGoogleDrive, useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic, useViewState } from "./hooks";
@@ -73,7 +69,7 @@ export default function MoneyFlow() {
     editingTx, setEditingTx,
     editingDescription, setEditingDescription,
     newDescription, setNewDescription,
-    showAddTransaction, setShowAddTransaction,
+    setShowAddTransaction,
     showCategoryManager, setShowCategoryManager,
     showSyncSettings, setShowSyncSettings,
     newTransaction, setNewTransaction,
@@ -99,7 +95,6 @@ export default function MoneyFlow() {
     years,
     deleteTransaction,
     clearAllData,
-    addManualTransaction,
     updateTxCategory,
     updateTxDescription,
   } = useTransactionData({
@@ -124,6 +119,8 @@ export default function MoneyFlow() {
     currentPage, setCurrentPage,
     dashboardCategoryFilter, setDashboardCategoryFilter,
     transactionsCategoryFilter, setTransactionsCategoryFilter,
+    sortColumn, setSortColumn,
+    sortDirection, setSortDirection,
   } = useFilters({ years });
 
   // State per indicare se i dati iniziali sono stati caricati
@@ -611,297 +608,33 @@ export default function MoneyFlow() {
 
         {/* Transactions View */}
         {view === "transactions" && (
-          <div
-            className="card card-fullheight"
-            style={{ animation: "fadeIn 0.3s ease" }}
-          >
-            <div className="card-header">
-              <h3 className="card-title">
-                Movimenti ({stats.filtered.length})
-              </h3>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "0.75rem",
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <div className="search-wrapper">
-                  <Search className="search-icon" size={16} />
-                  <input
-                    type="text"
-                    placeholder="Cerca transazioni..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="search-input"
-                  />
-                </div>
-                <div className="transactions-category-filter">
-                  <select
-                    value={transactionsCategoryFilter || ""}
-                    onChange={(e) =>
-                      setTransactionsCategoryFilter(e.target.value || null)
-                    }
-                    className="category-filter-select-tx"
-                  >
-                    <option value="">Tutte le categorie</option>
-                    {stats.allCategories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                  {transactionsCategoryFilter && (
-                    <button
-                      className="filter-clear-btn"
-                      onClick={() => setTransactionsCategoryFilter(null)}
-                      title="Rimuovi filtro"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-                <button
-                  className="btn-primary"
-                  onClick={() => setShowAddTransaction(!showAddTransaction)}
-                  style={{ padding: "0.5rem 0.75rem" }}
-                >
-                  <Plus size={16} /> Aggiungi
-                </button>
-              </div>
-            </div>
-
-            {/* Form nuova transazione */}
-            {showAddTransaction && (
-              <div className="add-transaction-form">
-                <input
-                  type="date"
-                  value={newTransaction.date}
-                  onChange={(e) =>
-                    setNewTransaction((prev) => ({
-                      ...prev,
-                      date: e.target.value,
-                    }))
-                  }
-                  className="form-input"
-                />
-                <input
-                  type="text"
-                  placeholder="Descrizione *"
-                  value={newTransaction.description}
-                  onChange={(e) =>
-                    setNewTransaction((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  className="form-input"
-                  style={{ flex: 2 }}
-                />
-                <input
-                  type="text"
-                  placeholder="Importo *"
-                  value={newTransaction.amount}
-                  onChange={(e) =>
-                    setNewTransaction((prev) => ({
-                      ...prev,
-                      amount: e.target.value,
-                    }))
-                  }
-                  className="form-input"
-                  style={{ width: "120px" }}
-                />
-                <select
-                  value={newTransaction.category}
-                  onChange={(e) =>
-                    setNewTransaction((prev) => ({
-                      ...prev,
-                      category: e.target.value,
-                    }))
-                  }
-                  className="form-input"
-                >
-                  {Object.keys(categories)
-                    .sort((a, b) => a.localeCompare(b, "it"))
-                    .map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  <option value="Altro">Altro</option>
-                </select>
-                <button
-                  className="btn-primary"
-                  onClick={addManualTransaction}
-                  style={{ padding: "0.5rem 0.75rem" }}
-                >
-                  <Check size={16} />
-                </button>
-                <button
-                  className="btn-secondary"
-                  onClick={() => {
-                    setShowAddTransaction(false);
-                    setNewTransaction({
-                      date: "",
-                      description: "",
-                      amount: "",
-                      category: "Altro",
-                    });
-                  }}
-                  style={{ padding: "0.5rem 0.75rem" }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-
-            <div className="transactions-list">
-              {stats.filtered.length > 0 ? (
-                <>
-                  {stats.filtered
-                    .slice(
-                      (currentPage - 1) * ITEMS_PER_PAGE,
-                      currentPage * ITEMS_PER_PAGE,
-                    )
-                    .map((tx) => (
-                      <div key={tx.id} className="transaction-item">
-                        <div className="transaction-date">
-                          {new Date(tx.date).toLocaleDateString("it-IT")}
-                        </div>
-                        <div className="transaction-details">
-                          {editingDescription === tx.id ? (
-                            <input
-                              type="text"
-                              value={newDescription}
-                              onChange={(e) =>
-                                setNewDescription(e.target.value)
-                              }
-                              onBlur={() =>
-                                updateTxDescription(tx.id, newDescription)
-                              }
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter")
-                                  updateTxDescription(tx.id, newDescription);
-                                if (e.key === "Escape") {
-                                  setEditingDescription(null);
-                                  setNewDescription("");
-                                }
-                              }}
-                              autoFocus
-                              className="search-input"
-                              style={{
-                                paddingLeft: "0.5rem",
-                                fontSize: "0.875rem",
-                                marginBottom: "0.25rem",
-                              }}
-                            />
-                          ) : (
-                            <div
-                              className="transaction-description"
-                              onClick={() => {
-                                setEditingDescription(tx.id);
-                                setNewDescription(tx.description);
-                              }}
-                              style={{ cursor: "pointer" }}
-                              title="Clicca per modificare"
-                            >
-                              {tx.description}
-                            </div>
-                          )}
-                          {editingTx === tx.id ? (
-                            <select
-                              value={tx.category}
-                              onChange={(e) =>
-                                updateTxCategory(tx.id, e.target.value)
-                              }
-                              onBlur={() => setEditingTx(null)}
-                              autoFocus
-                              className="category-select"
-                            >
-                              {Object.keys(categories)
-                                .sort((a, b) => a.localeCompare(b, "it"))
-                                .map((c) => (
-                                  <option key={c} value={c}>
-                                    {c}
-                                  </option>
-                                ))}
-                              <option value="Altro">Altro</option>
-                            </select>
-                          ) : (
-                            <button
-                              onClick={() => setEditingTx(tx.id)}
-                              className="transaction-category"
-                            >
-                              <Tag size={10} /> {tx.category}
-                            </button>
-                          )}
-                        </div>
-                        <div
-                          className={`transaction-amount ${tx.amount >= 0 ? "positive" : "negative"}`}
-                        >
-                          {tx.amount >= 0 ? "+" : ""}
-                          {formatCurrency(tx.amount)}
-                        </div>
-                        <button
-                          className="btn-delete"
-                          onClick={() =>
-                            setConfirmDelete({ type: "single", id: tx.id })
-                          }
-                          title="Elimina transazione"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  {/* Paginazione */}
-                  {stats.filtered.length > ITEMS_PER_PAGE && (
-                    <div className="pagination">
-                      <button
-                        className="btn-secondary"
-                        onClick={() =>
-                          setCurrentPage((p) => Math.max(1, p - 1))
-                        }
-                        disabled={currentPage === 1}
-                      >
-                        ← Precedente
-                      </button>
-                      <span className="pagination-info">
-                        {(currentPage - 1) * ITEMS_PER_PAGE + 1} -{" "}
-                        {Math.min(
-                          currentPage * ITEMS_PER_PAGE,
-                          stats.filtered.length,
-                        )}{" "}
-                        di {stats.filtered.length} movimenti
-                      </span>
-                      <button
-                        className="btn-secondary"
-                        onClick={() =>
-                          setCurrentPage((p) =>
-                            Math.min(
-                              Math.ceil(stats.filtered.length / ITEMS_PER_PAGE),
-                              p + 1,
-                            ),
-                          )
-                        }
-                        disabled={
-                          currentPage >=
-                          Math.ceil(stats.filtered.length / ITEMS_PER_PAGE)
-                        }
-                      >
-                        Successiva →
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="empty-state">
-                  <Search className="empty-state-icon" />
-                  <p>Nessuna transazione trovata</p>
-                </div>
-              )}
-            </div>
-          </div>
+          <TransactionsView
+            transactions={stats.filtered}
+            allCategories={stats.allCategories}
+            categories={categories}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            transactionsCategoryFilter={transactionsCategoryFilter}
+            setTransactionsCategoryFilter={setTransactionsCategoryFilter}
+            sortColumn={sortColumn}
+            setSortColumn={setSortColumn}
+            sortDirection={sortDirection}
+            setSortDirection={setSortDirection}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            editingTx={editingTx}
+            setEditingTx={setEditingTx}
+            editingDescription={editingDescription}
+            setEditingDescription={setEditingDescription}
+            newDescription={newDescription}
+            setNewDescription={setNewDescription}
+            updateTxCategory={updateTxCategory}
+            updateTxDescription={updateTxDescription}
+            setConfirmDelete={setConfirmDelete}
+            onImport={() => document.getElementById('file-input')?.click()}
+          />
         )}
 
       {/* Settings View */}
@@ -1045,6 +778,15 @@ export default function MoneyFlow() {
           onClose={() => setCategoryConflicts(null)}
         />
       )}
+
+      {/* Hidden file input for import trigger (used by TransactionsView empty state CTA) */}
+      <input
+        id="file-input"
+        type="file"
+        style={{ display: 'none' }}
+        accept=".xlsx,.xls,.csv"
+        onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])}
+      />
     </AppLayout>
   );
 }
