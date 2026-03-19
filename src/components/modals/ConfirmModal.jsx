@@ -1,3 +1,5 @@
+import { ModalShell } from '../ui';
+
 /**
  * Modal di conferma per azioni distruttive
  * @param {Object} props
@@ -8,15 +10,22 @@
  */
 export default function ConfirmModal({ title, message, onConfirm, onCancel }) {
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <h3 className="modal-title">{title}</h3>
-        <p className="modal-message">{message}</p>
-        <div className="modal-actions">
-          <button className="btn-cancel" onClick={onCancel}>Annulla</button>
-          <button className="btn-danger" onClick={onConfirm}>Elimina</button>
-        </div>
+    <ModalShell title={title} onClose={onCancel} size="sm">
+      <p className="text-gray-600 mb-6">{message}</p>
+      <div className="flex justify-end gap-3">
+        <button
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          onClick={onCancel}
+        >
+          Annulla
+        </button>
+        <button
+          className="bg-red-600 hover:bg-red-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          onClick={onConfirm}
+        >
+          Conferma eliminazione
+        </button>
       </div>
-    </div>
+    </ModalShell>
   );
 }
