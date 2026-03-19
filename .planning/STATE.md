@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-03-19T15:48:50.028Z"
+status: executing
+last_updated: "2026-03-19T15:55:21.417Z"
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 21
-  completed_plans: 17
-  percent: 81
+  completed_plans: 18
+  percent: 86
 ---
 
 ---
@@ -41,9 +41,9 @@ progress:
 ## Current Position
 
 **Active Phase:** Phase 6: Modals/Forms Redesign — IN PROGRESS
-**Active Plan:** Plan 02 (Plan 01 complete ✅)
+**Active Plan:** Plan 04 (Plans 01-03 complete ✅)
 **Status:** Ready to execute
-**Progress:** [████████░░] 81%
+**Progress:** [█████████░] 86%
 
 ## Performance Metrics
 
@@ -87,6 +87,7 @@ progress:
 | Phase 05-transaction-list-redesign PP03 | 12m | 2 tasks | 2 files |
 | Phase 05-transaction-list-redesign PP04 | 5m | 1 tasks | 1 files |
 | Phase 06-modals-redesign P01 | 8m | 3 tasks | 4 files |
+| Phase 06-modals-redesign PP03 | 12m | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,8 @@ progress:
 | 2026-03-19 | showAddTransaction and addManualTransaction removed from App.jsx destructuring | Add transaction form removed with inline list; setShowAddTransaction kept for AppLayout prop; features to resurface in future plan | ✓ Auto-fixed |
 | 2026-03-19 | ModalShell uses Dialog.Root open={true} — parent AnimatePresence controls mount/unmount lifecycle | Radix Dialog.Root open={true} stays always open when mounted; AnimatePresence in App.jsx handles mount/unmount so exit animations play before DOM removal | ✓ Implemented |
 | 2026-03-19 | Radix asChild on Dialog.Overlay/Content delegates a11y props to motion.div | Standard Radix+Framer Motion pattern: asChild merges Radix accessibility attributes onto the motion.div element | ✓ Implemented |
+| 2026-03-19 | CategoryManager recategorize button moved into amber banner (bg-amber-50) — contextual, only shown when categoriesChanged | Cleaner UX: action is contextual and visually prominent; AlertCircle icon removed as redundant | ✓ Implemented |
+| 2026-03-19 | SettingsView props onShowCategoryManager/onShowSyncSettings consistent with App.jsx useModals naming convention | Zero friction wiring in App.jsx; follows same pattern as all other modal show/hide handlers | ✓ Implemented |
 
 ### Todos
 
@@ -148,6 +151,7 @@ progress:
 - [x] Execute Plan 04-04: Gap closure — DASH-03 (CSS var colors in AreaChartCard) + DASH-07 (donut cross-filter to transaction list) ✅
 - [x] Execute Plan 05-03: Create TransactionsView + wire into App.jsx ✅
 - [x] Execute Plan 06-01: Install @radix-ui/react-dialog, create ModalShell component + ui barrel export ✅
+- [x] Execute Plan 06-03: Migrate ImportWizard + CategoryManager to ModalShell; extend SettingsView with modal trigger buttons ✅
 
 ### Known Blockers
 
@@ -182,14 +186,14 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- **Last session:** 2026-03-19T16:46Z (plan 06-01 ModalShell)
-- Installed @radix-ui/react-dialog@1.1.15
-- Created src/components/ui/ModalShell.jsx (Radix Dialog + Framer Motion, sm/lg sizes, backdrop-blur)
-- Created src/components/ui/index.js barrel export
-- Build: ✓ exit 0; Lint: ✓ exit 0; MOD-01/02/03/04 requirements marked complete
+- **Last session:** 2026-03-19T17:05Z (plan 06-03 ImportWizard/CategoryManager/SettingsView)
+- Migrated ImportWizard to ModalShell with Tailwind form styling (space-y-4, focus:ring-brand-500, disabled:opacity-50)
+- Migrated CategoryManager to ModalShell with grid layout (grid-cols-1 md:grid-cols-2) and amber banner for categoriesChanged
+- Extended SettingsView with onShowCategoryManager + onShowSyncSettings modal trigger buttons
+- Build: ✓ exit 0; Lint: ✓ exit 0; MOD-05/MOD-06 requirements marked complete
 
 ### Next Session Context
-**Immediate next action:** Execute Plan 06-02 — migrate first set of modals to ModalShell
+**Immediate next action:** Execute Plan 06-04 — migrate SyncSettings and PayPalEnrichWizard to ModalShell
 
 **What to know:**
 - ModalShell is ready: `import { ModalShell } from '../ui'`

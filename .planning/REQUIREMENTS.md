@@ -56,8 +56,8 @@
 - [x] **MOD-02**: Animazione apertura/chiusura modale con scale + fade (200ms)
 - [x] **MOD-03**: Chiusura con ESC e click su backdrop
 - [x] **MOD-04**: Focus trap all'interno della modale (accessibilità)
-- [ ] **MOD-05**: Stile consistente per tutti i modali: ImportWizard, CategoryManager, SyncSettings, ConfirmModal, ConflictResolver, CategoryConflictResolver, PayPalEnrichWizard
-- [ ] **MOD-06**: Bottoni con stile primario/secondario/distruttivo coerente con design system
+- [x] **MOD-05**: Stile consistente per tutti i modali: ImportWizard, CategoryManager, SyncSettings, ConfirmModal, ConflictResolver, CategoryConflictResolver, PayPalEnrichWizard
+- [x] **MOD-06**: Bottoni con stile primario/secondario/distruttivo coerente con design system
 - [ ] **MOD-07**: Modali con scrolling interno per contenuto lungo (es. ImportWizard step 2)
 
 ### UX Polish
@@ -139,8 +139,8 @@
 | MOD-02 | Phase 6 | Complete |
 | MOD-03 | Phase 6 | Complete |
 | MOD-04 | Phase 6 | Complete |
-| MOD-05 | Phase 6 | Pending |
-| MOD-06 | Phase 6 | Pending |
+| MOD-05 | Phase 6 | Complete |
+| MOD-06 | Phase 6 | Complete |
 | MOD-07 | Phase 6 | Pending |
 | UX-01 | Phase 7 | Pending |
 | UX-02 | Phase 7 | Pending |
