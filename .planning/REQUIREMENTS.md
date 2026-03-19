@@ -47,7 +47,7 @@
 - [ ] **TRNS-04**: Barra filtri: ricerca testo inline (search-as-type), filtro categoria dropdown, filtro data range
 - [ ] **TRNS-05**: Inline editing: click su descrizione o categoria per editare direttamente nella riga
 - [ ] **TRNS-06**: Importo colorato (verde entrate, rosso uscite) con segno esplicito
-- [ ] **TRNS-07**: Badge colorato per categoria su ogni riga
+- [x] **TRNS-07**: Badge colorato per categoria su ogni riga
 - [ ] **TRNS-08**: Empty state quando non ci sono transazioni (illustrazione + CTA importa/aggiungi)
 
 ### Modals
@@ -133,7 +133,7 @@
 | TRNS-04 | Phase 5 | Pending |
 | TRNS-05 | Phase 5 | Pending |
 | TRNS-06 | Phase 5 | Pending |
-| TRNS-07 | Phase 5 | Pending |
+| TRNS-07 | Phase 5 | Complete |
 | TRNS-08 | Phase 5 | Pending |
 | MOD-01 | Phase 6 | Pending |
 | MOD-02 | Phase 6 | Pending |

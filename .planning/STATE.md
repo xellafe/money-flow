@@ -3,6 +3,20 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
+last_updated: "2026-03-19T12:08:35.439Z"
+progress:
+  total_phases: 7
+  completed_phases: 4
+  total_plans: 15
+  completed_plans: 13
+  percent: 87
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: planning
 last_updated: "2026-03-19T08:41:20.365Z"
 progress:
   total_phases: 7
@@ -26,10 +40,10 @@ progress:
 
 ## Current Position
 
-**Active Phase:** Phase 5: Transaction List Redesign — NOT STARTED
-**Active Plan:** N/A (Phase 4 complete, Phase 5 planning pending)
-**Status:** Ready to plan
-**Progress:** [██████████] 100%
+**Active Phase:** Phase 5: Transaction List Redesign — IN PROGRESS
+**Active Plan:** Plan 02 (Plan 01 complete ✅)
+**Status:** In progress
+**Progress:** [█████████░] 87%
 
 ## Performance Metrics
 
@@ -68,6 +82,7 @@ progress:
 | Phase 04-dashboard-redesign PP03 | 20m | 4 tasks | 3 files |
 | Phase 04-dashboard-redesign P04 | 12m | 2 tasks | 4 files |
 | Phase 04-dashboard-redesign P04 | 12m | 2 tasks | 4 files |
+| Phase 05-transaction-list-redesign P01 | 10m | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -103,6 +118,8 @@ progress:
 | 2026-03-18 | onTransactionsCategoryChange prop threads setTransactionsCategoryFilter from App.jsx through DashboardView — DASH-07 gap closed | Donut click now filters both dashboard stats AND transaction list; period change clears both | ✓ Implemented |
 | 2026-03-18 | dashboardTypeFilter removed from stats useMemo — new DashboardView uses DonutChartCard cross-filter instead | New dashboard design dropped income/expense type toggle; category cross-filter via DonutChart handles filtering | ✓ Implemented |
 | 2026-03-18 | Period navigation handlers declared before isInitialized early return — required for React rules of hooks | useCallback must be called unconditionally; moved above the early return guard | ✓ Auto-fixed |
+| 2026-03-19 | sortColumn defaults to 'date', sortDirection to 'desc' — newest-first per CONTEXT.md Decision B; sort change resets pagination | Consistent with UX expectation; sort state in useFilters follows established pattern | ✓ Implemented |
+| 2026-03-19 | Full Tailwind class strings in BADGE_PALETTE — dynamic interpolation purged by JIT; all 10 bg/text pairs stored as complete strings | Tailwind JIT requires literal class names at build time | ✓ Implemented |
 
 ### Todos
 
@@ -155,17 +172,20 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- **Last session:** Plan 04-04 COMPLETE — gap closure for DASH-03 and DASH-07.
-- getSemanticColors() added to chartColors.js; AreaChartCard reads income/expense colors from CSS vars at mount
-- onTransactionsCategoryChange wired from App.jsx through DashboardView; donut cross-filter now filters transaction list
-- Build: ✓ exit 0; Lint: ✓ exit 0 on all 4 modified files
+- **Last session:** 2026-03-19 (plan 05-01 execution)
+- Extended useFilters with sortColumn/sortDirection state (defaults: 'date', 'desc')
+- Created categoryColors.js utility with djb2 hash + BADGE_PALETTE (10 pastel colors)
+- Created CategoryBadge, FilterChip components and barrel export in src/components/transactions/
+- Build: ✓ exit 0; Lint: ✓ exit 0; getCategoryColor determinism verified
 
 ### Next Session Context
-**Immediate next action:** Phase 5 — Transaction List Redesign (planning phase)
+**Immediate next action:** Execute Plan 05-02 — TransactionRow + TransactionFilterBar components
 
 **What to know:**
-- Phase 4 Plans 01+02+03+04 all done — Phase 4 fully complete including gap closure
-- DashboardView renders: 2 stat cards (income/expense with % change) + AreaChart + DonutChart
+- Phase 5 Plan 01 done — foundation building blocks ready
+- useFilters now exports sortColumn + sortDirection (default 'date'/'desc')
+- src/components/transactions barrel exports CategoryBadge + FilterChip
+- getCategoryColor('Food') → {bg: 'bg-lime-100', text: 'text-lime-700'} (deterministic)
 - Period selector in AppHeader: prev/next arrows + month label + Tutti button
 - Stats null-year mode: selectedYear=null shows ALL transactions (Tutti mode)
 - Cross-filter: DonutChart segments → sets BOTH dashboardCategoryFilter AND transactionsCategoryFilter
