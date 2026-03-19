@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import { X, Check, AlertCircle, Search, Upload, CreditCard } from 'lucide-react';
+import { Check, AlertCircle, CreditCard } from 'lucide-react';
+import { ModalShell } from '../ui';
+import { AnimatePresence, motion } from 'framer-motion';
 
 /**
  * Configurazione colonne CSV PayPal
@@ -96,6 +98,26 @@ function amountsMatch(amount1, amount2, tolerance = 0.02) {
 }
 
 /**
+ * Step slide animation variants for wizard transitions
+ */
+const stepVariants = {
+  enter: (direction) => ({
+    x: direction > 0 ? 30 : -30,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    transition: { duration: 0.2, ease: 'easeOut' },
+  },
+  exit: (direction) => ({
+    x: direction > 0 ? -30 : 30,
+    opacity: 0,
+    transition: { duration: 0.2, ease: 'easeOut' },
+  }),
+};
+
+/**
  * Wizard per arricchire le transazioni bancarie con i dati PayPal
  */
 export default function PayPalEnrichWizard({ 
@@ -104,6 +126,8 @@ export default function PayPalEnrichWizard({
   onConfirm, 
   onCancel 
 }) {
+  const [step, setStep] = useState(1);
+  const [direction, setDirection] = useState(0); // 1 = forward, -1 = back
   const [selectedMatches, setSelectedMatches] = useState({});
 
   // Filtra transazioni PayPal valide
@@ -218,6 +242,16 @@ export default function PayPalEnrichWizard({
     setSelectedMatches({});
   };
 
+  const goNext = () => {
+    setDirection(1);
+    setStep(s => s + 1);
+  };
+
+  const goBack = () => {
+    setDirection(-1);
+    setStep(s => s - 1);
+  };
+
   const selectedCount = Object.values(selectedMatches).filter(Boolean).length;
 
   const handleConfirm = () => {
@@ -243,107 +277,200 @@ export default function PayPalEnrichWizard({
   };
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal modal-large" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px' }}>
-        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-            <CreditCard size={20} /> Arricchisci da PayPal
-          </h3>
-          <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}>
-            <X size={20} />
-          </button>
-        </div>
+    <ModalShell title="Arricchisci transazioni PayPal" onClose={onCancel} size="lg">
+      <AnimatePresence mode="wait" custom={direction}>
+        <motion.div
+          key={step}
+          custom={direction}
+          variants={stepVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+        >
+          {step === 1 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 text-gray-500 mb-4">
+                <CreditCard size={20} />
+                <span className="text-sm text-gray-600">
+                  Analizzati <strong>{validPayPalTransactions.length}</strong> transazioni PayPal
+                </span>
+              </div>
+              {matches.length > 0 ? (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="font-medium text-gray-800 mb-1">
+                    Trovate {matches.length} corrispondenze
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Nel passo successivo potrai selezionare quali descrizioni aggiornare con i dati PayPal.
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <AlertCircle size={48} className="mx-auto mb-4 opacity-50" />
+                  <p className="font-medium text-gray-700 mb-1">Nessuna corrispondenza trovata</p>
+                  <p className="text-sm">
+                    Assicurati che le transazioni bancarie contengano &quot;PayPal&quot; nella descrizione
+                    e che le date/importi corrispondano.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
-        {matches.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-gray-500)' }}>
-            <AlertCircle size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-            <p>Nessuna corrispondenza trovata.</p>
-            <p style={{ fontSize: '0.875rem' }}>
-              Assicurati che le transazioni bancarie contengano "PayPal" nella descrizione
-              e che le date/importi corrispondano.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ margin: 0, color: 'var(--color-gray-600)' }}>
-                Trovate <strong>{matches.length}</strong> corrispondenze. Seleziona quelle da applicare.
-              </p>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="btn-secondary" onClick={selectAll} style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>
-                  Seleziona tutti
-                </button>
-                <button className="btn-secondary" onClick={deselectAll} style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}>
-                  Deseleziona tutti
-                </button>
+          {step === 2 && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-sm text-gray-600">
+                  Trovate <strong>{matches.length}</strong> corrispondenze. Seleziona quelle da applicare.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={selectAll}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-3 py-1 text-xs font-medium transition-colors"
+                  >
+                    Seleziona tutti
+                  </button>
+                  <button
+                    onClick={deselectAll}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-3 py-1 text-xs font-medium transition-colors"
+                  >
+                    Deseleziona tutti
+                  </button>
+                </div>
+              </div>
+              <div className="border border-gray-200 rounded-lg overflow-hidden mb-6">
+                <div className="overflow-y-auto max-h-80">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-gray-100 z-10">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-medium text-gray-700 w-10"></th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-700">Data</th>
+                        <th className="px-4 py-3 text-right font-medium text-gray-700">Importo</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-700">Descrizione attuale</th>
+                        <th className="px-4 py-3 text-center font-medium text-gray-700 w-8">→</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-700">Nuova descrizione</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {matches.map((match, idx) => (
+                        <tr
+                          key={idx}
+                          onClick={() => toggleMatch(idx)}
+                          className={`cursor-pointer transition-colors ${
+                            selectedMatches[idx] ? 'bg-green-50' : 'bg-white hover:bg-gray-50'
+                          }`}
+                        >
+                          <td className="px-4 py-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={!!selectedMatches[idx]}
+                              onChange={() => toggleMatch(idx)}
+                              onClick={e => e.stopPropagation()}
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-gray-700">{formatDate(match.transaction.date)}</td>
+                          <td className={`px-4 py-3 text-right ${
+                            match.transaction.amount < 0 ? 'text-red-600' : 'text-green-600'
+                          }`}>
+                            {formatAmount(match.transaction.amount)}
+                          </td>
+                          <td className="px-4 py-3 max-w-[180px] truncate text-gray-600">
+                            {match.transaction.description}
+                          </td>
+                          <td className="px-4 py-3 text-center text-gray-400">→</td>
+                          <td className="px-4 py-3 font-medium text-brand-600">
+                            {match.newDescription}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
+          )}
 
-            <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid var(--color-gray-200)', borderRadius: '8px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                <thead style={{ position: 'sticky', top: 0, background: 'var(--color-gray-100)' }}>
-                  <tr>
-                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}></th>
-                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>Data</th>
-                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>Importo</th>
-                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>Descrizione attuale</th>
-                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', width: '40px' }}>→</th>
-                    <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left' }}>Nuova descrizione</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {matches.map((match, idx) => (
-                    <tr 
-                      key={idx} 
-                      onClick={() => toggleMatch(idx)}
-                      style={{ 
-                        cursor: 'pointer',
-                        background: selectedMatches[idx] ? 'var(--color-success-bg, #ecfdf5)' : 'transparent',
-                        borderBottom: '1px solid var(--color-gray-100)'
-                      }}
-                    >
-                      <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                        <input 
-                          type="checkbox" 
-                          checked={!!selectedMatches[idx]} 
-                          onChange={() => toggleMatch(idx)}
-                          onClick={e => e.stopPropagation()}
-                        />
-                      </td>
-                      <td style={{ padding: '0.5rem' }}>{formatDate(match.transaction.date)}</td>
-                      <td style={{ padding: '0.5rem', textAlign: 'right', color: match.transaction.amount < 0 ? 'var(--color-danger)' : 'var(--color-success)' }}>
-                        {formatAmount(match.transaction.amount)}
-                      </td>
-                      <td style={{ padding: '0.5rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {match.transaction.description}
-                      </td>
-                      <td style={{ padding: '0.5rem', textAlign: 'center', color: 'var(--color-gray-400)' }}>→</td>
-                      <td style={{ padding: '0.5rem', fontWeight: 500, color: 'var(--color-primary)' }}>
-                        {match.newDescription}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {step === 3 && (
+            <div className="mb-6">
+              <div className={`p-4 rounded-lg border mb-4 ${
+                selectedCount > 0 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Check size={20} className={selectedCount > 0 ? 'text-green-700' : 'text-gray-400'} />
+                  <span className={`font-medium ${selectedCount > 0 ? 'text-green-800' : 'text-gray-600'}`}>
+                    {selectedCount > 0
+                      ? `${selectedCount} ${selectedCount === 1 ? 'modifica pronta' : 'modifiche pronte'} da applicare`
+                      : 'Nessuna modifica selezionata'}
+                  </span>
+                </div>
+                {selectedCount > 0 && (
+                  <p className="text-sm text-green-700">
+                    Le descrizioni selezionate verranno aggiornate con i dati PayPal.
+                  </p>
+                )}
+              </div>
+              {selectedCount > 0 && (
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="overflow-y-auto max-h-64">
+                    <table className="w-full text-sm">
+                      <thead className="sticky top-0 bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 text-left font-medium text-gray-700">Data</th>
+                          <th className="px-4 py-2 text-left font-medium text-gray-700">Nuova descrizione</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {matches.filter((_, idx) => selectedMatches[idx]).map((match, i) => (
+                          <tr key={i} className="bg-white">
+                            <td className="px-4 py-2 text-gray-600">{formatDate(match.transaction.date)}</td>
+                            <td className="px-4 py-2 font-medium text-brand-600">{match.newDescription}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
-          </>
-        )}
+          )}
+        </motion.div>
+      </AnimatePresence>
 
-        <div className="modal-actions" style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-          <button className="btn-secondary" onClick={onCancel}>
+      {/* Footer navigation */}
+      <div className="flex justify-between pt-4 border-t border-gray-200">
+        <button
+          onClick={goBack}
+          disabled={step === 1}
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Indietro
+        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          >
             Annulla
           </button>
-          {matches.length > 0 && (
-            <button 
-              className="btn-primary" 
+          {step < 3 ? (
+            <button
+              onClick={goNext}
+              disabled={matches.length === 0 && step === 1}
+              className="bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Continua
+            </button>
+          ) : (
+            <button
               onClick={handleConfirm}
               disabled={selectedCount === 0}
+              className="bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Check size={16} /> Applica {selectedCount} modifiche
+              Applica modifiche
             </button>
           )}
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
