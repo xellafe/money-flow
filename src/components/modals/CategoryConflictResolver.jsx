@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { AlertCircle, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { ModalShell } from '../ui';
 
 /**
  * Modal per risolvere conflitti di categoria durante la ricategorizzazione
@@ -29,57 +30,59 @@ export default function CategoryConflictResolver({ conflicts, onConfirm, onClose
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-large" onClick={e => e.stopPropagation()}>
-        <h3 className="modal-title">
-          <AlertCircle size={20} /> Conflitti di categoria
-        </h3>
-        
-        <p className="modal-message">
-          Alcune transazioni matchano keyword di più categorie. 
-          Di default viene usata la keyword più lunga (più specifica).
-          Puoi modificare la scelta per ogni transazione.
-        </p>
+    <ModalShell title="Conflitto categorie" onClose={onClose} size="sm">
+      <p className="text-gray-600 mb-4">
+        Alcune transazioni matchano keyword di più categorie. 
+        Di default viene usata la keyword più lunga (più specifica).
+        Puoi modificare la scelta per ogni transazione.
+      </p>
 
-        <div className="conflict-list">
-          {conflicts.map((conflict) => (
-            <div key={conflict.txId} className="conflict-item">
-              <div className="conflict-descriptions">
-                <div className="conflict-existing">
-                  <span className="conflict-text" style={{ fontWeight: 500 }}>{conflict.description}</span>
-                </div>
-                <div className="conflict-new" style={{ marginTop: '0.5rem' }}>
-                  <span className="conflict-label">Categorie trovate:</span>
-                  <span className="conflict-text">
-                    {conflict.matches.map(m => `${m.category} (${m.keyword})`).join(', ')}
-                  </span>
-                </div>
-              </div>
-              <div className="conflict-decision" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                {conflict.matches.map(m => (
-                  <label key={m.category} className={choices[conflict.txId] === m.category ? 'selected' : ''}>
-                    <input
-                      type="radio"
-                      checked={choices[conflict.txId] === m.category}
-                      onChange={() => setChoices(prev => ({ ...prev, [conflict.txId]: m.category }))}
-                    />
-                    {m.category} <small style={{ color: 'var(--color-gray-500)' }}>({m.keyword})</small>
-                  </label>
-                ))}
-              </div>
+      <div className="space-y-4 mb-6">
+        {conflicts.map((conflict) => (
+          <div key={conflict.txId} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="font-medium text-gray-800 mb-2">{conflict.description}</p>
+            <p className="text-sm text-gray-500 mb-3">
+              Categorie trovate: {conflict.matches.map(m => `${m.category} (${m.keyword})`).join(', ')}
+            </p>
+            <div className="flex flex-col gap-2">
+              {conflict.matches.map(m => (
+                <label
+                  key={m.category}
+                  className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg border ${
+                    choices[conflict.txId] === m.category
+                      ? 'border-brand-600 bg-brand-50'
+                      : 'border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    checked={choices[conflict.txId] === m.category}
+                    onChange={() => setChoices(prev => ({ ...prev, [conflict.txId]: m.category }))}
+                    className="accent-brand-600"
+                  />
+                  <span>{m.category}</span>
+                  <span className="text-gray-500 text-sm">({m.keyword})</span>
+                </label>
+              ))}
             </div>
-          ))}
-        </div>
-
-        <div className="modal-actions">
-          <button className="btn-secondary" onClick={onClose}>
-            Annulla
-          </button>
-          <button className="btn-primary" onClick={handleConfirm}>
-            <Check size={16} /> Conferma
-          </button>
-        </div>
+          </div>
+        ))}
       </div>
-    </div>
+
+      <div className="flex justify-end gap-3">
+        <button
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          onClick={onClose}
+        >
+          Annulla
+        </button>
+        <button
+          className="bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2"
+          onClick={handleConfirm}
+        >
+          <Check size={16} /> Applica modifica
+        </button>
+      </div>
+    </ModalShell>
   );
 }
