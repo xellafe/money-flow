@@ -642,84 +642,93 @@ export default function MoneyFlow() {
       {view === 'settings' && <SettingsView />}
 
       {/* Category Manager Modal */}
-      {showCategoryManager && (
-        <CategoryManager
-          categories={categories}
-          categoriesChanged={categoriesChanged}
-          onAddCategory={addCategory}
-          onDeleteCategory={deleteCategory}
-          onAddKeyword={addKeyword}
-          onRemoveKeyword={removeKeyword}
-          onRecategorize={() => recategorizeAll(transactions, categoryResolutions, setTransactions)}
-          onClose={() => setShowCategoryManager(false)}
-        />
-      )}
+      <AnimatePresence>
+        {showCategoryManager && (
+          <CategoryManager
+            key="category-manager"
+            categories={categories}
+            categoriesChanged={categoriesChanged}
+            onAddCategory={addCategory}
+            onDeleteCategory={deleteCategory}
+            onAddKeyword={addKeyword}
+            onRemoveKeyword={removeKeyword}
+            onRecategorize={() => recategorizeAll(transactions, categoryResolutions, setTransactions)}
+            onClose={() => setShowCategoryManager(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sync Settings Modal */}
-      {showSyncSettings && (
-        <SyncSettings
-          isAuthenticated={googleDrive.isAuthenticated}
-          hasDrivePermission={googleDrive.hasDrivePermission}
-          isLoading={googleDrive.isLoading}
-          userInfo={googleDrive.userInfo}
-          backupInfo={googleDrive.backupInfo}
-          lastSyncTime={googleDrive.lastSyncTime}
-          syncStatus={googleDrive.syncStatus}
-          error={googleDrive.error}
-          onSignIn={async () => {
-            const result = await googleDrive.signIn();
-            if (result.success) showToast("Connesso a Google Drive");
-            else if (!result.cancelled) showToast(result.error, "error");
-          }}
-          onCancelSignIn={() => {
-            googleDrive.cancelSignIn();
-          }}
-          onSignOut={async () => {
-            const result = await googleDrive.signOut();
-            if (result.success) showToast("Disconnesso da Google Drive");
-          }}
-          onUpload={async () => {
-            const data = { transactions, categories, importProfiles, categoryResolutions };
-            const result = await googleDrive.uploadBackup(data);
-            if (result.success) showToast("Backup salvato su Google Drive");
-            else showToast(result.error, "error");
-          }}
-          onDownload={async () => {
-            const result = await googleDrive.downloadBackup();
-            if (result.success && result.data) {
-              if (
-                confirm(
-                  `Sostituire i dati attuali con il backup di Google Drive?\n(${result.data.transactions?.length || 0} transazioni)`,
-                )
-              ) {
-                setTransactions(result.data.transactions || []);
-                setCategories(result.data.categories || DEFAULT_CATEGORIES);
-                setImportProfiles(result.data.importProfiles || {});
-                setCategoryResolutions(result.data.categoryResolutions || {});
-                showToast("Dati ripristinati da Google Drive");
+      <AnimatePresence>
+        {showSyncSettings && (
+          <SyncSettings
+            key="sync-settings"
+            isAuthenticated={googleDrive.isAuthenticated}
+            hasDrivePermission={googleDrive.hasDrivePermission}
+            isLoading={googleDrive.isLoading}
+            userInfo={googleDrive.userInfo}
+            backupInfo={googleDrive.backupInfo}
+            lastSyncTime={googleDrive.lastSyncTime}
+            syncStatus={googleDrive.syncStatus}
+            error={googleDrive.error}
+            onSignIn={async () => {
+              const result = await googleDrive.signIn();
+              if (result.success) showToast("Connesso a Google Drive");
+              else if (!result.cancelled) showToast(result.error, "error");
+            }}
+            onCancelSignIn={() => {
+              googleDrive.cancelSignIn();
+            }}
+            onSignOut={async () => {
+              const result = await googleDrive.signOut();
+              if (result.success) showToast("Disconnesso da Google Drive");
+            }}
+            onUpload={async () => {
+              const data = { transactions, categories, importProfiles, categoryResolutions };
+              const result = await googleDrive.uploadBackup(data);
+              if (result.success) showToast("Backup salvato su Google Drive");
+              else showToast(result.error, "error");
+            }}
+            onDownload={async () => {
+              const result = await googleDrive.downloadBackup();
+              if (result.success && result.data) {
+                if (
+                  confirm(
+                    `Sostituire i dati attuali con il backup di Google Drive?\n(${result.data.transactions?.length || 0} transazioni)`,
+                  )
+                ) {
+                  setTransactions(result.data.transactions || []);
+                  setCategories(result.data.categories || DEFAULT_CATEGORIES);
+                  setImportProfiles(result.data.importProfiles || {});
+                  setCategoryResolutions(result.data.categoryResolutions || {});
+                  showToast("Dati ripristinati da Google Drive");
+                }
+              } else {
+                showToast(result.error || "Nessun backup trovato", "error");
               }
-            } else {
-              showToast(result.error || "Nessun backup trovato", "error");
-            }
-          }}
-          onDelete={async () => {
-            const result = await googleDrive.deleteBackup();
-            if (result.success) showToast("Backup eliminato da Google Drive");
-            else showToast(result.error, "error");
-          }}
-          onClose={() => setShowSyncSettings(false)}
-        />
-      )}
+            }}
+            onDelete={async () => {
+              const result = await googleDrive.deleteBackup();
+              if (result.success) showToast("Backup eliminato da Google Drive");
+              else showToast(result.error, "error");
+            }}
+            onClose={() => setShowSyncSettings(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* PayPal Enrich Wizard */}
-      {paypalData && (
-        <PayPalEnrichWizard
-          transactions={transactions}
-          paypalData={paypalData}
-          onConfirm={applyPayPalEnrichment}
-          onCancel={() => setPaypalData(null)}
-        />
-      )}
+      <AnimatePresence>
+        {paypalData && (
+          <PayPalEnrichWizard
+            key="paypal-enrich-wizard"
+            transactions={transactions}
+            paypalData={paypalData}
+            onConfirm={applyPayPalEnrichment}
+            onCancel={() => setPaypalData(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Toast */}
       {toast && (
@@ -731,54 +740,66 @@ export default function MoneyFlow() {
       )}
 
       {/* Confirm Modal */}
-      {confirmDelete && (
-        <ConfirmModal
-          title={
-            confirmDelete.type === "all"
-              ? "Elimina tutti i dati"
-              : "Elimina transazione"
-          }
-          message={
-            confirmDelete.type === "all"
-              ? "Sei sicuro di voler eliminare tutte le transazioni? Questa azione non può essere annullata."
-              : "Sei sicuro di voler eliminare questa transazione?"
-          }
-          onConfirm={() =>
-            confirmDelete.type === "all"
-              ? clearAllData()
-              : deleteTransaction(confirmDelete.id)
-          }
-          onCancel={() => setConfirmDelete(null)}
-        />
-      )}
+      <AnimatePresence>
+        {confirmDelete && (
+          <ConfirmModal
+            key="confirm-modal"
+            title={
+              confirmDelete.type === "all"
+                ? "Elimina tutti i dati"
+                : "Elimina transazione"
+            }
+            message={
+              confirmDelete.type === "all"
+                ? "Sei sicuro di voler eliminare tutte le transazioni? Questa azione non può essere annullata."
+                : "Sei sicuro di voler eliminare questa transazione?"
+            }
+            onConfirm={() =>
+              confirmDelete.type === "all"
+                ? clearAllData()
+                : deleteTransaction(confirmDelete.id)
+            }
+            onCancel={() => setConfirmDelete(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Import Wizard Modal */}
-      {wizardData && (
-        <ImportWizard
-          columns={wizardData.columns}
-          sampleData={wizardData.sampleData}
-          onConfirm={handleWizardConfirm}
-          onCancel={() => setWizardData(null)}
-        />
-      )}
+      <AnimatePresence>
+        {wizardData && (
+          <ImportWizard
+            key="import-wizard"
+            columns={wizardData.columns}
+            sampleData={wizardData.sampleData}
+            onConfirm={handleWizardConfirm}
+            onCancel={() => setWizardData(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Conflict Resolver Modal */}
-      {importConflicts && (
-        <ConflictResolver
-          conflicts={importConflicts.conflicts}
-          onResolve={handleConflictResolve}
-          onCancel={() => setImportConflicts(null)}
-        />
-      )}
+      <AnimatePresence>
+        {importConflicts && (
+          <ConflictResolver
+            key="conflict-resolver"
+            conflicts={importConflicts.conflicts}
+            onResolve={handleConflictResolve}
+            onCancel={() => setImportConflicts(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Category Conflict Resolver Modal */}
-      {categoryConflicts && (
-        <CategoryConflictResolver
-          conflicts={categoryConflicts}
-          onConfirm={confirmCategoryConflicts}
-          onClose={() => setCategoryConflicts(null)}
-        />
-      )}
+      <AnimatePresence>
+        {categoryConflicts && (
+          <CategoryConflictResolver
+            key="category-conflict-resolver"
+            conflicts={categoryConflicts}
+            onConfirm={confirmCategoryConflicts}
+            onClose={() => setCategoryConflicts(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Hidden file input for import trigger (used by TransactionsView empty state CTA) */}
       <input
