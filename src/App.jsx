@@ -639,7 +639,12 @@ export default function MoneyFlow() {
         )}
 
       {/* Settings View */}
-      {view === 'settings' && <SettingsView />}
+      {view === 'settings' && (
+        <SettingsView
+          onShowCategoryManager={() => setShowCategoryManager(true)}
+          onShowSyncSettings={() => setShowSyncSettings(true)}
+        />
+      )}
 
       {/* Category Manager Modal */}
       <AnimatePresence>
