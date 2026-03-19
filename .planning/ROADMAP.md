@@ -153,7 +153,13 @@ Plans:
 4. All modals use consistent button styles (primary/secondary/destructive) from design system
 5. Long-content modals (ImportWizard step 2) scroll internally without breaking layout
 
-**Plans:** TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Foundation: Install Radix Dialog, create ModalShell wrapper, create ui/ barrel
+- [ ] 06-02-PLAN.md — Simple modals: Migrate ConfirmModal, CategoryConflictResolver, ConflictResolver
+- [ ] 06-03-PLAN.md — Complex modals: Migrate ImportWizard, CategoryManager, SyncSettings, PayPalEnrichWizard + SettingsView buttons
+- [ ] 06-04-PLAN.md — Wiring: AnimatePresence wrappers in App.jsx + SettingsView prop threading
 
 ---
 
