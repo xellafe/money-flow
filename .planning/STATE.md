@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-last_updated: "2026-03-19T13:20:40.264Z"
+last_updated: "2026-03-19T15:48:50.028Z"
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 16
-  completed_plans: 16
-  percent: 100
+  total_plans: 21
+  completed_plans: 17
+  percent: 81
 ---
 
 ---
@@ -28,7 +28,7 @@ progress:
 
 # Project State: MoneyFlow UI/UX Redesign
 
-**Last Updated:** 2026-03-18 (plan 04-04 gap closure execution)
+**Last Updated:** 2026-03-19 (plan 06-01 ModalShell foundation)
 
 ## Project Reference
 
@@ -36,14 +36,14 @@ progress:
 
 **Mission:** Transform MoneyFlow from custom CSS chaos (2,127-line App.jsx monolith) to a modern, maintainable UI/UX with Tailwind v4, preserving all existing functionality while introducing light clean minimal design (Notion/Apple inspiration).
 
-**Current Focus:** Phase 5 — Transaction List Redesign (Phase 4 Dashboard Redesign fully complete ✅)
+**Current Focus:** Phase 6 — Modals/Forms Redesign (Phase 5 Transaction List fully complete ✅)
 
 ## Current Position
 
-**Active Phase:** Phase 5: Transaction List Redesign — IN PROGRESS
+**Active Phase:** Phase 6: Modals/Forms Redesign — IN PROGRESS
 **Active Plan:** Plan 02 (Plan 01 complete ✅)
-**Status:** Ready to plan
-**Progress:** [██████████] 100%
+**Status:** Ready to execute
+**Progress:** [████████░░] 81%
 
 ## Performance Metrics
 
@@ -86,6 +86,7 @@ progress:
 | Phase 05-transaction-list-redesign P02 | 2m | 3 tasks | 3 files |
 | Phase 05-transaction-list-redesign PP03 | 12m | 2 tasks | 2 files |
 | Phase 05-transaction-list-redesign PP04 | 5m | 1 tasks | 1 files |
+| Phase 06-modals-redesign P01 | 8m | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -126,6 +127,8 @@ progress:
 | 2026-03-19 | Categoria sort removed per Decision A stacked layout — only Date + Importo sortable (TRNS-02) | Decision A stacked layout eliminates separate category column header; TRNS-02 scoped to date + importo only | ✓ Implemented |
 | 2026-03-19 | Hidden file-input id=file-input added unconditionally in App.jsx for empty state import CTA | Existing file input was conditional on transactions.length === 0; persistent input needed for TransactionsView empty state | ✓ Implemented |
 | 2026-03-19 | showAddTransaction and addManualTransaction removed from App.jsx destructuring | Add transaction form removed with inline list; setShowAddTransaction kept for AppLayout prop; features to resurface in future plan | ✓ Auto-fixed |
+| 2026-03-19 | ModalShell uses Dialog.Root open={true} — parent AnimatePresence controls mount/unmount lifecycle | Radix Dialog.Root open={true} stays always open when mounted; AnimatePresence in App.jsx handles mount/unmount so exit animations play before DOM removal | ✓ Implemented |
+| 2026-03-19 | Radix asChild on Dialog.Overlay/Content delegates a11y props to motion.div | Standard Radix+Framer Motion pattern: asChild merges Radix accessibility attributes onto the motion.div element | ✓ Implemented |
 
 ### Todos
 
@@ -144,6 +147,7 @@ progress:
 - [x] Execute Plan 04-03: Wire DashboardView + PeriodSelector + period handlers in App.jsx ✅ (Electron smoke test approved — all 7 verification categories passed)
 - [x] Execute Plan 04-04: Gap closure — DASH-03 (CSS var colors in AreaChartCard) + DASH-07 (donut cross-filter to transaction list) ✅
 - [x] Execute Plan 05-03: Create TransactionsView + wire into App.jsx ✅
+- [x] Execute Plan 06-01: Install @radix-ui/react-dialog, create ModalShell component + ui barrel export ✅
 
 ### Known Blockers
 
@@ -178,22 +182,21 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- **Last session:** 2026-03-19T13:16:50.421Z
-- Extended useFilters with sortColumn/sortDirection state (defaults: 'date', 'desc')
-- Created categoryColors.js utility with djb2 hash + BADGE_PALETTE (10 pastel colors)
-- Created CategoryBadge, FilterChip components and barrel export in src/components/transactions/
-- Build: ✓ exit 0; Lint: ✓ exit 0; getCategoryColor determinism verified
+- **Last session:** 2026-03-19T16:46Z (plan 06-01 ModalShell)
+- Installed @radix-ui/react-dialog@1.1.15
+- Created src/components/ui/ModalShell.jsx (Radix Dialog + Framer Motion, sm/lg sizes, backdrop-blur)
+- Created src/components/ui/index.js barrel export
+- Build: ✓ exit 0; Lint: ✓ exit 0; MOD-01/02/03/04 requirements marked complete
 
 ### Next Session Context
-**Immediate next action:** Phase 5 complete — execute Phase 6 (Modals/Forms Redesign) or verify TransactionsView in Electron smoke test
+**Immediate next action:** Execute Plan 06-02 — migrate first set of modals to ModalShell
 
 **What to know:**
-- Phase 5 all 3 plans done — TransactionsView fully assembled and wired
-- TransactionsView: sortable sticky header (date + amount only), AnimatePresence pagination, EmptyState variants
-- App.jsx: inline transaction list (~100 lines) replaced with <TransactionsView> component
-- sortColumn/sortDirection added to useFilters destructuring in App.jsx
-- showAddTransaction and addManualTransaction removed (add transaction form to resurface in future plan)
-- Hidden file input (id=file-input) persists in DOM for import CTA
+- ModalShell is ready: `import { ModalShell } from '../ui'`
+- Radix Dialog handles: focus trap, ESC close, backdrop click close
+- Framer Motion handles: 200ms scale+fade enter, 150ms exit
+- AnimatePresence must wrap ModalShell in App.jsx for exit animations to work
+- size="sm" (max-w-md) for ConfirmModal/CategoryConflictResolver; size="lg" (max-w-2xl) for ImportWizard/SyncSettings/CategoryManager/PayPalEnrichWizard/ConflictResolver
 
 ### Environment State
 - Working directory: `D:\Generale\budget-tracker`
