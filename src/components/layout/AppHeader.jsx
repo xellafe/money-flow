@@ -49,8 +49,8 @@ export function AppHeader({
         )}
       </div>
 
-      {/* Period selector row — dashboard only */}
-      {view === 'dashboard' && (
+      {/* Period selector row — dashboard and transactions */}
+      {(view === 'dashboard' || view === 'transactions') && (
         <div className="flex items-center gap-3 px-6 pb-3">
           {/* Year nav */}
           <div className="flex items-center gap-0.5 shrink-0">
