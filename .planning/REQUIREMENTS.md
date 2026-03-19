@@ -42,9 +42,9 @@
 ### Transactions
 
 - [x] **TRNS-01**: Tabella transazioni con colonne: Data, Descrizione, Categoria, Importo
-- [x] **TRNS-02**: Sorting cliccabile su ogni colonna (data, importo, categoria)
+- [x] **TRNS-02**: Sorting cliccabile su colonne Data e Importo (categoria sort rimosso — layout stacked Decision A elimina colonna Categoria separata; vedi 05-CONTEXT.md §A)
 - [x] **TRNS-03**: Paginazione pulita con contatore "X-Y di Z transazioni"
-- [x] **TRNS-04**: Barra filtri: ricerca testo inline (search-as-type), filtro categoria dropdown, filtro data range
+- [x] **TRNS-04**: Barra filtri: ricerca testo inline (search-as-type), filtro categoria dropdown (filtro data range differito a Phase 7/v2 — anno/mese via AppHeader; vedi 05-CONTEXT.md §C e Deferred Ideas)
 - [x] **TRNS-05**: Inline editing: click su descrizione o categoria per editare direttamente nella riga
 - [x] **TRNS-06**: Importo colorato (verde entrate, rosso uscite) con segno esplicito
 - [x] **TRNS-07**: Badge colorato per categoria su ogni riga
