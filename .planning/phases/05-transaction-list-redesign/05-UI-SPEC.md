@@ -54,12 +54,14 @@ All text uses `font-sans` → Inter Variable. Exactly 4 roles declared for this 
 
 | Role | Size | Tailwind class | Weight | Line Height | Usage |
 |------|------|----------------|--------|-------------|-------|
-| Meta | 12px | `text-xs` | 500 (medium) `font-medium` | 1.3 | Column header labels (uppercase, tracked); row date string; badge text; filter chip text; pagination counter |
+| Meta | 12px | `text-xs` | 400 (regular) `font-normal` | 1.3 | Column header labels (uppercase, tracked); row date string; badge text; filter chip text; pagination counter |
 | Body | 14px | `text-sm` | 400 (regular) `font-normal` | 1.5 | Row description text; category name in badge; empty state body copy; inline edit placeholder |
 | Emphasis | 14px | `text-sm` | 600 (semibold) `font-semibold` | 1.5 | Amount values (income green / expense red); active sort column header; inline edit input value |
 | Subheading | 16px | `text-base` | 600 (semibold) `font-semibold` | 1.4 | Empty state heading only |
 
-**Column header style:** `text-xs font-medium text-gray-500 uppercase tracking-wide`
+**2-weight system:** `font-normal` (400) for Meta + Body · `font-semibold` (600) for Emphasis + Subheading. Column header distinction is achieved via `text-xs`, `uppercase`, `tracking-wide`, and `text-gray-500` — no third weight needed.
+
+**Column header style:** `text-xs font-normal text-gray-500 uppercase tracking-wide`
 **Row date style:** `text-xs font-normal text-gray-400`
 **Row description style:** `text-sm font-normal text-gray-800`
 **Amount positive style:** `text-sm font-semibold text-income-500` (renders "+€ 1.200,00")
@@ -84,6 +86,7 @@ Design tokens are already defined in `src/index.css` via `@theme`. No new tokens
 2. Filter chip background (`bg-blue-100 text-blue-700` via brand palette equivalent)
 3. Search input focus ring (`focus:ring-1 focus:ring-brand-500 focus:border-brand-500`)
 4. Dismissible chip × button hover (`hover:text-brand-900`)
+5. Focus rings on all interactive elements (`focus:ring-1 focus:ring-brand-500`) — WCAG 2.1 SC 2.4.7 (Focus Visible) requires a visible keyboard focus indicator; brand-500 (#3b82f6) provides ≥ 3:1 contrast ratio against white backgrounds
 
 **Dividers:** `border-gray-100` between rows; `border-gray-200` on sticky header bottom border
 **Row hover:** `hover:bg-gray-50` (subtle — row already on white)
@@ -113,6 +116,8 @@ Hash algorithm: djb2 (`hash = ((hash << 5) + hash) ^ charCode`) % 10 — source 
 
 ## Component Layout Contracts
 
+**Primary focal point:** Amount column (`text-sm font-semibold`, income/expense color) — first visual anchor after the filter bar. Income green (`text-income-500`) and expense red (`text-expense-500`) draw the eye to financial significance before any other row element.
+
 ### TransactionsView (root)
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -141,7 +146,7 @@ Grid columns: `grid grid-cols-[120px_1fr_180px_120px_40px]`
 - Col 4 — Importo: sortable, right-aligned, width 120px
 - Col 5 — (delete col): width 40px, empty header
 
-Style: `px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide`
+Style: `px-4 py-2 text-xs font-normal text-gray-500 uppercase tracking-wide`
 
 ### TransactionRow Layout
 Same grid as header: `grid grid-cols-[120px_1fr_180px_120px_40px] px-4 py-3 items-center`
@@ -154,7 +159,7 @@ Same grid as header: `grid grid-cols-[120px_1fr_180px_120px_40px] px-4 py-3 item
   ```
 - **Col 3 — Category badge:**
   ```
-  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {bg} {text}">
+  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-normal {bg} {text}">
     <Tag size={12} /> {categoryName}
   </span>
   ```
@@ -320,7 +325,7 @@ No new packages required. All dependencies already installed.
 - Filter chips with × button: `aria-label="Rimuovi filtro {name}"` on the × button
 - Empty state icon: `aria-hidden="true"` on InboxIcon / SearchX (decorative)
 - Search input: `aria-label="Cerca transazioni"` (in addition to placeholder)
-- Focus ring: `focus:ring-1 focus:ring-brand-500` on all interactive elements — matches existing codebase pattern from `src/index.css`
+- Focus ring: `focus:ring-1 focus:ring-brand-500` on all interactive elements — listed as Accent item 5 in Color section; WCAG 2.1 SC 2.4.7 (Focus Visible) compliant; matches existing codebase pattern from `src/index.css`
 
 ---
 
