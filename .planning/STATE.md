@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-19T15:57:00.309Z"
+last_updated: "2026-03-19T15:59:25.311Z"
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 21
-  completed_plans: 19
-  percent: 90
+  completed_plans: 20
+  percent: 95
 ---
 
 ---
@@ -41,9 +41,9 @@ progress:
 ## Current Position
 
 **Active Phase:** Phase 6: Modals/Forms Redesign — IN PROGRESS
-**Active Plan:** Plan 04 (Plans 01-03 complete ✅)
+**Active Plan:** Plan 05 (Plans 01-04 complete ✅)
 **Status:** Ready to execute
-**Progress:** [█████████░] 90%
+**Progress:** [██████████] 95%
 
 ## Performance Metrics
 
@@ -89,6 +89,7 @@ progress:
 | Phase 06-modals-redesign P01 | 8m | 3 tasks | 4 files |
 | Phase 06-modals-redesign PP03 | 12m | 3 tasks | 3 files |
 | Phase 06-modals-redesign PP02 | 8m | 3 tasks | 3 files |
+| Phase 06-modals-redesign PP04 | 5m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -135,6 +136,8 @@ progress:
 | 2026-03-19 | SettingsView props onShowCategoryManager/onShowSyncSettings consistent with App.jsx useModals naming convention | Zero friction wiring in App.jsx; follows same pattern as all other modal show/hide handlers | ✓ Implemented |
 | 2026-03-19 | ConflictResolver: single-conflict navigator with currentIndex (not all-at-once list) — onResolve(toReplace, toAdd) API preserved | Better UX: focused one-at-a-time review; counter shows progress | ✓ Implemented |
 | 2026-03-19 | ConflictResolver: local formatAmount helper replaces formatCurrency import — sign+euro semantic format | Self-contained modal; semantic income-500/expense-500 colors for amounts | ✓ Implemented |
+| 2026-03-19 | SyncSettings preserves confirmDelete (local drive-backup state) + currentOperation + isProcessingRef anti-spam ref | Pitfall 7 from RESEARCH.md: internal confirmDelete is for Drive backup deletion, separate from App.jsx transaction confirmDelete | ✓ Implemented |
+| 2026-03-19 | PayPalEnrichWizard restructured as 3-step AnimatePresence wizard: overview -> selection table -> confirmation | stepVariants use custom={direction} (1=forward, -1=back) for direction-aware horizontal slide; lint warning at ~line 200 preserved per plan | ✓ Implemented |
 
 ### Todos
 
@@ -189,21 +192,19 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- **Last session:** 2026-03-19T17:00:00Z (plan 06-02 simple modals migration)
-- Migrated ConfirmModal to ModalShell size="sm" with destructive/secondary Tailwind button styling
-- Migrated CategoryConflictResolver to ModalShell size="sm" with styled radio selection and brand-600 selected state
-- Migrated ConflictResolver to ModalShell size="lg" — refactored to single-conflict navigator with counter
-- Build: ✓ exit 0; Lint: ✓ exit 0
+- **Last session:** 2026-03-19 (plan 06-04 SyncSettings + PayPalEnrichWizard)
+- Migrated SyncSettings to ModalShell size="lg" with full Tailwind styling, preserved confirmDelete/currentOperation/isProcessingRef
+- Migrated PayPalEnrichWizard to ModalShell size="lg" with AnimatePresence 3-step wizard (overview → selection → confirmation)
+- Build: ✓ exit 0; Lint: ✓ exit 0; MOD-07 requirement marked complete
 
 ### Next Session Context
-**Immediate next action:** Execute Plan 06-04 — migrate SyncSettings and PayPalEnrichWizard to ModalShell
+**Immediate next action:** Execute Plan 06-05 — wire AnimatePresence in App.jsx for all 7 modal exit animations
 
 **What to know:**
-- ModalShell is ready: `import { ModalShell } from '../ui'`
-- Radix Dialog handles: focus trap, ESC close, backdrop click close
-- Framer Motion handles: 200ms scale+fade enter, 150ms exit
-- AnimatePresence must wrap ModalShell in App.jsx for exit animations to work
-- size="sm" (max-w-md) for ConfirmModal/CategoryConflictResolver; size="lg" (max-w-2xl) for ImportWizard/SyncSettings/CategoryManager/PayPalEnrichWizard/ConflictResolver
+- All 7 modals now use ModalShell — ConfirmModal, CategoryConflictResolver, ConflictResolver, ImportWizard, CategoryManager, SyncSettings, PayPalEnrichWizard
+- ModalShell uses Dialog.Root open={true} — parent AnimatePresence controls mount/unmount lifecycle
+- Each conditional modal render in App.jsx needs `<AnimatePresence>` wrapper for exit animations to play
+- PayPalEnrichWizard's internal AnimatePresence is separate (step transitions) — App.jsx AnimatePresence handles mount/unmount
 
 ### Environment State
 - Working directory: `D:\Generale\budget-tracker`
