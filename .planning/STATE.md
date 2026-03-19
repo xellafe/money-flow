@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-19T12:14:08.992Z"
+last_updated: "2026-03-19T12:22:29.685Z"
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 15
-  completed_plans: 14
-  percent: 93
+  completed_plans: 15
+  percent: 100
 ---
 
 ---
@@ -43,7 +43,7 @@ progress:
 **Active Phase:** Phase 5: Transaction List Redesign — IN PROGRESS
 **Active Plan:** Plan 02 (Plan 01 complete ✅)
 **Status:** In progress
-**Progress:** [█████████░] 93%
+**Progress:** [██████████] 100%
 
 ## Performance Metrics
 
@@ -84,6 +84,7 @@ progress:
 | Phase 04-dashboard-redesign P04 | 12m | 2 tasks | 4 files |
 | Phase 05-transaction-list-redesign P01 | 10m | 3 tasks | 5 files |
 | Phase 05-transaction-list-redesign P02 | 2m | 3 tasks | 3 files |
+| Phase 05-transaction-list-redesign PP03 | 12m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,9 @@ progress:
 | 2026-03-18 | Period navigation handlers declared before isInitialized early return — required for React rules of hooks | useCallback must be called unconditionally; moved above the early return guard | ✓ Auto-fixed |
 | 2026-03-19 | sortColumn defaults to 'date', sortDirection to 'desc' — newest-first per CONTEXT.md Decision B; sort change resets pagination | Consistent with UX expectation; sort state in useFilters follows established pattern | ✓ Implemented |
 | 2026-03-19 | Full Tailwind class strings in BADGE_PALETTE — dynamic interpolation purged by JIT; all 10 bg/text pairs stored as complete strings | Tailwind JIT requires literal class names at build time | ✓ Implemented |
+| 2026-03-19 | Categoria sort removed per Decision A stacked layout — only Date + Importo sortable (TRNS-02) | Decision A stacked layout eliminates separate category column header; TRNS-02 scoped to date + importo only | ✓ Implemented |
+| 2026-03-19 | Hidden file-input id=file-input added unconditionally in App.jsx for empty state import CTA | Existing file input was conditional on transactions.length === 0; persistent input needed for TransactionsView empty state | ✓ Implemented |
+| 2026-03-19 | showAddTransaction and addManualTransaction removed from App.jsx destructuring | Add transaction form removed with inline list; setShowAddTransaction kept for AppLayout prop; features to resurface in future plan | ✓ Auto-fixed |
 
 ### Todos
 
@@ -138,7 +142,7 @@ progress:
 - [x] Execute Plan 04-02: AreaChartCard, DonutChartCard, DashboardView with skeleton loading ✅
 - [x] Execute Plan 04-03: Wire DashboardView + PeriodSelector + period handlers in App.jsx ✅ (Electron smoke test approved — all 7 verification categories passed)
 - [x] Execute Plan 04-04: Gap closure — DASH-03 (CSS var colors in AreaChartCard) + DASH-07 (donut cross-filter to transaction list) ✅
-- [ ] Test Radix Dialog + Framer Motion animations in Electron environment during Phase 6 planning
+- [x] Execute Plan 05-03: Create TransactionsView + wire into App.jsx ✅
 
 ### Known Blockers
 
@@ -173,23 +177,22 @@ None.
 ## Session Continuity
 
 ### Last Session Summary
-- **Last session:** 2026-03-19T12:14:08.988Z
+- **Last session:** 2026-03-19T12:22:29.682Z
 - Extended useFilters with sortColumn/sortDirection state (defaults: 'date', 'desc')
 - Created categoryColors.js utility with djb2 hash + BADGE_PALETTE (10 pastel colors)
 - Created CategoryBadge, FilterChip components and barrel export in src/components/transactions/
 - Build: ✓ exit 0; Lint: ✓ exit 0; getCategoryColor determinism verified
 
 ### Next Session Context
-**Immediate next action:** Execute Plan 05-02 — TransactionRow + TransactionFilterBar components
+**Immediate next action:** Phase 5 complete — execute Phase 6 (Modals/Forms Redesign) or verify TransactionsView in Electron smoke test
 
 **What to know:**
-- Phase 5 Plan 01 done — foundation building blocks ready
-- useFilters now exports sortColumn + sortDirection (default 'date'/'desc')
-- src/components/transactions barrel exports CategoryBadge + FilterChip
-- getCategoryColor('Food') → {bg: 'bg-lime-100', text: 'text-lime-700'} (deterministic)
-- Period selector in AppHeader: prev/next arrows + month label + Tutti button
-- Stats null-year mode: selectedYear=null shows ALL transactions (Tutti mode)
-- Cross-filter: DonutChart segments → sets BOTH dashboardCategoryFilter AND transactionsCategoryFilter
+- Phase 5 all 3 plans done — TransactionsView fully assembled and wired
+- TransactionsView: sortable sticky header (date + amount only), AnimatePresence pagination, EmptyState variants
+- App.jsx: inline transaction list (~100 lines) replaced with <TransactionsView> component
+- sortColumn/sortDirection added to useFilters destructuring in App.jsx
+- showAddTransaction and addManualTransaction removed (add transaction form to resurface in future plan)
+- Hidden file input (id=file-input) persists in DOM for import CTA
 
 ### Environment State
 - Working directory: `D:\Generale\budget-tracker`

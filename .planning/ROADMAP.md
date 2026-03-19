@@ -17,7 +17,7 @@
 - [x] **Phase 2: State Extraction** - Extract 7 custom hooks from App.jsx monolith (completed 2026-03-17)
 - [x] **Phase 3: Navigation & Layout** - Sidebar, header, main content routing (completed 2026-03-18)
 - [x] **Phase 4: Dashboard Redesign** - Stats cards, Recharts theming, cross-filtering (completed 2026-03-18)
-- [ ] **Phase 5: Transaction List Redesign** - Table, filters, inline editing, pagination
+- [x] **Phase 5: Transaction List Redesign** - Table, filters, inline editing, pagination (completed 2026-03-19)
 - [ ] **Phase 6: Modals Redesign** - 7 modals with animations, accessibility, consistent styling
 - [ ] **Phase 7: UX Polish** - Micro-interactions, keyboard shortcuts, empty states
 
@@ -129,7 +129,7 @@ Plans:
 5. Pagination shows clear counter ("Showing 1-100 of 342 transazioni") and navigation works smoothly
 6. Empty state appears when no transactions exist, with clear CTA to import or add manually
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 05-01-PLAN.md — Foundation: useFilters sort state, categoryColors utility, CategoryBadge, FilterChip
@@ -184,7 +184,7 @@ Plans:
 | 2. State Extraction | 4/4 | Complete   | 2026-03-17 |
 | 3. Navigation & Layout | 2/2 | Complete    | 2026-03-18 |
 | 4. Dashboard Redesign | 4/4 | Complete   | 2026-03-18 |
-| 5. Transaction List Redesign | 2/3 | In Progress|  |
+| 5. Transaction List Redesign | 3/3 | Complete   | 2026-03-19 |
 | 6. Modals Redesign | 0/? | Not started | - |
 | 7. UX Polish | 0/? | Not started | - |
 
