@@ -18,7 +18,7 @@
 - [x] **Phase 3: Navigation & Layout** - Sidebar, header, main content routing (completed 2026-03-18)
 - [x] **Phase 4: Dashboard Redesign** - Stats cards, Recharts theming, cross-filtering (completed 2026-03-18)
 - [x] **Phase 5: Transaction List Redesign** - Table, filters, inline editing, pagination (completed 2026-03-19)
-- [ ] **Phase 6: Modals Redesign** - 7 modals with animations, accessibility, consistent styling
+- [x] **Phase 6: Modals Redesign** - 7 modals with animations, accessibility, consistent styling (completed 2026-03-19)
 - [ ] **Phase 7: UX Polish** - Micro-interactions, keyboard shortcuts, empty states
 
 ## Phase Details
@@ -153,7 +153,7 @@ Plans:
 4. All modals use consistent button styles (primary/secondary/destructive) from design system
 5. Long-content modals (ImportWizard step 2) scroll internally without breaking layout
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [ ] 06-01-PLAN.md — Foundation: Install Radix Dialog, create ModalShell wrapper, create ui/ barrel
@@ -192,7 +192,7 @@ Plans:
 | 3. Navigation & Layout | 2/2 | Complete    | 2026-03-18 |
 | 4. Dashboard Redesign | 4/4 | Complete   | 2026-03-18 |
 | 5. Transaction List Redesign | 4/4 | Complete    | 2026-03-19 |
-| 6. Modals Redesign | 4/5 | In Progress|  |
+| 6. Modals Redesign | 5/5 | Complete   | 2026-03-19 |
 | 7. UX Polish | 0/? | Not started | - |
 
 ## Dependencies
