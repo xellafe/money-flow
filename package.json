@@ -45,6 +45,7 @@
     }
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
     "electron-store": "^8.2.0",
     "framer-motion": "^12.38.0",
     "google-auth-library": "^10.5.0",
