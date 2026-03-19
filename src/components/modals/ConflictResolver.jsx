@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { AlertCircle, Check } from 'lucide-react';
-import { formatCurrency } from '../../utils';
+import { ModalShell } from '../ui';
 
 /**
  * Modal per risolvere conflitti durante l'import
@@ -10,107 +9,86 @@ import { formatCurrency } from '../../utils';
  * @param {Function} props.onCancel - Callback annullamento
  */
 export default function ConflictResolver({ conflicts, onResolve, onCancel }) {
-  const [decisions, setDecisions] = useState(
-    conflicts.reduce((acc, c, i) => ({ ...acc, [i]: 'skip' }), {})
-  );
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [resolvedDecisions, setResolvedDecisions] = useState([]);
 
-  const handleDecision = (index, decision) => {
-    setDecisions(prev => ({ ...prev, [index]: decision }));
+  const conflict = conflicts[currentIndex];
+
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString('it-IT');
+
+  const formatAmount = (amount) => {
+    const sign = amount >= 0 ? '+' : '';
+    return `${sign}€${Math.abs(amount).toLocaleString('it-IT', { minimumFractionDigits: 2 })}`;
   };
 
-  const handleConfirm = () => {
-    const resolved = conflicts.map((c, i) => ({ ...c, decision: decisions[i] }));
-    const toReplace = resolved.filter(c => c.decision === 'replace');
-    const toAdd = resolved.filter(c => c.decision === 'add');
-    onResolve(toReplace, toAdd);
-  };
-
-  const selectAll = (decision) => {
-    setDecisions(conflicts.reduce((acc, _, i) => ({ ...acc, [i]: decision }), {}));
+  const handleResolve = (decision) => {
+    const newDecisions = [...resolvedDecisions, { ...conflict, decision }];
+    if (currentIndex < conflicts.length - 1) {
+      setResolvedDecisions(newDecisions);
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      const toReplace = newDecisions.filter(c => c.decision === 'replace');
+      const toAdd = newDecisions.filter(c => c.decision === 'add');
+      onResolve(toReplace, toAdd);
+    }
   };
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal modal-large" onClick={e => e.stopPropagation()}>
-        <h3 className="modal-title">
-          <AlertCircle size={20} /> Conflitti rilevati
-        </h3>
-        
-        <p className="modal-message">
-          Ho trovato <strong>{conflicts.length}</strong> transazioni con stessa data e importo ma descrizione diversa. 
-          Potrebbero essere transazioni rinominate o movimenti separati.
-        </p>
+    <ModalShell title="Risolvi conflitti" onClose={onCancel} size="lg">
+      <p className="text-sm text-gray-500 mb-4">
+        Conflitto {currentIndex + 1} di {conflicts.length}
+      </p>
 
-        <div className="conflict-actions-top">
-          <button className="btn-small" onClick={() => selectAll('skip')}>
-            Salta tutti
-          </button>
-          <button className="btn-small" onClick={() => selectAll('replace')}>
-            Sostituisci tutti
-          </button>
-          <button className="btn-small" onClick={() => selectAll('add')}>
-            Aggiungi tutti
-          </button>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-6">
+        <div className="mb-4">
+          <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">Esistente</span>
+          <div className="mt-1 p-3 bg-white rounded border border-gray-200">
+            <p className="font-medium text-gray-800">{conflict.existing.description}</p>
+            <p className="text-sm text-gray-500">
+              {formatDate(conflict.existing.date)} •{' '}
+              <span className={conflict.existing.amount >= 0 ? 'text-income-500' : 'text-expense-500'}>
+                {formatAmount(conflict.existing.amount)}
+              </span>
+            </p>
+          </div>
         </div>
-
-        <div className="conflict-list">
-          {conflicts.map((conflict, i) => (
-            <div key={i} className="conflict-item">
-              <div className="conflict-info">
-                <div className="conflict-date">
-                  {new Date(conflict.existing.date).toLocaleDateString('it-IT')}
-                </div>
-                <div className="conflict-amount">
-                  {formatCurrency(conflict.existing.amount)}
-                </div>
-              </div>
-              <div className="conflict-descriptions">
-                <div className="conflict-existing">
-                  <span className="conflict-label">Attuale:</span>
-                  <span className="conflict-text">{conflict.existing.description}</span>
-                </div>
-                <div className="conflict-new">
-                  <span className="conflict-label">Nuova:</span>
-                  <span className="conflict-text">{conflict.new.description}</span>
-                </div>
-              </div>
-              <div className="conflict-decision">
-                <label className={decisions[i] === 'skip' ? 'selected' : ''}>
-                  <input
-                    type="radio"
-                    checked={decisions[i] === 'skip'}
-                    onChange={() => handleDecision(i, 'skip')}
-                  />
-                  Mantieni
-                </label>
-                <label className={decisions[i] === 'replace' ? 'selected' : ''}>
-                  <input
-                    type="radio"
-                    checked={decisions[i] === 'replace'}
-                    onChange={() => handleDecision(i, 'replace')}
-                  />
-                  Sostituisci
-                </label>
-                <label className={decisions[i] === 'add' ? 'selected' : ''}>
-                  <input
-                    type="radio"
-                    checked={decisions[i] === 'add'}
-                    onChange={() => handleDecision(i, 'add')}
-                  />
-                  Aggiungi
-                </label>
-              </div>
-            </div>
-          ))}
+        <div>
+          <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">Nuovo</span>
+          <div className="mt-1 p-3 bg-white rounded border border-gray-200">
+            <p className="font-medium text-gray-800">{conflict.new.description}</p>
+            <p className="text-sm text-gray-500">
+              {formatDate(conflict.new.date)} •{' '}
+              <span className={conflict.new.amount >= 0 ? 'text-income-500' : 'text-expense-500'}>
+                {formatAmount(conflict.new.amount)}
+              </span>
+            </p>
+          </div>
         </div>
+      </div>
 
-        <div className="modal-actions">
-          <button className="btn-cancel" onClick={onCancel}>Annulla import</button>
-          <button className="btn-primary" onClick={handleConfirm}>
-            <Check size={16} /> Conferma
+      <div className="flex justify-between">
+        <button
+          className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          onClick={() => handleResolve('skip')}
+        >
+          Salta
+        </button>
+        <div className="flex gap-3">
+          <button
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            onClick={() => handleResolve('keep')}
+          >
+            Mantieni originale
+          </button>
+          <button
+            className="bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            onClick={() => handleResolve('replace')}
+          >
+            Usa nuovo
           </button>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
