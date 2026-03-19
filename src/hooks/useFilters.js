@@ -15,12 +15,14 @@ export function useFilters({ years = [] } = {}) {
   const [transactionsCategoryFilter, setTransactionsCategoryFilter] = useState(null);
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [showCategoryPercentage, setShowCategoryPercentage] = useState(false);
+  const [sortColumn, setSortColumn] = useState('date');
+  const [sortDirection, setSortDirection] = useState('desc');
 
   // Reset pagina quando cambiano i filtri
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
-  }, [selectedYear, selectedMonth, searchQuery, transactionsCategoryFilter]);
+  }, [selectedYear, selectedMonth, searchQuery, transactionsCategoryFilter, sortColumn, sortDirection]);
 
   // Auto-update selectedYear quando cambiano gli anni disponibili
   useEffect(() => {
@@ -40,6 +42,8 @@ export function useFilters({ years = [] } = {}) {
     transactionsCategoryFilter, setTransactionsCategoryFilter,
     expandedCategory, setExpandedCategory,
     showCategoryPercentage, setShowCategoryPercentage,
+    sortColumn, setSortColumn,
+    sortDirection, setSortDirection,
   };
 }
 
