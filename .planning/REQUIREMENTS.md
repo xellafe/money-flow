@@ -41,12 +41,12 @@
 
 ### Transactions
 
-- [ ] **TRNS-01**: Tabella transazioni con colonne: Data, Descrizione, Categoria, Importo
+- [x] **TRNS-01**: Tabella transazioni con colonne: Data, Descrizione, Categoria, Importo
 - [ ] **TRNS-02**: Sorting cliccabile su ogni colonna (data, importo, categoria)
 - [ ] **TRNS-03**: Paginazione pulita con contatore "X-Y di Z transazioni"
-- [ ] **TRNS-04**: Barra filtri: ricerca testo inline (search-as-type), filtro categoria dropdown, filtro data range
-- [ ] **TRNS-05**: Inline editing: click su descrizione o categoria per editare direttamente nella riga
-- [ ] **TRNS-06**: Importo colorato (verde entrate, rosso uscite) con segno esplicito
+- [x] **TRNS-04**: Barra filtri: ricerca testo inline (search-as-type), filtro categoria dropdown, filtro data range
+- [x] **TRNS-05**: Inline editing: click su descrizione o categoria per editare direttamente nella riga
+- [x] **TRNS-06**: Importo colorato (verde entrate, rosso uscite) con segno esplicito
 - [x] **TRNS-07**: Badge colorato per categoria su ogni riga
 - [ ] **TRNS-08**: Empty state quando non ci sono transazioni (illustrazione + CTA importa/aggiungi)
 
@@ -127,12 +127,12 @@
 | DASH-06 | Phase 4 | Complete |
 | DASH-07 | Phase 4 | Complete |
 | DASH-08 | Phase 4 | Complete |
-| TRNS-01 | Phase 5 | Pending |
+| TRNS-01 | Phase 5 | Complete |
 | TRNS-02 | Phase 5 | Pending |
 | TRNS-03 | Phase 5 | Pending |
-| TRNS-04 | Phase 5 | Pending |
-| TRNS-05 | Phase 5 | Pending |
-| TRNS-06 | Phase 5 | Pending |
+| TRNS-04 | Phase 5 | Complete |
+| TRNS-05 | Phase 5 | Complete |
+| TRNS-06 | Phase 5 | Complete |
 | TRNS-07 | Phase 5 | Complete |
 | TRNS-08 | Phase 5 | Pending |
 | MOD-01 | Phase 6 | Pending |

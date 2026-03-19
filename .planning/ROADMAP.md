@@ -129,7 +129,7 @@ Plans:
 5. Pagination shows clear counter ("Showing 1-100 of 342 transazioni") and navigation works smoothly
 6. Empty state appears when no transactions exist, with clear CTA to import or add manually
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 05-01-PLAN.md — Foundation: useFilters sort state, categoryColors utility, CategoryBadge, FilterChip
@@ -184,7 +184,7 @@ Plans:
 | 2. State Extraction | 4/4 | Complete   | 2026-03-17 |
 | 3. Navigation & Layout | 2/2 | Complete    | 2026-03-18 |
 | 4. Dashboard Redesign | 4/4 | Complete   | 2026-03-18 |
-| 5. Transaction List Redesign | 1/3 | In Progress|  |
+| 5. Transaction List Redesign | 2/3 | In Progress|  |
 | 6. Modals Redesign | 0/? | Not started | - |
 | 7. UX Polish | 0/? | Not started | - |
 
