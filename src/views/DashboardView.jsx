@@ -4,6 +4,7 @@ import { DashboardStatCard } from '../components/dashboard/DashboardStatCard';
 import { SkeletonStatCard } from '../components/dashboard/SkeletonStatCard';
 import { AreaChartCard } from '../components/dashboard/AreaChartCard';
 import { DonutChartCard } from '../components/dashboard/DonutChartCard';
+import { DashboardEmptyState } from '../components/dashboard/DashboardEmptyState';
 import { MONTHS_IT } from '../constants';
 
 /**
@@ -25,6 +26,8 @@ export function DashboardView({
   dashboardCategoryFilter,
   onCategoryFilterChange,
   onTransactionsCategoryChange,
+  hasTransactions,  // NEW: shows empty state when false
+  onImport,         // NEW: CTA callback for file import
 }) {
   // Skeleton loading state: show on mount and on period change
   const [isLoading, setIsLoading] = useState(true);
@@ -71,6 +74,15 @@ export function DashboardView({
       onTransactionsCategoryChange(null);
     }
   }, [onCategoryFilterChange, onTransactionsCategoryChange]);
+
+  // Empty state when no transactions
+  if (!hasTransactions) {
+    return (
+      <div className="p-6 flex-1 flex items-center justify-center">
+        <DashboardEmptyState onImport={onImport} />
+      </div>
+    );
+  }
 
   return (
     <motion.div
