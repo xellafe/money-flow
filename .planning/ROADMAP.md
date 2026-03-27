@@ -220,7 +220,9 @@ Plans:
 5. REQUIREMENTS.md traceability table fully accurate
 
 **Plans:** 1 plan
-- [ ] 08-01-PLAN.md - Fix cursor, remove dead state, normalize import, fix docs
+
+Plans:
+- [ ] 08-01-PLAN.md — Code cleanup (cursor fix, dead state removal, dead branches, import normalization) + documentation closure (FOUND-04 + FOUND-11)
 
 ---
 
