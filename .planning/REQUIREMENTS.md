@@ -63,9 +63,9 @@
 ### UX Polish
 
 - [ ] **UX-01**: Hover states su tutti gli elementi interattivi (150ms transition)
-- [ ] **UX-02**: Skeleton loading per lista transazioni durante caricamento iniziale
-- [ ] **UX-03**: Empty state dashboard: nessun dato importato (icona + testo + pulsante "Importa transazioni")
-- [ ] **UX-04**: Toast notifications restyled con design system (posizione, animazione slide-in 300ms)
+- [x] **UX-02**: Skeleton loading per lista transazioni durante caricamento iniziale
+- [x] **UX-03**: Empty state dashboard: nessun dato importato (icona + testo + pulsante "Importa transazioni")
+- [x] **UX-04**: Toast notifications restyled con design system (posizione, animazione slide-in 300ms)
 - [x] **UX-05**: Bottone "Aggiungi transazione" sempre accessibile (in header o sidebar)
 - [ ] **UX-06**: Cursore pointer su tutti gli elementi cliccabili
 - [ ] **UX-07**: Transizione pagina smooth quando si cambia view (fade 150ms)
@@ -143,9 +143,9 @@
 | MOD-06 | Phase 6 | Complete |
 | MOD-07 | Phase 6 | Complete |
 | UX-01 | Phase 7 | Pending |
-| UX-02 | Phase 7 | Pending |
-| UX-03 | Phase 7 | Pending |
-| UX-04 | Phase 7 | Pending |
+| UX-02 | Phase 7 | Complete |
+| UX-03 | Phase 7 | Complete |
+| UX-04 | Phase 7 | Complete |
 | UX-05 | Phase 7 | Complete |
 | UX-06 | Phase 7 | Pending |
 | UX-07 | Phase 7 | Pending |
