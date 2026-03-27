@@ -38,15 +38,14 @@ export function AppHeader({
           {VIEW_TITLES[view] ?? 'MoneyFlow'}
         </h1>
 
-        {view === 'transactions' && (
-          <button
-            onClick={onAddTransaction}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-500 text-white text-sm font-semibold rounded-lg hover:bg-brand-600 transition-colors cursor-pointer"
-          >
-            <Plus size={16} />
-            Aggiungi transazione
-          </button>
-        )}
+        <button
+          onClick={onAddTransaction}
+          aria-label="Aggiungi transazione"
+          className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg transition-colors cursor-pointer"
+        >
+          <Plus size={16} />
+          Aggiungi
+        </button>
       </div>
 
       {/* Period selector row — dashboard and transactions */}
