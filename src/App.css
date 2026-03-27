@@ -1112,31 +1112,6 @@
   background: var(--color-danger-light);
 }
 
-/* Toast */
-.toast {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  padding: 1rem 1.5rem;
-  background: var(--color-gray-800);
-  color: white;
-  border-radius: 0.75rem;
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  animation: slideUp 0.3s ease;
-  z-index: 100;
-}
-
-.toast.success {
-  background: var(--color-success);
-}
-
-.toast.error {
-  background: var(--color-danger);
-}
-
 /* Modal */
 .modal-overlay {
   position: fixed;
