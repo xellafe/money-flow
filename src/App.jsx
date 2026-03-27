@@ -23,6 +23,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { SettingsView } from './views/SettingsView';
 import { DashboardView } from './views/DashboardView';
 import { TransactionsView } from './views/TransactionsView';
+import AddTransactionModal from './components/modals/AddTransactionModal';
 
 // Hooks
 import { useGoogleDrive, useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic, useViewState } from "./hooks";
@@ -545,14 +546,31 @@ export default function MoneyFlow() {
         )}
       </AnimatePresence>
 
-      {/* Toast */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {/* Add Transaction Modal */}
+      <AnimatePresence>
+        {showAddTransaction && (
+          <AddTransactionModal
+            key="add-transaction-modal"
+            newTransaction={newTransaction}
+            setNewTransaction={setNewTransaction}
+            onConfirm={addManualTransaction}
+            onClose={() => setShowAddTransaction(false)}
+            categories={Object.keys(categories)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Toast — AnimatePresence for exit animation */}
+      <AnimatePresence mode="wait">
+        {toast && (
+          <Toast
+            key={toast.message + (toast.timestamp || Date.now())}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Confirm Modal */}
       <AnimatePresence>
