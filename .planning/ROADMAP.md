@@ -179,7 +179,7 @@ Plans:
 6. Page transitions between views (Dashboard ↔ Transazioni) fade smoothly (150ms)
 7. All clickable elements show pointer cursor on hover
 
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 07-01-PLAN.md — Toast animation + skeleton loading + dashboard empty state (UX-02, UX-03, UX-04)
@@ -198,7 +198,7 @@ Plans:
 | 4. Dashboard Redesign | 4/4 | Complete   | 2026-03-18 |
 | 5. Transaction List Redesign | 4/4 | Complete    | 2026-03-19 |
 | 6. Modals Redesign | 5/5 | Complete   | 2026-03-19 |
-| 7. UX Polish | 0/3 | Planning complete | - |
+| 7. UX Polish | 2/3 | In Progress|  |
 
 ## Dependencies
 
