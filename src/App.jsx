@@ -1,47 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  Legend,
-  AreaChart,
-  Area,
-} from "recharts";
-import {
-  Upload,
-  TrendingUp,
-  TrendingDown,
-  Download,
-  FileSpreadsheet,
-  X,
-  Check,
-  Loader2,
-  Plus,
-  ChevronDown,
-  Cloud,
-} from "lucide-react";
 
 // Constants
 import {
-  COLORS,
   DEFAULT_CATEGORIES,
   MONTHS_IT,
-  ITEMS_PER_PAGE,
 } from "./constants";
 
 // Utils
 // Components
 import {
   Toast,
-  StatCard,
   ConfirmModal,
   ImportWizard,
   ConflictResolver,
@@ -49,9 +17,8 @@ import {
   CategoryManager,
   SyncSettings,
   PayPalEnrichWizard,
-  GoogleSignInButton,
 } from "./components";
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AppLayout } from './components/layout/AppLayout';
 import { SettingsView } from './views/SettingsView';
 import { DashboardView } from './views/DashboardView';
@@ -70,7 +37,7 @@ export default function MoneyFlow() {
     editingTx, setEditingTx,
     editingDescription, setEditingDescription,
     newDescription, setNewDescription,
-    setShowAddTransaction,
+    showAddTransaction, setShowAddTransaction,
     showCategoryManager, setShowCategoryManager,
     showSyncSettings, setShowSyncSettings,
     newTransaction, setNewTransaction,
@@ -98,6 +65,7 @@ export default function MoneyFlow() {
     clearAllData,
     updateTxCategory,
     updateTxDescription,
+    addManualTransaction,
   } = useTransactionData({
     categories,
     importProfiles,
@@ -429,222 +397,64 @@ export default function MoneyFlow() {
       onSelectMonth={handleSelectMonth}
       availableMonths={availableMonths}
     >
-      {/* Drop Zone iniziale */}
-        {transactions.length === 0 && (
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={onDrop}
-            className={`drop-zone ${dragOver ? "active" : ""}`}
-          >
-            {loading ? (
-              <>
-                <Loader2
-                  className="drop-zone-icon"
-                  style={{ animation: "spin 1s linear infinite" }}
-                />
-                <p className="drop-zone-title">Importazione in corso...</p>
-              </>
-            ) : (
-              <>
-                <FileSpreadsheet className="drop-zone-icon" />
-                <p className="drop-zone-title">
-                  Trascina qui il tuo file Excel
-                </p>
-                <p className="drop-zone-subtitle">
-                  Supporta file .xlsx, .xls e .csv
-                </p>
-                <label className="btn-primary">
-                  <Upload size={18} />
-                  Seleziona file
-                  <input
-                    type="file"
-                    style={{ display: "none" }}
-                    accept=".xlsx,.xls,.csv"
-                    onChange={(e) =>
-                      e.target.files[0] && handleFile(e.target.files[0])
-                    }
-                  />
-                </label>
-
-                {/* Opzioni Google Drive (solo Electron) */}
-                {googleDrive.isElectron && (
-                  <div
-                    style={{
-                      marginTop: "2rem",
-                      paddingTop: "2rem",
-                      borderTop: "1px solid var(--color-gray-200)",
-                      width: "100%",
-                      maxWidth: "400px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <p
-                      style={{
-                        color: "var(--color-gray-500)",
-                        fontSize: "0.875rem",
-                        marginBottom: "1rem",
-                      }}
-                    >
-                      Oppure ripristina da cloud
-                    </p>
-
-                    {googleDrive.isAuthenticated ? (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "0.75rem",
-                          alignItems: "center",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "0.5rem",
-                            color: "var(--color-success)",
-                            fontSize: "0.875rem",
-                          }}
-                        >
-                          <Cloud size={16} />
-                          <span>
-                            Connesso come{" "}
-                            {googleDrive.userInfo?.email || "Google"}
-                          </span>
-                        </div>
-
-                        {googleDrive.backupInfo ? (
-                          <button
-                            className="btn-secondary"
-                            onClick={async () => {
-                              const result = await googleDrive.downloadBackup();
-                              if (result.success && result.data) {
-                                setTransactions(result.data.transactions || []);
-                                setCategories(
-                                  result.data.categories || DEFAULT_CATEGORIES,
-                                );
-                                setImportProfiles(
-                                  result.data.importProfiles || {},
-                                );
-                                showToast("Dati ripristinati da Google Drive");
-                              } else {
-                                showToast(
-                                  result.error ||
-                                    "Errore durante il ripristino",
-                                  "error",
-                                );
-                              }
-                            }}
-                            disabled={googleDrive.syncStatus === "syncing"}
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "0.5rem",
-                            }}
-                          >
-                            {googleDrive.syncStatus === "syncing" ? (
-                              <Loader2 size={16} className="spin" />
-                            ) : (
-                              <Download size={16} />
-                            )}
-                            Ripristina backup (
-                            {new Date(
-                              googleDrive.backupInfo.modifiedTime,
-                            ).toLocaleDateString("it-IT")}
-                            )
-                          </button>
-                        ) : (
-                          <p
-                            style={{
-                              color: "var(--color-gray-400)",
-                              fontSize: "0.875rem",
-                              margin: 0,
-                            }}
-                          >
-                            Nessun backup trovato su Drive
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <GoogleSignInButton
-                        onClick={async () => {
-                          const result = await googleDrive.signIn();
-                          if (result.success) {
-                            showToast("Connesso a Google Drive");
-                          } else {
-                            showToast(
-                              result.error || "Errore durante la connessione",
-                              "error",
-                            );
-                          }
-                        }}
-                        disabled={googleDrive.isLoading}
-                        isLoading={googleDrive.isLoading}
-                      />
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Dashboard View */}
-        {transactions.length > 0 && view === "dashboard" && (
-          <DashboardView
-            stats={stats}
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-            dashboardCategoryFilter={dashboardCategoryFilter}
-            onCategoryFilterChange={setDashboardCategoryFilter}
-            onTransactionsCategoryChange={setTransactionsCategoryFilter}
-          />
-        )}
-
-        {/* Transactions View */}
-        {view === "transactions" && (
-          <TransactionsView
-            transactions={stats.filtered}
-            allCategories={stats.allCategories}
-            categories={categories}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            transactionsCategoryFilter={transactionsCategoryFilter}
-            setTransactionsCategoryFilter={setTransactionsCategoryFilter}
-            sortColumn={sortColumn}
-            setSortColumn={setSortColumn}
-            sortDirection={sortDirection}
-            setSortDirection={setSortDirection}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-            editingTx={editingTx}
-            setEditingTx={setEditingTx}
-            editingDescription={editingDescription}
-            setEditingDescription={setEditingDescription}
-            newDescription={newDescription}
-            setNewDescription={setNewDescription}
-            updateTxCategory={updateTxCategory}
-            updateTxDescription={updateTxDescription}
-            setConfirmDelete={setConfirmDelete}
-            onImport={() => document.getElementById('file-input')?.click()}
-          />
-        )}
-
-      {/* Settings View */}
-      {view === 'settings' && (
-        <SettingsView
-          onShowCategoryManager={() => setShowCategoryManager(true)}
-          onShowSyncSettings={() => setShowSyncSettings(true)}
-        />
-      )}
+      {/* Page transitions — AnimatePresence mode="wait" */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={view}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: 0.15, ease: 'easeOut' } }}
+          exit={{ opacity: 0, transition: { duration: 0.15, ease: 'easeIn' } }}
+          className="flex-1 min-h-0 overflow-hidden"
+        >
+          {view === 'dashboard' && (
+            <DashboardView
+              stats={stats}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              dashboardCategoryFilter={dashboardCategoryFilter}
+              onCategoryFilterChange={setDashboardCategoryFilter}
+              onTransactionsCategoryChange={setTransactionsCategoryFilter}
+              hasTransactions={transactions.length > 0}
+              onImport={() => document.getElementById('file-input')?.click()}
+            />
+          )}
+          {view === 'transactions' && (
+            <TransactionsView
+              transactions={stats.filtered}
+              allCategories={stats.allCategories}
+              categories={categories}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              transactionsCategoryFilter={transactionsCategoryFilter}
+              setTransactionsCategoryFilter={setTransactionsCategoryFilter}
+              sortColumn={sortColumn}
+              setSortColumn={setSortColumn}
+              sortDirection={sortDirection}
+              setSortDirection={setSortDirection}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              editingTx={editingTx}
+              setEditingTx={setEditingTx}
+              editingDescription={editingDescription}
+              setEditingDescription={setEditingDescription}
+              newDescription={newDescription}
+              setNewDescription={setNewDescription}
+              updateTxCategory={updateTxCategory}
+              updateTxDescription={updateTxDescription}
+              setConfirmDelete={setConfirmDelete}
+              onImport={() => document.getElementById('file-input')?.click()}
+            />
+          )}
+          {view === 'settings' && (
+            <SettingsView
+              onShowCategoryManager={() => setShowCategoryManager(true)}
+              onShowSyncSettings={() => setShowSyncSettings(true)}
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
 
       {/* Category Manager Modal */}
       <AnimatePresence>
