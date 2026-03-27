@@ -1,7 +1,8 @@
-import { useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronUp, ChevronDown, ArrowUpDown, Inbox, SearchX } from 'lucide-react';
 import { TransactionRow, TransactionFilterBar } from '../components/transactions';
+import { SkeletonTransactionRow } from '../components/transactions/SkeletonTransactionRow';
 import { ITEMS_PER_PAGE } from '../constants';
 
 /**
@@ -161,6 +162,13 @@ export function TransactionsView({
   setConfirmDelete,
   onImport,
 }) {
+  // Skeleton loading state: true on mount, false after 300ms
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, []); // mount-only
   // Sort handler: 3-state toggle (ASC → DESC → reset to date DESC)
   const handleSort = useCallback((column) => {
     if (column !== sortColumn) {
@@ -260,7 +268,13 @@ export function TransactionsView({
 
       {/* Main content area */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {transactions.length === 0 ? (
+        {isLoading ? (
+          <div aria-busy="true" aria-label="Caricamento transazioni">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonTransactionRow key={i} />
+            ))}
+          </div>
+        ) : transactions.length === 0 ? (
           <EmptyState
             hasActiveFilters={hasActiveFilters}
             onClearFilters={handleClearFilters}
