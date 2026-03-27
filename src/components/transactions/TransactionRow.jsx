@@ -116,7 +116,7 @@ export function TransactionRow({
       <button
         type="button"
         onClick={onDelete}
-        className="p-1 text-gray-300 hover:text-expense-500 transition-colors duration-150 justify-self-end"
+        className="p-1 text-gray-300 hover:text-expense-500 transition-colors duration-150 cursor-pointer justify-self-end"
         aria-label="Elimina transazione"
         title="Elimina transazione"
       >
