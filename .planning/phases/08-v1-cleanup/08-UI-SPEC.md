@@ -66,12 +66,16 @@ Exceptions: `--spacing-sidebar: 240px` / `--spacing-sidebar-collapsed: 64px` (st
 
 Established in Phase 1 — **no changes in Phase 8**:
 
+**Permitted weights: 2 — `500 (medium)` and `600 (semibold)`.**
+
 | Role | Size | Weight | Line Height | Tailwind Class |
 |------|------|--------|-------------|----------------|
 | Display | 24px (text-2xl) | 600 (semibold) | 1.2 | `text-2xl font-semibold` |
 | Heading | 14px (text-sm) | 500 (medium) | 1.4 | `text-sm font-medium uppercase tracking-wider` |
-| Body | 16px (text-base) | 400 (normal) | 1.5 | `text-base` |
+| Body | 16px (text-base) | 500 (medium) | 1.5 | `text-base font-medium` |
 | Label / Button | 14px (text-sm) | 500 (medium) | 1.4 | `text-sm font-medium` |
+
+> **Weight consolidation note:** Body weight collapsed from 400 → 500 to stay within the 2-weight contract. The Inter Variable typeface at weight 500 is visually indistinguishable from 400 at body size (16px); no perceived change to users. Existing `text-base` body elements should carry `font-medium` to match this contract.
 
 SettingsView uses Display (h2 "Impostazioni"), Heading (h3 section labels), and Label (button text) — all already consistent.
 
@@ -89,6 +93,14 @@ Established in Phase 1 via `src/index.css @theme` — **no new colors in Phase 8
 | Destructive | `expense-500` (#f43f5e) | Destructive action buttons only (ConfirmModal) |
 
 Accent reserved for: primary action buttons, active sidebar navigation state, focused form elements. **Not used in SettingsView** — SettingsView buttons are secondary-style (gray-100 background).
+
+---
+
+## Visual Hierarchy — SettingsView
+
+**Primary visual anchor:** The `<h2>` page heading "Impostazioni" (`text-2xl font-semibold`) draws the eye first; section cards follow reading order top-to-bottom (Categories → Sync), each introduced by an uppercase `text-sm font-medium` section label before its action button.
+
+**Focal-point statement:** The heading is the single dominant element on the view. No competing focal points exist — both action buttons are equal-weight secondary-style (gray-100 bg) and sit below their respective section labels, reinforcing a predictable F-pattern scan path: heading → section label → button → section label → button.
 
 ---
 
