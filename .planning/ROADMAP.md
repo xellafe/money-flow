@@ -1,4 +1,4 @@
-# Roadmap: MoneyFlow UI/UX Redesign
+﻿# Roadmap: MoneyFlow UI/UX Redesign
 
 **Created:** 2026-03-17
 **Last Updated:** 2026-03-17 (Phase 1 complete)
@@ -20,6 +20,7 @@
 - [x] **Phase 5: Transaction List Redesign** - Table, filters, inline editing, pagination (completed 2026-03-19)
 - [x] **Phase 6: Modals Redesign** - 7 modals with animations, accessibility, consistent styling (completed 2026-03-19)
 - [x] **Phase 7: UX Polish** - Micro-interactions, keyboard shortcuts, empty states (completed 2026-03-27)
+- [ ] **Phase 8: v1.0 Cleanup** - Close all v1.0 audit tech debt: cursor inconsistency, dead code removal, doc fixes
 
 ## Phase Details
 
@@ -199,6 +200,29 @@ Plans:
 | 5. Transaction List Redesign | 4/4 | Complete    | 2026-03-19 |
 | 6. Modals Redesign | 5/5 | Complete   | 2026-03-19 |
 | 7. UX Polish | 3/3 | Complete   | 2026-03-27 |
+| 8. v1.0 Cleanup | 0/1 | Pending | - |
+
+
+
+### Phase 8: v1.0 Cleanup
+**Goal:** Close all accumulated tech debt from the v1.0 audit
+
+**Depends on:** Phase 7 (final polish phase)
+
+**Requirements:** UX-06 (gap closure), FOUND-11 (doc closure)
+**Gap Closure:** Closes all gaps from v1.0-MILESTONE-AUDIT.md
+
+**Success Criteria** (what must be TRUE):
+1. Both buttons in SettingsView show pointer cursor on hover
+2. useFilters and useModals return only actively consumed state
+3. No dead selectedYear === null code paths exist
+4. All modal imports use consistent named barrel pattern
+5. REQUIREMENTS.md traceability table fully accurate
+
+**Plans:** 1 plan
+- [ ] 08-01-PLAN.md - Fix cursor, remove dead state, normalize import, fix docs
+
+---
 
 ## Dependencies
 

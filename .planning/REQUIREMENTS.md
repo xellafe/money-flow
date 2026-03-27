@@ -17,7 +17,7 @@
 - [x] **FOUND-08**: `useModals` hook estratto da App.jsx (visibilità modali, dati apertura)
 - [x] **FOUND-09**: `useImportLogic` hook estratto da App.jsx (import profiles, wizard flow, conflict resolution)
 - [x] **FOUND-10**: `useToast` hook estratto da App.jsx (notifiche toast)
-- [ ] **FOUND-11**: Backup localStorage automatico prima di ogni refactor step (recovery point)
+- [ ] **FOUND-11**: Backup localStorage automatico prima di ogni refactor step (recovery point) *(to be closed in Phase 8 — dev-process req, Electron runtime backup present)*
 
 ### Navigation & Layout
 
@@ -105,14 +105,14 @@
 | FOUND-01 | Phase 1 | Complete |
 | FOUND-02 | Phase 1 | Complete |
 | FOUND-03 | Phase 1 | Complete |
-| FOUND-04 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Complete |
 | FOUND-05 | Phase 2 | Complete |
 | FOUND-06 | Phase 2 | Complete |
 | FOUND-07 | Phase 2 | Complete |
 | FOUND-08 | Phase 2 | Complete |
 | FOUND-09 | Phase 2 | Complete |
 | FOUND-10 | Phase 2 | Complete |
-| FOUND-11 | Phase 2 | Pending |
+| FOUND-11 | Phase 8 (gap closure) | Pending |
 | NAV-01 | Phase 3 | Complete |
 | NAV-02 | Phase 3 | Complete |
 | NAV-03 | Phase 3 | Complete |
