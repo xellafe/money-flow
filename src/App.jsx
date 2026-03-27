@@ -104,13 +104,10 @@ export default function MoneyFlow() {
     wizardData, setWizardData,
     importConflicts, setImportConflicts,
     paypalData, setPaypalData,
-    dragOver, setDragOver,
-    loading,
     handleFile,
     applyPayPalEnrichment,
     handleConflictResolve,
     handleWizardConfirm,
-    onDrop,
   } = useImportLogic({
     transactions,
     setTransactions,
@@ -564,7 +561,7 @@ export default function MoneyFlow() {
       <AnimatePresence mode="wait">
         {toast && (
           <Toast
-            key={toast.message + (toast.timestamp || Date.now())}
+            key={toast.id}
             message={toast.message}
             type={toast.type}
             onClose={() => setToast(null)}
