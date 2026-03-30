@@ -20,7 +20,7 @@
 - [x] **Phase 5: Transaction List Redesign** - Table, filters, inline editing, pagination (completed 2026-03-19)
 - [x] **Phase 6: Modals Redesign** - 7 modals with animations, accessibility, consistent styling (completed 2026-03-19)
 - [x] **Phase 7: UX Polish** - Micro-interactions, keyboard shortcuts, empty states (completed 2026-03-27)
-- [ ] **Phase 8: v1.0 Cleanup** - Close all v1.0 audit tech debt: cursor inconsistency, dead code removal, doc fixes
+- [x] **Phase 8: v1.0 Cleanup** - Close all v1.0 audit tech debt: cursor inconsistency, dead code removal, doc fixes (completed 2026-03-30)
 
 ## Phase Details
 
@@ -200,7 +200,7 @@ Plans:
 | 5. Transaction List Redesign | 4/4 | Complete    | 2026-03-19 |
 | 6. Modals Redesign | 5/5 | Complete   | 2026-03-19 |
 | 7. UX Polish | 3/3 | Complete   | 2026-03-27 |
-| 8. v1.0 Cleanup | 0/1 | Pending | - |
+| 8. v1.0 Cleanup | 1/1 | Complete   | 2026-03-30 |
 
 
 
@@ -219,7 +219,7 @@ Plans:
 4. All modal imports use consistent named barrel pattern
 5. REQUIREMENTS.md traceability table fully accurate
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 08-01-PLAN.md — Code cleanup (cursor fix, dead state removal, dead branches, import normalization) + documentation closure (FOUND-04 + FOUND-11)
