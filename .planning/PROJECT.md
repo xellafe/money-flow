@@ -2,7 +2,7 @@
 
 ## What This Is
 
-MoneyFlow è un'applicazione desktop (Electron + React 19) per la gestione del budget personale. Permette di importare transazioni da file Excel/CSV di banche italiane (Illimity, Fineco), categorizzarle automaticamente e visualizzarle con grafici. Il redesign porta l'interfaccia a uno stile **light clean & minimal** (ispirazione Notion/Apple), con Tailwind CSS come sistema di styling e refactor dei componenti per maggiore manutenibilità.
+MoneyFlow è un'applicazione desktop (Electron + React 19) per la gestione del budget personale. Importa transazioni da file Excel/CSV di banche italiane (Illimity, Fineco, PayPal), le categorizza automaticamente e le visualizza con grafici interattivi. **v1.0 spedita:** il redesign completo porta l'interfaccia a uno stile light clean & minimal con Tailwind CSS v4, navigazione sidebar animata, dashboard con grafici interattivi, lista transazioni con inline editing, e sistema modale unificato con Radix Dialog.
 
 ## Core Value
 
@@ -21,19 +21,18 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 - ✓ Import profiles personalizzabili — existing
 - ✓ Persistenza locale via localStorage — existing
 - ✓ Toast notifications — existing
+- ✓ Tailwind CSS v4 come sistema di styling principale — v1.0
+- ✓ Refactor App.jsx monolitico (2127 righe) in 6 hook separati — v1.0
+- ✓ Design system: token colori, tipografia, spacing coerenti — v1.0
+- ✓ Redesign navigazione: sidebar fissa animata (240px/64px), AppHeader contestuale — v1.0
+- ✓ Redesign Dashboard: stat cards, AreaChart + DonutChart, period selector, cross-filter — v1.0
+- ✓ Redesign Lista Transazioni: tabella sortable, inline editing, ricerca debounced, filter chips — v1.0
+- ✓ Redesign Modali: Radix Dialog + ModalShell, scale/fade 200ms, focus trap, 7 modali migrate — v1.0
+- ✓ UX polish: toast animato, skeleton loading, empty states, page transitions, cursor coerente — v1.0
 
 ### Active
 
-- [ ] Aggiunta Tailwind CSS v4 come sistema di styling principale
-- [ ] Refactor `App.jsx` monolitico (2127 righe) in componenti/hook separati
-- [ ] Redesign Dashboard: layout cards moderne, grafici ridisegnati, stat highlights
-- [ ] Redesign Lista Transazioni: tabella pulita, filtri accessibili, paginazione migliorata
-- [ ] Redesign navigazione: sidebar fissa con icone Lucide, breadcrumb/tab chiaro
-- [ ] Redesign Modali: stile consistente, animazioni di apertura/chiusura, focus trap
-- [ ] UX — filtri: date picker, ricerca inline, filtro categoria accessibile dalla sidebar
-- [ ] UX — micro-animazioni: hover states, transizioni di pagina, skeleton loading
-- [ ] Design system: token colori, tipografia, spacing coerenti in tutto il codebase
-- [ ] Responsive layout per diverse dimensioni finestra Electron
+*(Next milestone requirements go here)*
 
 ### Out of Scope
 
@@ -41,27 +40,38 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 - Sistema di apprendimento categorie (ML) — fuori scope v1 redesign
 - Mobile app — desktop-only (Electron)
 - Nuove funzionalità business (budget goals, forecast) — solo redesign UI/UX esistente
+- Date range picker nella TransactionFilterBar — deferred to v1.1 (AppHeader-only decision)
 
 ## Context
 
+**Shipped v1.0 — 2026-03-30**
+- 8 phases, 25 plans, ~4,917 LOC (src JSX/JS)
+- 170 files changed, 47,230 insertions across 62 days (2026-01-27 → 2026-03-30)
+- All 47 requirements satisfied
+
 **Stack attuale:**
 - React 19.2.0, Vite 7.2.4, Electron 34.5.8
-- CSS custom in `src/App.css` e `src/index.css` — nessun framework UI
-- Lucide React 0.563.0 per icone (già usato)
-- Recharts 3.7.0 per grafici (mantenuto)
-- `App.jsx` è il collo di bottiglia: 2127 righe, tutto in un file
+- Tailwind CSS v4 via @tailwindcss/vite, Inter Variable font (local via Fontsource)
+- Framer Motion for animations, Radix Dialog for modals
+- Recharts 3.7.0 for charts, Lucide React for icons
+- App.jsx decomposed into 6 hooks: useTransactionData, useCategories, useFilters, useModals, useImportLogic, useToast
 
-**Problemi noti dell'UI attuale:**
-- Nessun design system — stili sparsi e inconsistenti
-- Layout rigido, poco leggibile su schermi piccoli
-- Modali senza animazioni, accessibilità limitata
-- Dashboard poco gerarchica visivamente
+**Deferred tech debt (v1.1 candidates):**
+- 2 residual `selectedYear !== null` patterns in AreaChartCard.jsx and TransactionFilterBar.jsx (logged in deferred-items.md)
+- Date range picker for transaction filtering
 
-**Decisioni chiave già prese:**
-- Tailwind CSS v4 (utility-first, ottimo con Vite)
-- Mantenere Recharts (già integrato, basta reskin colori/stili)
-- Mantenere Lucide React (già usato, icone coerenti)
-- NON aggiungere component library esterna (shadcn richiede più setup per Electron)
+## Key Decisions
+
+| Decision | Rationale | Outcome |
+|----------|-----------|---------|
+| Tailwind CSS v4 | Utility-first, ottima integrazione Vite, no CSS specificity issues | ✓ Good — zero friction, HMR working |
+| Refactor App.jsx in hook + componenti | Riduce rischio bugs durante redesign, codice più manutenibile | ✓ Good — App.jsx ora ~300 righe di pura orchestrazione |
+| Stile light clean minimal | Richiesta utente — massima leggibilità per dati finanziari | ✓ Good — coerente con Inter Variable + design tokens |
+| Mantenere Recharts | Già funzionante, solo theming | ✓ Good — CSS var integration riuscita |
+| NO shadcn/ui | Evita overhead setup per Electron, Tailwind da solo è sufficiente | ✓ Good — Radix Dialog per modali sufficiente |
+| Radix Dialog per modali | Focus trap nativo, accessibilità, no custom scroll trapping | ✓ Good — tutti 7 modali migrati con consistenza |
+| Framer Motion per animazioni | API dichiarativa, AnimatePresence per mount/unmount | ✓ Good — sidebar, modali, toast, page transitions |
+| Barrel import per componenti UI | Normalizzazione import in tutto il codebase | ✓ Good — src/ui/index.js come punto unico |
 
 ## Constraints
 
@@ -70,15 +80,5 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 - **Dipendenze**: Preferire utility Tailwind; non aggiungere nuove librerie UI salvo necessità specifica
 - **Funzionalità**: Il redesign NON deve rompere funzionalità esistenti (import, sync, CRUD)
 
-## Key Decisions
-
-| Decision | Rationale | Outcome |
-|----------|-----------|---------|
-| Tailwind CSS v4 | Utility-first, ottima integrazione Vite, no CSS specificity issues | — Pending |
-| Refactor App.jsx in hook + componenti | Riduce rischio bugs durante redesign, codice più manutenibile | — Pending |
-| Stile light clean minimal | Richiesta utente — massima leggibilità per dati finanziari | — Pending |
-| Mantenere Recharts | Già funzionante, solo theming | — Pending |
-| NO shadcn/ui | Evita overhead setup per Electron, Tailwind da solo è sufficiente | — Pending |
-
 ---
-*Last updated: 2026-03-17 after initialization*
+*Last updated: 2026-03-30 after v1.0 milestone*
