@@ -13,7 +13,7 @@ import { MONTHS_IT } from '../constants';
  * @param {{
  *   stats: { income: number, expenses: number, categoryData: Array, monthlyData: Array, prevIncome?: number, prevExpenses?: number },
  *   selectedMonth: number|null,
- *   selectedYear: number|null,
+ *   selectedYear: number,
  *   dashboardCategoryFilter: string[],
  *   onCategoryFilterChange: (categories: string[]) => void,
  *   onTransactionsCategoryChange: (category: string|null) => void
@@ -93,11 +93,9 @@ export function DashboardView({
     >
       {/* Period label */}
       <h3 className="text-base font-semibold text-gray-700">
-        {selectedMonth !== null && selectedYear !== null
+        {selectedMonth !== null
           ? `${MONTHS_IT[selectedMonth]} ${selectedYear}`
-          : selectedYear !== null
-            ? `Anno ${selectedYear}`
-            : 'Tutti gli anni'}
+          : `Anno ${selectedYear}`}
       </h3>
 
       {/* Stat cards row */}

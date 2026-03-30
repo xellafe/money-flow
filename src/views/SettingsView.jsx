@@ -16,7 +16,7 @@ export function SettingsView({ onShowCategoryManager, onShowSyncSettings }) {
           </h3>
           <button
             onClick={onShowCategoryManager}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition-colors cursor-pointer"
           >
             Gestione Categorie
           </button>
@@ -28,7 +28,7 @@ export function SettingsView({ onShowCategoryManager, onShowSyncSettings }) {
           </h3>
           <button
             onClick={onShowSyncSettings}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium transition-colors cursor-pointer"
           >
             Sincronizzazione Drive
           </button>

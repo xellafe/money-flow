@@ -11,7 +11,6 @@ export function useModals() {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showSyncSettings, setShowSyncSettings] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState(null);
   const [newTransaction, setNewTransaction] = useState({
     date: '', description: '', amount: '', category: 'Altro',
   });
@@ -24,7 +23,6 @@ export function useModals() {
     showAddTransaction, setShowAddTransaction,
     showCategoryManager, setShowCategoryManager,
     showSyncSettings, setShowSyncSettings,
-    openDropdown, setOpenDropdown,
     newTransaction, setNewTransaction,
   };
 }

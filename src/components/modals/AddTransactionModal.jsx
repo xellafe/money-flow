@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Plus } from 'lucide-react';
-import ModalShell from '../ui/ModalShell';
+import { ModalShell } from '../ui';
 
 /**
  * Modal for manually adding a new transaction.

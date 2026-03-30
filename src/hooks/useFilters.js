@@ -10,11 +10,8 @@ export function useFilters({ years = [] } = {}) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [dashboardTypeFilter, setDashboardTypeFilter] = useState('all');
   const [dashboardCategoryFilter, setDashboardCategoryFilter] = useState([]);
   const [transactionsCategoryFilter, setTransactionsCategoryFilter] = useState(null);
-  const [expandedCategory, setExpandedCategory] = useState(null);
-  const [showCategoryPercentage, setShowCategoryPercentage] = useState(false);
   const [sortColumn, setSortColumn] = useState('date');
   const [sortDirection, setSortDirection] = useState('desc');
 
@@ -37,11 +34,8 @@ export function useFilters({ years = [] } = {}) {
     selectedYear, setSelectedYear,
     searchQuery, setSearchQuery,
     currentPage, setCurrentPage,
-    dashboardTypeFilter, setDashboardTypeFilter,
     dashboardCategoryFilter, setDashboardCategoryFilter,
     transactionsCategoryFilter, setTransactionsCategoryFilter,
-    expandedCategory, setExpandedCategory,
-    showCategoryPercentage, setShowCategoryPercentage,
     sortColumn, setSortColumn,
     sortDirection, setSortDirection,
   };

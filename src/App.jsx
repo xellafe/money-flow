@@ -154,9 +154,7 @@ export default function MoneyFlow() {
 
   // Calcoli statistiche
   const stats = useMemo(() => {
-    let filtered = selectedYear !== null
-      ? transactions.filter((t) => new Date(t.date).getFullYear() === selectedYear)
-      : [...transactions];
+    let filtered = transactions.filter((t) => new Date(t.date).getFullYear() === selectedYear);
 
     if (selectedMonth !== null) {
       filtered = filtered.filter(
@@ -214,9 +212,7 @@ export default function MoneyFlow() {
       .sort((a, b) => b.value - a.value);
 
     const byMonth = {};
-    let monthlyFiltered = selectedYear !== null
-      ? transactions.filter((t) => new Date(t.date).getFullYear() === selectedYear)
-      : [...transactions];
+    let monthlyFiltered = transactions.filter((t) => new Date(t.date).getFullYear() === selectedYear);
     if (dashboardCategoryFilter.length > 0) {
       monthlyFiltered = monthlyFiltered.filter((t) =>
         dashboardCategoryFilter.includes(t.category),
@@ -317,7 +313,7 @@ export default function MoneyFlow() {
     // Previous period stats for % change calculation
     let prevIncome = null;
     let prevExpenses = null;
-    if (selectedMonth !== null && selectedYear !== null) {
+    if (selectedMonth !== null) {
       const prevMonth = selectedMonth === 0 ? 11 : selectedMonth - 1;
       const prevYear = selectedMonth === 0 ? selectedYear - 1 : selectedYear;
       const prevTxs = transactions.filter(t => {
@@ -354,27 +350,24 @@ export default function MoneyFlow() {
 
   // Months that actually have transactions in the selected year (for period selector)
   const availableMonths = useMemo(() => {
-    const base = selectedYear !== null
-      ? transactions.filter(t => new Date(t.date).getFullYear() === selectedYear)
-      : transactions;
+    const base = transactions.filter(t => new Date(t.date).getFullYear() === selectedYear);
     return new Set(base.map(t => new Date(t.date).getMonth()));
   }, [transactions, selectedYear]);
 
   // Period navigation handlers (must be before early return to follow rules of hooks)
   const handlePrevYear = useCallback(() => {
-    setSelectedYear(y => (y ?? new Date().getFullYear()) - 1);
+    setSelectedYear(y => y - 1);
     setSelectedMonth(null);
   }, [setSelectedYear, setSelectedMonth]);
 
   const handleNextYear = useCallback(() => {
-    setSelectedYear(y => (y ?? new Date().getFullYear()) + 1);
+    setSelectedYear(y => y + 1);
     setSelectedMonth(null);
   }, [setSelectedYear, setSelectedMonth]);
 
   const handleSelectMonth = useCallback((month) => {
-    if (selectedYear === null) setSelectedYear(new Date().getFullYear());
     setSelectedMonth(prev => (prev === month ? null : month));
-  }, [selectedYear, setSelectedYear, setSelectedMonth]);
+  }, [setSelectedMonth]);
 
   // Mostra nulla finché i dati iniziali non sono caricati
   if (!isInitialized) {
