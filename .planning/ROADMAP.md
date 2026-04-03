@@ -33,7 +33,7 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
 ## Phases
 
 - [ ] **Phase 9: Update Infrastructure** — Install electron-updater, wire main process, expose IPC bridge to renderer
-- [ ] **Phase 10: Update UI** — UpdateBanner, Settings Aggiornamenti section, manual check, post-check feedback
+- [x] **Phase 10: Update UI** — UpdateBanner, Settings Aggiornamenti section, manual check, post-check feedback (completed 2026-04-03)
 
 ## Phase Details
 
@@ -73,4 +73,4 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 9. Update Infrastructure | 0/1 | Planned | — |
-| 10. Update UI | 0/2 | Planned | — |
+| 10. Update UI | 0/2 | Complete    | 2026-04-03 |
