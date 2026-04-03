@@ -32,7 +32,12 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 
 ### Active
 
-*(Next milestone requirements go here)*
+- [ ] **UPD-01**: Configurare electron-updater con GitHub Releases come provider
+- [ ] **UPD-02**: Check aggiornamenti automatico all'avvio dell'app
+- [ ] **UPD-03**: Toast non-bloccante con pulsante "Installa e riavvia" se update disponibile
+- [ ] **UPD-04**: Sezione "Aggiornamenti" in SettingsView con versione corrente e stato
+- [ ] **UPD-05**: Pulsante "Controlla aggiornamenti" con feedback visivo (loading, found, up-to-date, error)
+- [ ] **UPD-06**: IPC bridge main ↔ renderer per eventi update (check, progress, ready, error)
 
 ### Out of Scope
 
@@ -41,6 +46,16 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 - Mobile app — desktop-only (Electron)
 - Nuove funzionalità business (budget goals, forecast) — solo redesign UI/UX esistente
 - Date range picker nella TransactionFilterBar — deferred to v1.1 (AppHeader-only decision)
+
+## Current Milestone: v1.1 Auto-Update
+
+**Goal:** Aggiungere il sistema di aggiornamento automatico via GitHub Releases con check all'avvio e controllo manuale dalla schermata Impostazioni.
+
+**Target features:**
+- electron-updater integrato con GitHub Releases
+- Check automatico all'avvio → toast non-bloccante con "Installa e riavvia"
+- Sezione "Aggiornamenti" in SettingsView con versione attuale, stato e pulsante manuale
+- IPC bridge main ↔ renderer per eventi update
 
 ## Context
 
@@ -80,5 +95,22 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 - **Dipendenze**: Preferire utility Tailwind; non aggiungere nuove librerie UI salvo necessità specifica
 - **Funzionalità**: Il redesign NON deve rompere funzionalità esistenti (import, sync, CRUD)
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-03-30 after v1.0 milestone*
+*Last updated: 2026-04-03 after v1.1 milestone started*

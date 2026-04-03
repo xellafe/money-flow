@@ -1,32 +1,34 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: MVP
-status: completed
-last_updated: "2026-03-30T13:30:00.000Z"
+milestone: v1.1
+milestone_name: Auto-Update
+status: in_progress
+last_updated: "2026-04-03T08:14:00.000Z"
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 25
-  completed_plans: 25
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
-# Project State: MoneyFlow UI/UX Redesign
+# Project State: MoneyFlow Auto-Update
 
-**Last Updated:** 2026-03-30 (v1.0 milestone archived)
+**Last Updated:** 2026-04-03 (v1.1 milestone started)
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-30)
+See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core Value:** L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — dashboard chiara, dati leggibili, flusso di importazione senza frizioni.
-**Current Focus:** v1.0 shipped — planning next milestone
+**Current Focus:** v1.1 — Auto-update via GitHub Releases
 
 ## Current Position
 
-**Status:** ✅ v1.0 MILESTONE COMPLETE
-**Progress:** [██████████] 100% — 8/8 phases, 25/25 plans, 47/47 requirements
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-03 — Milestone v1.1 started
 
 ## Archived
 
