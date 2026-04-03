@@ -49,7 +49,7 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
 **Plans:** 1 plan
 
 Plans:
-- [ ] 09-01-PLAN.md — Install electron-updater, configure GitHub publish, wire main process + IPC bridge
+- [x] 09-01-PLAN.md — Install electron-updater, configure GitHub publish, wire main process + IPC bridge
 
 ### Phase 10: Update UI
 **Goal**: Users can see and act on available updates — automatic notification in the corner when a download is ready, and full manual control from the Settings screen
