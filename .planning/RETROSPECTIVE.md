@@ -35,28 +35,56 @@
 - **CSS variable colors in Recharts:** `getComputedStyle` utility to read Tailwind design tokens at runtime
 - **ModalShell as universal wrapper:** Any new modal goes through Radix Dialog + ModalShell — never raw HTML
 
-### Key Lessons
-1. State extraction as a dedicated phase pays dividends — downstream phases moved faster with stable hooks
-2. Design tokens via CSS variables are worth the upfront setup; theming and consistency fall into place naturally
-3. Milestone audit before archiving (Phase 8) is worth running — caught 5 real items that would have been permanent debt
-4. AnimatePresence must wrap the conditional render, not be inside the component — easy to get wrong, worth enforcing as convention
-
-### Cost Observations
-- Model mix: ~90% sonnet, ~10% haiku (explore agents)
-- Sessions: multiple across 62 days
-- Notable: parallel wave execution (phases 4+5 logically parallel) reduced planning overhead
-
 ---
 
-## Cross-Milestone Trends
+## Milestone: v1.1 — Auto-Update
+
+**Shipped:** 2026-04-03
+**Phases:** 3 (9–11) | **Plans:** 4 | **Duration:** 1 day
+
+### What Was Built
+- electron-updater integration with GitHub Releases provider (prod-only guard, 3s startup delay)
+- IPC bridge: 8 preload methods, 3 `ipcMain.handle` handlers, 5 push event channels
+- `useUpdateStatus` hook — centralised update state machine in renderer (idle → checking → available → downloading → ready)
+- `UpdateBanner` — non-blocking toast shown when download completes, "Installa e riavvia" triggers `quitAndInstall`
+- Settings → Aggiornamenti section with current version display, manual check button, progress bar, last-checked timestamp
+- Fixed silent error swallowing: `autoUpdater.on('error')` is now the single forwarding point; `updater:start-download` throws instead of returning `{ success: false }`
+
+### What Worked
+- **Atomic D-01+D-02:** Fixing both the duplicate send and the missing guard in one commit prevented a window where the double-fire bug could exist in any shipped revision
+- **Single forwarding point pattern:** Identifying `autoUpdater.on('error')` as the canonical source-of-truth for all update errors made the fix clean and easy to verify
+- **gsd-plan-checker catching exact code hunks:** Verifying exact before/after in the plan before execution meant zero surprises at edit time
+- **`ipcMain.handle` / `throw` pattern understood early:** Knowing that `return { success: false }` silently resolves the renderer promise prevented a harder-to-diagnose bug
+
+### What Was Inefficient
+- Stale `.git/index.lock` from a prior interrupted command blocked the first commit — required manual removal
+- `edit` tool failed on ROADMAP.md due to CRLF/whitespace encoding mismatch; needed PowerShell `Set-Content` fallback
+- gsd-tools `milestone complete` accomplishment extraction pulled frontmatter keys instead of real content — manual correction needed
+
+### Patterns Established
+- **Single IPC error-forwarding point:** `autoUpdater.on('error')` is the canonical place to send `updater:error` to renderer; IPC handlers must not duplicate it
+- **`throw err` in `ipcMain.handle`:** Returning an error object silently resolves the renderer promise; throwing is required for `.catch()` to fire
+- **Prod-only auto-update guard:** Wrap all `autoUpdater` calls with `!isDev` to prevent crashes during development
+
+### Key Lessons
+1. `ipcMain.handle` semantics: `return` always resolves, `throw` rejects — this matters for any IPC handler where the renderer needs to catch errors
+2. electron-updater fires both the `error` event AND rejects the `.checkForUpdates()` promise for the same failure — dedup is required
+3. Milestone audit before archiving was worth it — Phase 11 was discovered and planned from the audit's tech debt findings
+
+### Cost Observations
+- Model mix: ~70% opus (planning + verification), ~30% sonnet (execution + research)
+- Duration: single-day milestone — 3 phases in one session
 
 ### Process Evolution
 
 | Milestone | Phases | Plans | Duration | Key Change |
 |-----------|--------|-------|----------|------------|
 | v1.0 MVP  | 8      | 25    | 62 days  | First milestone — established hook-first pattern, design tokens, audit-driven cleanup |
+| v1.1 Auto-Update | 3 | 4 | 1 day | IPC bridge pattern, single error-forwarding point, `throw` semantics in `ipcMain.handle` |
 
 ### Top Lessons (Verified Across Milestones)
 
 1. Extract state before refactoring UI — reduces coupling and test surface
 2. Design tokens as CSS variables beat inline colors every time for maintainability
+3. Milestone audit before archiving is worth it — surfaces tech debt that becomes the next milestone
+4. `ipcMain.handle` semantics differ from REST: `throw` to reject, not `return { error }`

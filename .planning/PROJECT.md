@@ -1,8 +1,8 @@
-# MoneyFlow — UI/UX Redesign
+# MoneyFlow — Desktop Budget App
 
 ## What This Is
 
-MoneyFlow è un'applicazione desktop (Electron + React 19) per la gestione del budget personale. Importa transazioni da file Excel/CSV di banche italiane (Illimity, Fineco, PayPal), le categorizza automaticamente e le visualizza con grafici interattivi. **v1.0 spedita:** il redesign completo porta l'interfaccia a uno stile light clean & minimal con Tailwind CSS v4, navigazione sidebar animata, dashboard con grafici interattivi, lista transazioni con inline editing, e sistema modale unificato con Radix Dialog.
+MoneyFlow è un'applicazione desktop (Electron + React 19) per la gestione del budget personale. Importa transazioni da file Excel/CSV di banche italiane (Illimity, Fineco, PayPal), le categorizza automaticamente e le visualizza con grafici interattivi. **v1.1 spedita:** sistema di aggiornamento automatico via GitHub Releases con check all'avvio, toast non-bloccante "Installa e riavvia", sezione Aggiornamenti in Settings con controllo manuale, e gestione completa degli errori IPC.
 
 ## Core Value
 
@@ -32,15 +32,34 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 
 ### Active
 
-- [x] **UPD-03**: Toast non-bloccante con pulsante "Installa e riavvia" se update disponibile — *Validated in Phase 10: update-ui*
-- [x] **UPD-04**: Sezione "Aggiornamenti" in SettingsView con versione corrente e stato — *Validated in Phase 10: update-ui*
-- [x] **UPD-05**: Pulsante "Controlla aggiornamenti" con feedback visivo (loading, found, up-to-date, error) — *Validated in Phase 10: update-ui*
+*(Nothing — v1.1 milestone complete. Next requirements defined in next milestone.)*
 
 ### Validated
 
-- [x] **UPD-01**: Configurare electron-updater con GitHub Releases come provider — *Validated in Phase 09: update-infrastructure*
-- [x] **UPD-02**: Check aggiornamenti automatico all'avvio dell'app — *Validated in Phase 09: update-infrastructure*
-- [x] **UPD-06**: IPC bridge main ↔ renderer per eventi update (check, progress, ready, error) — *Validated in Phase 09: update-infrastructure*
+- ✓ Importazione transazioni da Excel/CSV (Illimity, Fineco, PayPal, generic) — existing
+- ✓ Auto-categorizzazione keyword-based con gestione conflitti — existing
+- ✓ Dashboard analytics con grafici (Recharts: bar, area, pie) — existing
+- ✓ CRUD transazioni manuali (add, edit, delete) — existing
+- ✓ Gestione categorie (add, edit, delete, keyword mapping) — existing
+- ✓ Sincronizzazione Google Drive (OAuth, backup/restore, auto-backup alla chiusura) — existing
+- ✓ Import profiles personalizzabili — existing
+- ✓ Persistenza locale via localStorage — existing
+- ✓ Toast notifications — existing
+- ✓ Tailwind CSS v4 come sistema di styling principale — v1.0
+- ✓ Refactor App.jsx monolitico (2127 righe) in 6 hook separati — v1.0
+- ✓ Design system: token colori, tipografia, spacing coerenti — v1.0
+- ✓ Redesign navigazione: sidebar fissa animata (240px/64px), AppHeader contestuale — v1.0
+- ✓ Redesign Dashboard: stat cards, AreaChart + DonutChart, period selector, cross-filter — v1.0
+- ✓ Redesign Lista Transazioni: tabella sortable, inline editing, ricerca debounced, filter chips — v1.0
+- ✓ Redesign Modali: Radix Dialog + ModalShell, scale/fade 200ms, focus trap, 7 modali migrate — v1.0
+- ✓ UX polish: toast animato, skeleton loading, empty states, page transitions, cursor coerente — v1.0
+- ✓ **UPD-01**: electron-updater configurato con GitHub Releases come provider — v1.1
+- ✓ **UPD-02**: Check aggiornamenti automatico all'avvio (3s delay, prod-only guard) — v1.1
+- ✓ **UPD-03**: Toast non-bloccante "Installa e riavvia" quando download completato — v1.1
+- ✓ **UPD-04**: Sezione "Aggiornamenti" in SettingsView con versione corrente e stato — v1.1
+- ✓ **UPD-05**: Pulsante "Controlla aggiornamenti" con feedback visivo (loading, found, up-to-date, error) — v1.1
+- ✓ **UPD-06**: IPC bridge main ↔ renderer (8 metodi preload, 3 IPC handlers, 5 push events) — v1.1
+- ✓ **UPD-07/08/09**: Gestione errori IPC completa — errori background/download raggiungono renderer via single forwarding point — v1.1
 
 ### Out of Scope
 
@@ -50,15 +69,20 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 - Nuove funzionalità business (budget goals, forecast) — solo redesign UI/UX esistente
 - Date range picker nella TransactionFilterBar — deferred to v1.1 (AppHeader-only decision)
 
-## Current Milestone: v1.1 Auto-Update — **COMPLETE**
+## Last Shipped: v1.1 Auto-Update — **2026-04-03**
 
-**Goal:** Aggiungere il sistema di aggiornamento automatico via GitHub Releases con check all'avvio e controllo manuale dalla schermata Impostazioni.
+**Goal:** Aggiungere sistema aggiornamento automatico via GitHub Releases con check all'avvio e controllo manuale da Impostazioni.
 
-**Completed:** Phase 9 (infrastructure), Phase 10 (UI), Phase 11 (error handling) — 2026-04-03
+**Phases:** 9 (infrastructure) → 10 (UI) → 11 (error handling) — 3 phases, 4 plans, 2026-04-03
 
-**Phase 11 complete:** Silent error swallowing fixed — `autoUpdater.on('error')` now forwards to renderer; `updater:start-download` rejects on error so UI shows error state.
+**Context:** See `.planning/milestones/v1.1-ROADMAP.md` for full archive.
 
 ## Context
+
+**Shipped v1.1 — 2026-04-03**
+- 3 phases (9–11), 4 plans
+- Auto-update system: electron-updater + IPC bridge + React UI + full error handling
+- See `.planning/milestones/v1.1-ROADMAP.md`
 
 **Shipped v1.0 — 2026-03-30**
 - 8 phases, 25 plans, ~4,917 LOC (src JSX/JS)
@@ -87,7 +111,10 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 | NO shadcn/ui | Evita overhead setup per Electron, Tailwind da solo è sufficiente | ✓ Good — Radix Dialog per modali sufficiente |
 | Radix Dialog per modali | Focus trap nativo, accessibilità, no custom scroll trapping | ✓ Good — tutti 7 modali migrati con consistenza |
 | Framer Motion per animazioni | API dichiarativa, AnimatePresence per mount/unmount | ✓ Good — sidebar, modali, toast, page transitions |
-| Barrel import per componenti UI | Normalizzazione import in tutto il codebase | ✓ Good — src/ui/index.js come punto unico |
+| electron-updater via GitHub Releases | Integrazione nativa Electron, zero infra, free tier sufficiente | ✓ Good — auto-update funzionante end-to-end |
+| Single error-forwarding point | Evita doppio-fire: `autoUpdater.on('error')` è l'unico punto che manda `updater:error` al renderer | ✓ Good — D-01+D-02 pattern; dedup richiesto |
+| `throw err` in `ipcMain.handle` | `return { success: false }` risolve sempre la promise; solo `throw` fa scattare `.catch()` in renderer | ✓ Good — necessario per mostrare error state in UI |
+| useUpdateStatus hook (renderer) | Centralizza tutto lo stato update in un hook; zero prop drilling | ✓ Good — usato sia in UpdateBanner che SettingsView |
 
 ## Constraints
 
@@ -114,4 +141,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-03 — Phase 10 complete: update UI delivered (UpdateBanner, SettingsView Aggiornamenti, useUpdateStatus hook)*
+*Last updated: 2026-04-03 — v1.1 milestone complete: auto-update system shipped (Phases 9–11)*
