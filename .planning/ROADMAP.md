@@ -35,6 +35,8 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
 - [x] **Phase 9: Update Infrastructure** — Install electron-updater, wire main process, expose IPC bridge to renderer (completed 2026-04-03)
 - [x] **Phase 10: Update UI** — UpdateBanner, Settings Aggiornamenti section, manual check, post-check feedback (completed 2026-04-03)
 
+- [ ] **Phase 11: Update Error Handling** — Fix silent error swallowing in IPC bridge (background/download errors reach renderer)
+
 ## Phase Details
 
 ### Phase 9: Update Infrastructure
@@ -68,9 +70,20 @@ Plans:
 
 **UI hint**: yes
 
+### Phase 11: Update Error Handling
+**Goal:** Fix silent error swallowing in the auto-update IPC bridge — background/download errors must reach the renderer so the UI can show the error state instead of freezing indefinitely
+**Depends on:** Phase 10
+**Gap Closure:** Closes tech-debt Issues 1 & 2 from v1.1-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. When `autoUpdater.on('error', ...)` fires (background startup check or mid-download), a `webContents.send('updater:error', err.message)` call is made so `useUpdateStatus` transitions to `status='error'`
+  2. When `updater:start-download` IPC handler encounters an error, the promise rejects (or the hook inspects the return value) so `useUpdateStatus.catch()` fires and sets `status='error'`
+  3. The renderer UI shows the error state in both banner-flow and Settings after a background/download failure — no more indefinitely-stuck `'idle'` or `'downloading'` status
+**Plans:** 1 plan
+
 ## Progress Table
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 9. Update Infrastructure | 1/1 | Complete | 2026-04-03 |
 | 10. Update UI | 2/2 | Complete | 2026-04-03 |
+| 11. Update Error Handling | 0/1 | Planned | — |
