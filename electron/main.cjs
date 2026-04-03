@@ -362,3 +362,5 @@ ipcMain.handle('updater:install-update', async () => {
   isQuitting = true;  // D-08: prevents backup flow in 'close' handler
   autoUpdater.quitAndInstall();
 });
+
+ipcMain.handle('get-app-version', () => app.getVersion());

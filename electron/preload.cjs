@@ -69,4 +69,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Utility per sapere se siamo in Electron
   isElectron: true,
+
+  // App version
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 });
