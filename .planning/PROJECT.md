@@ -32,9 +32,9 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 
 ### Active
 
-- [ ] **UPD-03**: Toast non-bloccante con pulsante "Installa e riavvia" se update disponibile
-- [ ] **UPD-04**: Sezione "Aggiornamenti" in SettingsView con versione corrente e stato
-- [ ] **UPD-05**: Pulsante "Controlla aggiornamenti" con feedback visivo (loading, found, up-to-date, error)
+- [x] **UPD-03**: Toast non-bloccante con pulsante "Installa e riavvia" se update disponibile — *Validated in Phase 10: update-ui*
+- [x] **UPD-04**: Sezione "Aggiornamenti" in SettingsView con versione corrente e stato — *Validated in Phase 10: update-ui*
+- [x] **UPD-05**: Pulsante "Controlla aggiornamenti" con feedback visivo (loading, found, up-to-date, error) — *Validated in Phase 10: update-ui*
 
 ### Validated
 
@@ -50,15 +50,13 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 - Nuove funzionalità business (budget goals, forecast) — solo redesign UI/UX esistente
 - Date range picker nella TransactionFilterBar — deferred to v1.1 (AppHeader-only decision)
 
-## Current Milestone: v1.1 Auto-Update
+## Current Milestone: v1.1 Auto-Update — **COMPLETE**
 
 **Goal:** Aggiungere il sistema di aggiornamento automatico via GitHub Releases con check all'avvio e controllo manuale dalla schermata Impostazioni.
 
-**Target features:**
-- electron-updater integrato con GitHub Releases
-- Check automatico all'avvio → toast non-bloccante con "Installa e riavvia"
-- Sezione "Aggiornamenti" in SettingsView con versione attuale, stato e pulsante manuale
-- IPC bridge main ↔ renderer per eventi update
+**Completed:** Phase 9 (infrastructure), Phase 10 (UI), Phase 11 (error handling) — 2026-04-03
+
+**Phase 11 complete:** Silent error swallowing fixed — `autoUpdater.on('error')` now forwards to renderer; `updater:start-download` rejects on error so UI shows error state.
 
 ## Context
 
