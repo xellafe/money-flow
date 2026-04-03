@@ -10,6 +10,7 @@ import {
 // Components
 import {
   Toast,
+  UpdateBanner,
   ConfirmModal,
   ImportWizard,
   ConflictResolver,
@@ -26,13 +27,14 @@ import { TransactionsView } from './views/TransactionsView';
 import AddTransactionModal from './components/modals/AddTransactionModal';
 
 // Hooks
-import { useGoogleDrive, useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic, useViewState } from "./hooks";
+import { useGoogleDrive, useToast, useModals, useFilters, useCategories, useTransactionData, useImportLogic, useViewState, useUpdateStatus } from "./hooks";
 
 import "./App.css";
 
 export default function MoneyFlow() {
   // Hooks
   const { toast, setToast, showToast } = useToast();
+  const updateStatus = useUpdateStatus();
   const {
     confirmDelete, setConfirmDelete,
     editingTx, setEditingTx,
@@ -442,6 +444,7 @@ export default function MoneyFlow() {
             <SettingsView
               onShowCategoryManager={() => setShowCategoryManager(true)}
               onShowSyncSettings={() => setShowSyncSettings(true)}
+              updateStatus={updateStatus}
             />
           )}
         </motion.div>
@@ -550,17 +553,30 @@ export default function MoneyFlow() {
         )}
       </AnimatePresence>
 
-      {/* Toast — AnimatePresence for exit animation */}
-      <AnimatePresence mode="wait">
-        {toast && (
-          <Toast
-            key={toast.id}
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        )}
-      </AnimatePresence>
+      {/* Notification stack — Toast + UpdateBanner */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col-reverse gap-3">
+        <AnimatePresence>
+          {toast && (
+            <Toast
+              key={toast.id}
+              message={toast.message}
+              type={toast.type}
+              onClose={() => setToast(null)}
+            />
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {updateStatus.status === 'ready' && !updateStatus.isDismissed && (
+            <UpdateBanner
+              key="update-banner"
+              version={updateStatus.version}
+              onInstall={updateStatus.installUpdate}
+              onDismiss={updateStatus.dismissBanner}
+              isInstalling={updateStatus.isInstalling}
+            />
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Confirm Modal */}
       <AnimatePresence>

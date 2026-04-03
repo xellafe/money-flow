@@ -19,8 +19,10 @@ export default function Toast({ message, type, onClose }) {
   }, [onClose]);
 
   return (
+    // Positioned by parent container in App.jsx (fixed bottom-6 right-6 z-50)
+    // Do NOT add fixed positioning here — it will double-position the toast
     <motion.div
-      className="fixed bottom-6 right-6 z-50 bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3 text-gray-800 min-w-[260px]"
+      className="bg-white border border-gray-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3 text-gray-800 min-w-[260px]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } }}
       exit={{ opacity: 0, y: 20, transition: { duration: 0.2, ease: 'easeIn' } }}
