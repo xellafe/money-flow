@@ -69,10 +69,12 @@ function setupAutoUpdater() {
     }
   });
 
-  // Error handler: log always, do NOT forward to renderer here
-  // The IPC handler catches errors from checkForUpdates() and forwards them
+  // Error handler: single forwarding point for all updater errors (D-01)
   autoUpdater.on('error', (err) => {
     log.error('autoUpdater error:', err.message);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('updater:error', err.message);
+    }
   });
 
   // Startup check — 3s delay per D-06
@@ -341,9 +343,6 @@ ipcMain.handle('updater:check-for-updates', async () => {
     return { success: true };
   } catch (err) {
     log.error('checkForUpdates error:', err.message);
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('updater:error', err.message);
-    }
     return { success: false, error: err.message };
   }
 });
