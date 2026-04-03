@@ -1,474 +1,358 @@
-# Feature Landscape: Personal Finance UI/UX
+# Feature Landscape — Auto-Update UX
 
-**Domain:** Personal Finance / Budget Tracker Desktop Application
-**Researched:** 2025-01-17
-**Target Aesthetic:** Light, Clean, Minimal (Notion/Apple/Linear-inspired)
-**Platform:** Electron Desktop (Windows 7+)
-
-## Executive Summary
-
-Modern personal finance apps excel through **clarity at a glance**, **zero-friction data entry**, and **subtle but purposeful interactions**. The best apps (YNAB, Copilot, Revolut) prioritize information hierarchy, use color sparingly but meaningfully, and make common actions (add transaction, filter, categorize) require minimal clicks.
-
-For desktop apps, **sidebar navigation** dominates (Notion, Linear, Slack pattern), providing persistent context and quick switching. Transaction lists behave like "smart tables" — inline editing, keyboard shortcuts, bulk actions. Dashboards use **card-based layouts** with progressive disclosure: headline metrics above the fold, detailed charts/breakdowns on scroll.
-
-The redesign should focus on:
-1. **Visual breathing room** — whitespace, clear typography hierarchy, light shadows
-2. **Purposeful motion** — smooth transitions, loading states, hover feedback
-3. **Contextual density** — show more when users need it, hide when they don't
+**Milestone:** v1.1 Auto-Update (electron-updater + GitHub Releases)
+**Domain:** Electron desktop auto-update UX patterns
+**Researched:** 2026-04-03
+**App stack:** React 19, Framer Motion, Tailwind CSS v4, Radix Dialog, Lucide icons
+**Existing infra:** Toast (success/error, 3s auto-dismiss), SettingsView (section+button pattern), IPC bridge (invoke + webContents.send)
 
 ## Table Stakes
 
-Features users expect. Missing = product feels incomplete or amateur.
-
-### Dashboard & Overview
-
-| Feature | Why Expected | Complexity | Implementation Notes |
-|---------|--------------|------------|---------------------|
-| **At-a-glance balance summary** | First thing users check: "Do I have money?" | Low | Single large metric card: current balance, income this month, expenses this month. Use color coding: green (positive balance), red (negative), yellow (warning threshold). |
-| **Time period selector** | Users think in months/quarters/years | Low | Dropdown or segmented control (This Month, Last Month, This Year, Custom). Should update all dashboard metrics/charts. Already exists in MoneyFlow, needs visual refinement. |
-| **Income vs. Expense comparison** | Core question: "Am I spending more than I earn?" | Low | Bar chart or side-by-side cards. Show absolute values + percentage comparison. YNAB uses stacked bars; Copilot uses simple ratio display. |
-| **Category breakdown pie/donut chart** | Users want to see where money goes | Medium | Already in MoneyFlow (Recharts). Redesign: larger, cleaner legend, click-to-filter category, show top 5-7 categories + "Other". Use muted color palette (not rainbow). |
-| **Monthly trend line chart** | Pattern recognition: "Am I improving?" | Medium | Area or line chart showing income/expense over time. Already exists, needs cleaner axis labels, tooltip improvements. |
-| **Quick filters: income/expense/all toggle** | Fast context switching | Low | Segmented button group above transaction list. Single click to filter view. |
-| **Empty state with CTA** | First-run experience crucial | Low | Friendly illustration or icon, clear "Import your first transactions" button. Explain value prop: "Track spending in 2 minutes". |
-
-### Transaction List
-
-| Feature | Why Expected | Complexity | Implementation Notes |
-|---------|--------------|------------|---------------------|
-| **Tabular layout with sortable columns** | Users expect spreadsheet-like behavior | Low | Date, Description, Amount, Category, Actions. Click column header to sort. Current MoneyFlow has this; needs cleaner styling. |
-| **Inline editing (description, category)** | Avoiding modal friction for quick edits | Medium | Double-click or single-click to edit cell. Enter/Esc to save/cancel. Description and Category most common edits. |
-| **Search/filter bar (always visible)** | Essential for large transaction sets (>50) | Low | Fixed position near top. Search should filter as-you-type (debounced). Filter by description text. |
-| **Bulk selection + actions** | Efficiency: categorize multiple at once | Medium | Checkbox column, "Select All" option. Actions: delete, bulk categorize. Show "X selected" indicator. |
-| **Date range filter** | Critical for finance: "Show me Q4" | Medium | Date picker input (single or range). Pre-sets: This Month, Last 3 Months, This Year. |
-| **Category filter (multi-select)** | "Show me all Food + Transport" | Medium | Dropdown with checkboxes or tag-style pills. Should support multiple categories. |
-| **Pagination or virtual scrolling** | Performance with 1000+ transactions | Medium | MoneyFlow has pagination. Consider virtual scrolling (react-window) for smoother UX if >500 transactions typical. |
-| **Amount formatting & color coding** | Readability: income green, expense red | Low | Format with currency symbol, 2 decimals. Positive amounts green, negative red. Already exists; ensure consistent styling. |
-| **Quick add transaction button** | Low-friction manual entry | Low | Floating action button or persistent "+ New" button. Opens inline form or compact modal. |
-| **Transaction detail hover/tooltip** | Show full info without clicking | Low | Hover shows: full description, note, bank ID, import date. Subtle shadow/border on hover. |
-
-### Navigation & Layout
-
-| Feature | Why Expected | Complexity | Implementation Notes |
-|---------|--------------|------------|---------------------|
-| **Fixed sidebar navigation** | Desktop standard (Notion, Linear, Slack) | Low | Left-aligned, 240px wide, icons + labels. Sections: Dashboard, Transactions, Categories, Settings, Sync. Always visible. |
-| **Icon-based navigation items** | Visual recognition faster than text | Low | Use Lucide icons (already in project). Home, List, Tag, Settings, Cloud icons. Hover shows tooltip if labels hidden. |
-| **Active state indication** | User needs to know "where am I?" | Low | Highlight active nav item with background color or left border. Subtle, not bold. |
-| **Responsive sidebar collapse** | Smaller windows need more space | Medium | Toggle button to collapse sidebar to icon-only mode. Save state in localStorage. |
-| **Header with contextual title** | Reinforces current view | Low | Top bar shows current view name (e.g., "Dashboard", "Transactions — February 2025"). Breadcrumb optional for multi-level views. |
-| **Window controls integration** | Electron-specific: native feel | Low | Custom title bar or integrate with system controls. Drag region for moving window. |
-
-### Modals & Dialogs
-
-| Feature | Why Expected | Complexity | Implementation Notes |
-|---------|--------------|------------|---------------------|
-| **Overlay with backdrop blur** | Focus attention, modern aesthetic | Low | Semi-transparent dark backdrop (rgba(0,0,0,0.5)), optional backdrop-blur CSS. |
-| **Smooth open/close animations** | Perceived performance, polish | Low | Fade + scale (0.95 → 1.0) on open. Duration: 200-300ms. Use CSS transitions or Framer Motion. |
-| **Keyboard shortcuts (ESC to close)** | Power user efficiency | Low | ESC closes modal, ENTER submits form (when not in textarea). Already standard, ensure consistent. |
-| **Focus trap** | Accessibility + UX | Medium | Tab cycles within modal. Focus returns to trigger element on close. Use focus-trap-react or manual implementation. |
-| **Persistent position on screen** | Modal shouldn't jump around | Low | Center modal in viewport, fixed position. Large modals (Import Wizard) may be full-screen overlay. |
-| **Action buttons: consistent placement** | Predictability reduces cognitive load | Low | Primary action right-aligned, secondary left or left of primary. "Save" right, "Cancel" left. Never swap. |
-| **Loading states within modal** | Async operations need feedback | Low | Disable buttons, show spinner, or progress indicator. "Saving..." text. |
-
-### Data Visualization
-
-| Feature | Why Expected | Complexity | Implementation Notes |
-|---------|--------------|------------|---------------------|
-| **Consistent color palette** | Brand identity + readability | Low | Define 6-8 category colors (muted palette: blues, greens, oranges). Avoid pure red/green for colorblind users. |
-| **Accessible chart colors** | Colorblind-friendly | Medium | Use patterns or labels in addition to color. Test with colorblind simulator. |
-| **Interactive tooltips on charts** | Show exact values on hover | Low | Recharts supports this. Ensure tooltip is readable: white bg, shadow, formatted numbers. |
-| **Responsive chart sizing** | Desktop windows resize frequently | Medium | Use aspect ratio or viewport-relative sizing. Charts should scale gracefully 1024px to 1920px width. |
-| **Legend with click-to-filter** | Let users explore data dynamically | Medium | Click legend item to hide/show that category in chart. Visual feedback on hover. |
-| **Empty state for charts** | "No data to display" handling | Low | Show placeholder with message: "Add transactions to see insights". Don't show broken/empty chart. |
-
-### Feedback & States
-
-| Feature | Why Expected | Complexity | Implementation Notes |
-|---------|--------------|------------|---------------------|
-| **Toast notifications** | Non-blocking confirmations | Low | Already in MoneyFlow. Redesign: bottom-right corner, auto-dismiss in 3-5s, success/error/info states with icons. |
-| **Loading skeletons** | Perceived speed during data load | Low | Use gray placeholder boxes mimicking content layout. Better than spinners for list/table data. |
-| **Form validation (inline feedback)** | Prevent errors before submission | Medium | Show validation message below input field. Red border + icon. Validate on blur, not on keystroke. |
-| **Hover states on interactive elements** | Affordance: "this is clickable" | Low | Subtle background color change, pointer cursor, slight shadow. Consistent across buttons, rows, cards. |
-| **Disabled state styling** | Prevent invalid actions | Low | Reduced opacity (0.5), no hover effect, cursor: not-allowed. Explain why disabled (tooltip). |
-| **Smooth page transitions** | Polish, reduces jarring switches | Low | Fade between views (150-200ms). Don't overdo — keep it subtle. |
+| Feature | Description |
+|---------|-------------|
+| Auto-check on startup | Silent check; show notification only if update found |
+| Update available toast | Non-blocking, persistent until dismissed, shows version, "Installa e riavvia" CTA |
+| SettingsView update section | Shows current version (`app.getVersion()`), last checked timestamp, "Controlla aggiornamenti" button |
+| Manual check feedback | Loading spinner → found / already up-to-date / error |
+| Install on user action | `autoUpdater.quitAndInstall()` only after user clicks CTA |
+| No-update silent path | Startup check: if no update, do nothing (no toast) |
+| Error handling | Network error, GitHub rate limit, bad release → show error state in Settings, never crash |
 
 ## Differentiators
 
-Features that set products apart. Not expected, but highly valued when present.
+| Feature | Description | Complexity |
+|---------|-------------|------------|
+| Download progress | Show % in Settings while downloading | Low — `download-progress` event available |
+| Version number in toast | "Versione 2.1.0 disponibile" | Trivial |
+| Portable target notice | If portable build detected, show "Scarica manualmente" link instead of auto-install | Medium |
 
-### Advanced UX Polish
+## Anti-Features (Avoid)
 
-| Feature | Value Proposition | Complexity | Implementation Notes |
-|---------|-------------------|------------|---------------------|
-| **Keyboard shortcuts for power users** | 10x faster for frequent actions | Medium | Cmd/Ctrl+N (new transaction), Cmd+F (search), Cmd+K (command palette), / (focus search). Show shortcut hints in tooltips. |
-| **Command palette (Cmd+K)** | Notion/Linear pattern — fast access to any action | High | Fuzzy search over all commands: "Add transaction", "Go to Dashboard", "Export CSV". Use library like `kbar` or `cmdk`. |
-| **Smart search with natural language** | "coffee" finds transactions with "coffee" in any field | Medium | Search across description, note, category. Highlight matches. Bonus: "last month food" → filters date + category. |
-| **Undo/redo for destructive actions** | Confidence to experiment without fear | High | Transaction delete → show "Undo" in toast for 5s. Implement action history stack. Complex for bulk operations. |
-| **Drag-and-drop categorization** | Visual, intuitive bulk categorization | Medium | Drag transaction row onto category pill/tag in sidebar. Updates category instantly. Satisfying interaction. |
-| **Auto-save with visual indicator** | Peace of mind: "my changes are saved" | Low | Show "All changes saved" message in header. Fade in/out on each save. Already auto-saves to localStorage; just expose it. |
-| **Dark mode toggle** | User preference, reduces eye strain | Low | Toggle in settings. Use CSS variables for theme colors. Notion/Linear standard feature. Not critical for MVP, but expected in 2025+. |
-| **Customizable dashboard cards** | Users value different metrics | High | Drag-to-reorder cards, hide/show specific charts. Save layout preference. Advanced feature — defer to v2. |
-| **Transaction notes/memos** | Context for future self: "why did I buy this?" | Low | Already exists in MoneyFlow (note field). Ensure visible in detail view, editable inline. |
-| **Recurring transaction templates** | Efficiency: rent, subscriptions don't need re-entry | High | Define template → auto-add monthly. Out of scope for redesign, but common request. |
+- **Blocking modal** — never block app usage while checking/downloading
+- **Auto-restart** without user consent (data loss risk if transactions unsaved)
+- **Forced update** — user must always be able to dismiss
+- **Check on every focus** — startup + manual only, not on every window focus
+- **Verbose logs to UI** — keep debug output to console/log file, not visible in UI
 
-### Data Intelligence
-
-| Feature | Value Proposition | Complexity | Implementation Notes |
-|---------|-------------------|------------|---------------------|
-| **Smart category suggestions** | Reduces manual categorization | Medium | MoneyFlow has keyword-based auto-categorization. Improve: show confidence score, "Accept" button inline. |
-| **Duplicate detection warnings** | Prevents data quality issues | Low | Already exists (conflict resolver). Enhance: show "Possible duplicate" badge on import preview. |
-| **Spending trends insights** | Proactive guidance: "Food up 20% vs last month" | High | Requires trend analysis logic. Display as callout cards on dashboard. High value, but complex. Defer to post-redesign. |
-| **Budget vs. actual comparison** | Core YNAB feature — goal tracking | High | Out of scope for redesign (no budgeting feature yet). Future consideration. |
-
-### Onboarding & Guidance
-
-| Feature | Value Proposition | Complexity | Implementation Notes |
-|---------|-------------------|------------|---------------------|
-| **Multi-step onboarding wizard** | Guided first experience reduces abandonment | Medium | Step 1: Welcome. Step 2: Import first file. Step 3: Review categories. Step 4: See dashboard. Progress indicator. |
-| **Contextual tooltips (first visit)** | "This is where you add transactions" | Medium | Use library like `react-joyride` or `intro.js`. Show once, dismiss option. Store in localStorage. |
-| **Empty state CTAs with next steps** | Guide users to value | Low | Empty transaction list → "Import from bank or add manually". Button for each action. |
-| **Sample data for demo mode** | Let users explore without commitment | Medium | "Load sample transactions" button in empty state. Pre-populate with fake data. Reset option. |
-| **Help/documentation links** | Reduce support burden | Low | "?" icon in header → link to docs or FAQ. Tooltip on complex features (e.g., Import Profiles). |
-
-## Anti-Features
-
-Features to deliberately NOT build in a redesign. Either out of scope, anti-pattern, or against design philosophy.
-
-| Anti-Feature | Why Avoid | What to Do Instead |
-|--------------|-----------|-------------------|
-| **Mobile responsive layout** | Desktop-only Electron app; mobile not in scope | Focus on desktop window sizes (1024px+). Tablet/mobile is separate product decision. |
-| **Heavy animations (3D, particles)** | Distracts from data, slows performance | Use subtle transitions (200-300ms), functional animations only. Finance needs clarity, not flash. |
-| **Gamification (badges, streaks)** | Not in line with "clean minimal" aesthetic | Focus on clear metrics, trends. Positive reinforcement via insights ("You saved $200 this month"). |
-| **Overly complex filtering UI** | Analysis paralysis; users want quick answers | Provide 3-5 common filters (date, category, type). Advanced filters in "More" dropdown, not primary UI. |
-| **Multi-column dashboard layout** | Desktop temptation to cram too much | Use single-column card stack with clear hierarchy. Wide cards utilize horizontal space without columns. |
-| **Social features (sharing, leaderboards)** | Finance is private; adds complexity | Keep data local-first. Sync is backup only, not social. |
-| **Real-time bank sync** | Requires bank APIs, security, ongoing maintenance | Import from files (existing flow). Real-time sync is major feature, not redesign scope. |
-| **Budgeting goals/envelopes** | Core feature of YNAB, but not current MoneyFlow scope | MoneyFlow is transaction tracker + analytics. Budgeting is future milestone, not redesign. |
-| **AI-powered insights** | Buzzword-driven; requires ML, data privacy concerns | Smart categorization (keyword-based) sufficient. Defer AI to post-MVP if user need validated. |
-| **Customizable themes/skins** | Introduces inconsistency, maintenance burden | Single light theme (clean minimal). Dark mode as binary toggle acceptable, but not full themes. |
-| **In-app chat support** | Adds dependency, weight; desktop app users expect email/docs | Link to email/GitHub issues. Simple feedback form acceptable. |
-| **Confetti/celebration animations** | Against minimal aesthetic | Subtle toast notification sufficient for success states. |
-
-## Feature Dependencies
+## UX Flow
 
 ```
-Dashboard Summary
-  ↓ requires
-Transaction Data
-  ↓ requires
-Import/Manual Entry
+App startup
+  └─ autoUpdater.checkForUpdates()
+       ├─ update-available → show UpdateBanner (persistent, dismissible)
+       │     └─ user clicks "Installa e riavvia" → autoUpdater.quitAndInstall()
+       ├─ update-not-available → (silent, no UI)
+       └─ error → (silent at startup; show error only in Settings if manual check)
 
-Filters (Category, Date)
-  ↓ requires
-Transaction Data + Categories
-
-Inline Editing
-  ↓ requires
-Editable Transaction State
-
-Bulk Actions
-  ↓ requires
-Multi-Select UI
-  ↓ requires
-Checkbox Column in Table
-
-Auto-categorization
-  ↓ requires
-Category Keyword Mappings
-
-Chart Visualizations
-  ↓ requires
-Aggregated Statistics (useMemo)
-  ↓ requires
-Filtered Transaction Set
-
-Google Drive Sync
-  ↓ requires
-OAuth Flow (Electron IPC)
-  ↓ requires
-Electron Environment
+Settings > Aggiornamenti section
+  ├─ Shows: v{current} | Ultimo controllo: {timestamp}
+  ├─ Button "Controlla aggiornamenti"
+  │     ├─ loading state
+  │     ├─ found → same UpdateBanner + "Versione X.Y.Z disponibile" in section
+  │     ├─ up-to-date → "Sei già aggiornato" feedback
+  │     └─ error → "Impossibile controllare gli aggiornamenti" with retry
+  └─ If update already downloaded → show "Pronto per installare" + CTA
 ```
+---
 
-## Domain-Specific UX Patterns
+## Codebase Constraints Discovered
 
-### Dashboard Best Practices
+Before the feature list: critical integration constraints found in the source files that shape every UX decision.
 
-**Hierarchy:** Big numbers first (total balance), then comparisons (income vs. expense), then breakdowns (category chart), finally trends (monthly line).
+### Toast.jsx — Requires Extension
+The current `Toast` is **not suitable** for an update notification as-is:
+```jsx
+// Current: auto-dismisses after 3000ms, success/error only, no action button
+const timer = setTimeout(onClose, 3000);
+// Only renders Check or AlertCircle icon, static message text
+```
+The update notification needs:
+- **No auto-dismiss** (or configurable `duration` prop) — user must act on it
+- **Action button slot** — "Installa e riavvia" CTA inside the toast
+- **`info` or `update` type** — visually distinct from success/error (e.g., blue/indigo accent with `Download` or `RefreshCw` icon from Lucide)
 
-**Card Layout:** Use card components with subtle shadows for visual separation. Each card = one insight. MoneyFlow should adopt:
-- **Hero card:** Current balance + month-to-date change (top of page, full width)
-- **Stat cards:** Income, Expense, Savings Rate (3-column grid below hero)
-- **Chart cards:** Category Pie, Monthly Trend, Top Expenses List (stacked vertically)
+**Implementation path:** Extend `Toast` with optional `persistent` prop (skips `setTimeout`) + optional `action: { label, onClick }` prop. Backwards-compatible; existing callers unchanged. **Low complexity.**
 
-**Color Coding:**
-- **Green:** Income, positive balance, savings
-- **Red:** Expenses, negative balance, overspending
-- **Blue/Neutral:** Informational, transfers, neutral categories
-- **Yellow/Orange:** Warnings (approaching budget limit — future feature)
+### SettingsView.jsx — Section Pattern is Perfect
+Current pattern: `<section>` with uppercase `<h3>` label + a `<button>` that opens a modal. The "Aggiornamenti" section **should NOT open a modal** — inline state display is the right UX here. Instead: version string, status text, and the check button all live inline within the section. No modal needed. Matches existing visual pattern exactly.
 
-**Interactivity:** Click category in pie chart → filter transaction list to that category. Click month in bar chart → drill down to that month. All charts should cross-filter.
+### main.cjs — CSP Must Be Updated
+The `connect-src` directive currently allows only:
+```
+'self' http://localhost:* ws://localhost:* https://www.googleapis.com https://oauth2.googleapis.com
+```
+`electron-updater` downloads from GitHub Releases (`objects.githubusercontent.com`) and checks for updates at the GitHub API (`api.github.com`). **CSP will block update downloads in production** unless extended. This is a non-obvious blocker that must be addressed in the same phase as the updater setup.
 
-**Reference:**
-- **YNAB:** Uses "Age of Money" as hero metric (not applicable to MoneyFlow, but shows power of single focus number)
-- **Copilot Money:** Clean cards with "Income this month" / "Spent this month" side-by-side
-- **Revolut:** Donut chart with spending categories, tap to drill down
+### package.json — electron-updater Not Installed
+`electron-updater` is absent from `dependencies`. It must be added (`npm install electron-updater`). Note: `electron-builder` (already present as devDep) and `electron-updater` are from the same team and work together via the `build.publish` config key.
 
-### Transaction List UX
+### package.json — Portable Build Cannot Auto-Update
+The build config specifies:
+```json
+"win": { "target": ["portable", "nsis"] }
+```
+`portable` EXE builds **do not support auto-update** — they run without installation and cannot overwrite themselves. Only `nsis` (installer) builds can self-update. The auto-update feature will only work for users who installed via the NSIS installer. This must be documented and the portable target should ideally be removed or deprioritized.
 
-**Density:** Finance users want information density (see many transactions at once) but not clutter. Aim for ~15-20 transactions visible without scrolling on 1080p screen.
-
-**Row Height:** 44-48px for comfortable click targets and readability. Hover increases to 50px with subtle background change.
-
-**Zebra Striping:** Optional alternating row background (very light gray). Reduces eye fatigue for scanning long lists. Notion doesn't use it; Excel does. Test both.
-
-**Inline Editing Flow:**
-1. Single-click on description or category cell
-2. Cell transforms to input field (description) or dropdown (category)
-3. ESC cancels, ENTER saves
-4. Tab moves to next editable cell (power user flow)
-5. Auto-save on blur (click outside)
-
-**Bulk Actions:**
-- Show checkbox column only when first transaction selected (progressive disclosure)
-- Selected rows highlighted with light blue background
-- Action bar appears at top: "X selected | Delete | Categorize as... | Cancel"
-- Confirmation modal for destructive actions (delete)
-
-**Search/Filter Persistence:** Save filter state in URL query params or localStorage. User returns to app → sees last applied filters. Clear button resets to default (all transactions, current month).
-
-**Reference:**
-- **Linear:** Excellent inline editing, keyboard shortcuts, bulk selection
-- **Notion:** Database table view — inline editing, filters, sorting
-- **Apple Numbers:** Clean table aesthetics, but lacks inline bulk actions
-
-### Onboarding / Empty States
-
-**First Launch:**
-1. **Welcome screen:** "MoneyFlow helps you understand spending in 2 minutes" + "Get Started" button
-2. **Import prompt:** "Import your first bank transactions" or "Add manually"
-3. **Category setup:** "Review auto-detected categories or customize"
-4. **Dashboard intro:** "Here's your financial overview" (tour optional)
-
-**Empty State Components:**
-- **Icon:** Large, friendly icon (not illustration — keeps minimal)
-- **Headline:** "No transactions yet"
-- **Subtext:** "Import from your bank or add your first transaction manually"
-- **Primary CTA:** "Import Transactions" button
-- **Secondary CTA:** "Add Manually" link
-
-**Empty Chart:** Show placeholder: "Your spending breakdown will appear here after importing transactions." Don't show axes/legend for empty data.
-
-**Reference:**
-- **Notion:** Clean empty states with icon + single CTA
-- **Linear:** "No issues yet" with keyboard shortcut hint
-- **Apple:** Minimal text, clear action
-
-### Data Visualization for Finance
-
-**Color Palette (Muted, Accessible):**
-- Category 1: `#3B82F6` (blue)
-- Category 2: `#10B981` (green)
-- Category 3: `#F59E0B` (amber)
-- Category 4: `#8B5CF6` (purple)
-- Category 5: `#EC4899` (pink)
-- Category 6: `#6366F1` (indigo)
-- Category 7: `#EF4444` (red — use for overspending only)
-- Other: `#9CA3AF` (gray)
-
-**Chart Types:**
-- **Pie/Donut:** Category breakdown (max 7 slices + "Other")
-- **Bar Chart:** Monthly comparison (side-by-side bars for income/expense)
-- **Area Chart:** Trend over time (filled area for expense, line for income)
-- **Sparklines:** Inline micro-charts in stat cards (minimal axes)
-
-**Tooltip Design:**
-- White background, drop-shadow
-- Bold label, formatted value (e.g., "Food: $234.50")
-- Percentage of total if relevant
-- No border (shadow provides separation)
-
-**Accessibility:**
-- Include text labels on chart segments for screen readers
-- Hover state must be keyboard-accessible
-- Don't rely on color alone (use labels, patterns)
-
-**Reference:**
-- **Recharts:** MoneyFlow already uses this; customize theme
-- **Copilot Money:** Excellent color choices (muted, pastel)
-- **YNAB:** High contrast, clear labels
-
-### Navigation: Desktop Electron Patterns
-
-**Sidebar (Recommended for MoneyFlow):**
-- **Width:** 240px expanded, 64px collapsed (icon-only)
-- **Position:** Fixed left, full height
-- **Sections:** Group navigation items (Data: Dashboard, Transactions | Manage: Categories | Sync: Settings)
-- **Active State:** Background color + left border (3px accent color)
-- **Collapse Toggle:** Icon button at bottom or top (hamburger or arrow)
-
-**Why Sidebar over Tabs:**
-- Desktop has horizontal space; sidebar utilizes it
-- Always-visible navigation (no hunting for tabs)
-- Supports nested navigation (future: sub-categories)
-- Standard pattern (Notion, Linear, Slack, VS Code, Finder)
-
-**Top Bar (Complement to Sidebar):**
-- **Left:** Logo or app name + current view title
-- **Right:** User profile (future), sync status, settings icon
-- **Center:** Breadcrumb (optional for multi-level views)
-- **Height:** 56-64px
-
-**Window Controls (Electron-specific):**
-- **macOS:** Native traffic lights (red/yellow/green) — no customization needed
-- **Windows:** Custom title bar with Minimize, Maximize, Close buttons (right-aligned)
-- **Drag region:** Entire top bar should be draggable for window repositioning
-
-**Reference:**
-- **Linear:** Gold standard sidebar navigation
-- **Notion:** Collapsible sidebar with nested pages
-- **VS Code:** Icon-only sidebar with expandable sections
-
-### Modal/Dialog UX Best Practices
-
-**Size Tiers:**
-- **Small:** 400px wide (confirmation, simple forms)
-- **Medium:** 600px wide (add transaction, category editor)
-- **Large:** 800px wide (import wizard, conflict resolver)
-- **Full-screen:** Overlay for complex multi-step flows
-
-**Layout:**
-- **Header:** Title (bold, 18-20px) + Close button (X icon, top-right)
-- **Body:** Content with padding (24px), scrollable if tall
-- **Footer:** Action buttons, always visible (sticky if body scrolls)
-
-**Animation:**
-- **Open:** Fade in backdrop (150ms) → Scale in modal (200ms, ease-out, 0.95→1.0)
-- **Close:** Fade out modal (150ms) → Fade out backdrop (100ms)
-- **Timing:** Total open duration 200-250ms; close 150-200ms
-
-**Behavior:**
-- **ESC:** Always closes modal (except during async operation)
-- **Click Backdrop:** Close modal (UX debate, but common pattern)
-- **ENTER:** Submits form if single input focused
-- **Focus Trap:** Tab cycles within modal, Shift+Tab reverses
-
-**Accessibility:**
-- `role="dialog"`, `aria-modal="true"`
-- `aria-labelledby` points to title element
-- Focus moves to first interactive element on open
-- Focus returns to trigger on close
-
-**Reference:**
-- **Radix UI:** Excellent modal primitives with a11y built-in
-- **Headless UI:** Unstyled modal component with focus management
-- **Linear:** Clean, fast modals with keyboard shortcuts
-
-### Micro-Interactions & Animation Standards
-
-**Hover States:**
-- **Duration:** 150ms
-- **Easing:** ease-in-out
-- **Effect:** Background color shift (10-20% darker/lighter), subtle scale (1.0 → 1.02 for buttons)
-
-**Button Press:**
-- **Duration:** 100ms
-- **Effect:** Scale down (1.0 → 0.98), increase shadow (active state)
-
-**Page Transitions:**
-- **Duration:** 200ms
-- **Effect:** Fade out old view (100ms) → Fade in new view (100ms)
-- **Alternative:** Slide (subtle, 10-20px offset)
-
-**Loading States:**
-- **Spinner:** 1-2s delay before showing (avoid flash)
-- **Skeleton:** Immediate, mimics content layout
-- **Progress Bar:** Linear or circular, show percentage if available
-
-**Toast Notifications:**
-- **Enter:** Slide in from bottom-right (300ms, ease-out)
-- **Exit:** Fade out (200ms) after 3-5s auto-dismiss
-- **Interaction:** Hover pauses auto-dismiss
-
-**List Item Add/Remove:**
-- **Add:** Fade in + slight scale (0.95 → 1.0), 300ms
-- **Remove:** Fade out + collapse height, 250ms
-- **Reorder:** Smooth position transition (CSS `transition: transform 200ms`)
-
-**Chart Updates:**
-- **Duration:** 500ms (longer acceptable for data visualization)
-- **Easing:** ease-in-out
-- **Effect:** Animate bar heights, pie slices, line paths (Recharts supports this)
-
-**Performance:**
-- Use CSS transforms (scale, translate) not width/height (hardware-accelerated)
-- Avoid animating expensive properties (box-shadow → use opacity on shadow element)
-- 60fps minimum (16ms per frame budget)
-
-**Reference:**
-- **Framer Motion:** React animation library for complex interactions
-- **Apple Human Interface Guidelines:** Tasteful, purposeful motion
-- **Linear:** Fast, subtle animations that feel responsive
-
-## MVP Recommendation
-
-### Phase 1: Visual Foundation (Week 1-2)
-**Prioritize:**
-1. **Tailwind CSS setup** — design tokens, utility classes
-2. **Sidebar navigation** — fixed left, icon + labels, active state
-3. **Card-based dashboard layout** — hero card, stat cards, chart cards
-4. **Color palette & typography** — define system, apply consistently
-5. **Button component library** — primary, secondary, ghost, danger variants
-
-**Why:** Establishes visual language; all future work builds on this.
-
-### Phase 2: Core UX Polish (Week 3-4)
-**Prioritize:**
-1. **Transaction list redesign** — table styling, hover states, inline editing (description)
-2. **Filter/search bar** — sticky position, search-as-type, category filter dropdown
-3. **Modal animations** — fade + scale, ESC to close, focus trap
-4. **Toast notifications** — redesign with icons, success/error states
-5. **Loading skeletons** — dashboard and transaction list placeholders
-
-**Why:** Addresses most-used features; high impact on daily UX.
-
-### Phase 3: Differentiators (Week 5-6)
-**Prioritize:**
-1. **Keyboard shortcuts** — Cmd+N, Cmd+F, ESC, ENTER
-2. **Bulk selection + actions** — checkbox column, delete, categorize
-3. **Smart search** — filter across all fields, highlight matches
-4. **Chart interactivity** — click category to filter, legend toggle
-5. **Onboarding empty states** — welcome screen, CTAs, sample data option
-
-**Why:** Separates "good" from "great"; power user delight.
-
-### Defer to Post-MVP
-- Command palette (Cmd+K) — high complexity, lower immediate impact
-- Undo/redo — requires architecture changes
-- Dark mode — nice-to-have, not critical for light minimal theme
-- Customizable dashboard — advanced feature, low ROI for redesign
-- Multi-step onboarding wizard — polish after core UX proven
-
-## Sources & Confidence
-
-**Confidence Level:** HIGH (UI/UX patterns), MEDIUM (Specific app comparisons)
-
-**Knowledge Base:**
-- **Personal use:** Notion, Linear, YNAB, Revolut apps (direct experience)
-- **Design systems:** Material Design, Apple HIG, Tailwind UI patterns
-- **Desktop patterns:** Electron app conventions (VS Code, Slack, Discord)
-- **Training data:** Personal finance UX articles, case studies (2022-2024)
-
-**Verification Limitation:**
-- Unable to access current web sources (Brave API unavailable)
-- Recommendations based on established patterns and training knowledge
-- Specific 2025/2026 trends not verified; focused on timeless principles
-
-**Recommended Validation:**
-- Review reference apps directly (YNAB, Copilot, Revolut) for latest patterns
-- Test designs with real users (especially transaction list density/filters)
-- Benchmark performance of animations on target Windows 7+ systems
+### IPC Pattern — Established, Easy to Follow
+The existing Drive sync IPC uses `ipcMain.handle` (renderer-initiated request/response) and `mainWindow.webContents.send` (main-initiated push events). The update IPC bridge follows the identical pattern. Low risk.
 
 ---
 
-*Feature research completed: 2025-01-17*
-*Target: MoneyFlow Desktop Budget Tracker UI/UX Redesign*
+## Table Stakes
+
+Features that MUST exist for the auto-update feature to be functional and non-broken. Missing any of these = the feature is incomplete.
+
+| Feature | Why Table Stakes | Complexity | Existing Dependency |
+|---------|-----------------|------------|---------------------|
+| **electron-updater installed + configured** | Nothing works without it. Needs `build.publish` pointing to GitHub Releases in `package.json` | Low | `electron-builder` already present |
+| **Auto-check on startup (silent)** | Core contract: user opens app, update check happens. No user action needed. On success (up-to-date), completely silent. | Low | New `ipcMain` handler in `main.cjs` |
+| **IPC bridge: 5 events wired up** | Renderer can't know update state without IPC. Events: `update-available`, `update-not-available`, `download-progress`, `update-downloaded`, `update-error`. Commands: `check-for-updates`, `install-update` | Medium | Follows existing Drive IPC pattern in `preload.cjs` |
+| **Persistent update toast with CTA** | User must be told an update is ready and given one-tap path to install. Non-blocking = doesn't interrupt workflow, but stays visible until dismissed or acted on. | Medium | Requires Toast extension (persistent prop + action prop) |
+| **Settings "Aggiornamenti" section: version display** | Users need to know what version they're on. "Versione attuale: v2.0.0" | Low | `app.getVersion()` via IPC, inline in SettingsView section |
+| **Settings: manual check button** | Power-user escape hatch. When auto-check hasn't run or user wants confirmation. Matches UPD-05. | Low | New IPC command `check-for-updates` |
+| **Settings: check status display (4 states)** | Button press must provide feedback. 4 states: `idle` → `checking` (spinner) → `found \| up-to-date \| error`. | Medium | Inline state in SettingsView section, no modal |
+| **"Install and Restart" action** | The whole point. `autoUpdater.quitAndInstall()` called via IPC when user clicks. | Low | New IPC command `install-update` |
+| **CSP updated for GitHub domains** | Without this, update downloads silently fail in production. `api.github.com` + `objects.githubusercontent.com` must be added to `connect-src`. | Low | Edit `main.cjs` CSP header string |
+
+---
+
+## Differentiators
+
+Nice-to-have features that improve the UX without being blockers. All are optional for v1.1 MVP.
+
+| Feature | Value Proposition | Complexity | Recommendation |
+|---------|-------------------|------------|----------------|
+| **Download progress in Settings section** | "Downloading 2.1 MB / 8.4 MB (25%)" — reassures user update is happening. Uses `download-progress` IPC event. Small progress bar under the button. | Medium | **Include** — `download-progress` event is emitted by electron-updater for free; showing a `<div>` progress bar is trivial. High perceived quality gain for low effort. |
+| **Version number in update toast** | "v2.1.0 disponibile" vs just "Aggiornamento disponibile" — gives context | Low | **Include** — the `update-available` event payload includes `version`. One string interpolation. |
+| **Download progress in toast** | Animated toast updates to show download % | High | **Defer** — requires mutable toast state (Toast is currently stateless/immutable after render). Adds complexity without proportional value. The Settings section progress bar is sufficient. |
+| **Release notes link / changelog snippet** | Show what changed in the new version | High | **Defer** — requires fetching and parsing GitHub release notes, markdown rendering. Not worth the complexity in v1.1. |
+| **"Dismiss / remind me later"** | User can acknowledge toast without installing | Low | **Optional** — trivial to add a "Più tardi" secondary button that just closes the toast. Adds user control. |
+| **Startup check delay** | Wait 5-10s after app ready before checking, to not slow perceived startup | Low | **Include** — wrap `checkForUpdates()` in a `setTimeout(5000)` in `app.whenReady`. Prevents startup jank on slow connections. |
+| **Error message differentiation** | "Nessuna connessione" vs "GitHub non raggiungibile" vs "Rate limit superato" — different messages for different failure modes | Medium | **Optional** — parse the error code/message from electron-updater's error event. Adds polish but not critical. A single fallback message is acceptable for v1.1. |
+
+---
+
+## Anti-Features
+
+Patterns to explicitly avoid. Each has a concrete "instead" recommendation.
+
+| Anti-Feature | Why Avoid | Instead |
+|--------------|-----------|---------|
+| **Blocking modal / dialog on update available** | Interrupts the user mid-task in a finance app. Jarring. Feels like nagware. The user might be in the middle of categorizing transactions. | Non-blocking persistent toast (bottom-right, same position as existing toasts) |
+| **Auto-install without consent** | Silent restart will corrupt any in-progress work (transaction editing, import flow). Unexpected for a personal finance tool. | Always require explicit "Installa e riavvia" click. `autoDownload: true` is fine (download silently), but `quitAndInstall()` must be user-triggered. |
+| **Forced update screen (app blocked until updated)** | Extreme anti-pattern for a personal desktop app. No justification exists for a single-user local tool. | Soft notification only. User can dismiss and use the app forever on the old version. |
+| **Checking on every focus/resume event** | Hammers the GitHub API, triggers rate limiting (60 req/hour unauthenticated), causes 403 errors. Annoying if multiple windows/monitors. | Check once at startup (with 5s delay). Manual check in Settings on demand. No more. |
+| **Showing "up to date" toast on startup** | Noisy. User doesn't care that nothing changed. Successful check → silent. | Only surface notifications when there IS an update, or when user explicitly triggered a manual check (then show result). |
+| **Progress modal during download** | A heavy Radix Dialog just to show a progress bar is over-engineering. Blocks interaction. | Download silently in background. Show progress inline in Settings section only if user is already there. Toast fires only when download is complete. |
+| **Full release notes rendered in-app** | Requires markdown parser, GitHub API call, layout for arbitrary content. V1.1 is about plumbing, not a changelog browser. | If needed, a "Vedi novità" link that opens GitHub Releases page in default browser via `shell.openExternal()`. One line of code. |
+| **Removing portable build target** | Portable users exist and would lose their build format | Keep `portable` target but document that auto-update only works on NSIS-installed builds. Portable users see no update UI (guard with `electron-updater` `autoUpdater.isUpdaterActive()` check). |
+
+---
+
+## UX Flow
+
+### Flow 1: Startup Auto-Check (Happy Path — Update Available)
+
+```
+App launches
+  └── main.cjs: app.whenReady()
+        └── createWindow()
+        └── setTimeout(5000) → autoUpdater.checkForUpdates()
+              └── electron-updater: finds new version
+              └── autoDownload: true → download starts silently
+              └── [download-progress events firing, renderer optionally listening]
+              └── update-downloaded event fires
+              └── main.cjs: mainWindow.webContents.send('update-downloaded', { version })
+                    └── renderer: receives via preload onUpdateDownloaded()
+                    └── renderer: shows persistent UpdateToast
+                          ┌── Icon: Download (Lucide, blue)
+                          ├── Text: "MoneyFlow v2.1.0 è pronto"
+                          ├── CTA button: "Installa e riavvia"  → ipcRenderer.invoke('install-update')
+                          └── X dismiss button → closes toast, update deferred to next launch
+```
+
+**Key decisions:**
+- Fire toast only on `update-downloaded` (not `update-available`) — user can act immediately without waiting
+- Toast is **persistent** (no auto-dismiss timer)
+- Download happens silently, no progress shown unless user goes to Settings
+
+---
+
+### Flow 2: Startup Auto-Check (Happy Path — Already Up to Date)
+
+```
+App launches
+  └── setTimeout(5000) → autoUpdater.checkForUpdates()
+        └── electron-updater: no update found
+        └── update-not-available fires
+        └── [nothing shown to user — completely silent]
+```
+
+**No toast, no notification. Zero UX noise.**
+
+---
+
+### Flow 3: Startup Auto-Check (Error — Network / Rate Limit)
+
+```
+App launches
+  └── setTimeout(5000) → autoUpdater.checkForUpdates()
+        └── electron-updater: error (no network / 403 rate limit / server down)
+        └── error event fires
+        └── main.cjs: catches error, logs to console only
+        └── [nothing shown to user — silent failure on startup]
+```
+
+**On startup errors: silent.** The user didn't ask to check; informing them of a background check failure adds noise. They can always use the manual check in Settings if they care.
+
+---
+
+### Flow 4: Manual Check in Settings (All States)
+
+```
+User navigates to Settings → "Aggiornamenti" section visible:
+  ┌── "Versione attuale: v2.0.0"
+  └── [Button: "Controlla aggiornamenti"] [state: idle]
+
+User clicks button:
+  └── ipcRenderer.invoke('check-for-updates')
+  └── Button state → "checking" (spinner, disabled)
+  └── Status text: "Controllo in corso..."
+
+  Case A — Update available (already downloading):
+    └── download-progress events update inline progress bar (optional differentiator)
+    └── update-downloaded fires
+    └── Button state → "found"
+    └── Status text: "v2.1.0 disponibile ✓"
+    └── New button appears: [Installa e riavvia] (primary blue style)
+
+  Case B — Already up to date:
+    └── update-not-available fires
+    └── Button state → "up-to-date"
+    └── Status text: "Sei aggiornato ✓" (with green Check icon, Lucide)
+    └── Button resets to idle after 3000ms
+
+  Case C — Error (no network):
+    └── update-error fires with { message }
+    └── Button state → "error"
+    └── Status text: "Impossibile verificare: nessuna connessione" (red AlertCircle icon)
+    └── Button resets to idle after 5000ms (allows retry)
+```
+
+---
+
+### Flow 5: User Deferred Update (Restart Needed)
+
+```
+User dismissed toast (clicked X)
+  └── Toast closes
+  └── Update package stays downloaded on disk (electron-updater keeps it)
+  └── On next app launch: update-downloaded fires immediately (no re-download)
+  └── UpdateToast appears again
+```
+
+**electron-updater automatically re-fires `update-downloaded` on next launch if a downloaded update is pending.** No extra code needed for this flow.
+
+---
+
+## IPC Contract
+
+Complete specification for the IPC bridge (UPD-06).
+
+### Renderer → Main (commands via `ipcRenderer.invoke`)
+
+| Channel | Payload | Response |
+|---------|---------|----------|
+| `updater:check` | none | `{ triggered: true }` |
+| `updater:install` | none | never returns (app restarts) |
+| `updater:get-version` | none | `{ version: string }` |
+
+### Main → Renderer (events via `webContents.send` + `ipcRenderer.on`)
+
+| Channel | Payload | When |
+|---------|---------|------|
+| `updater:available` | `{ version: string }` | New version found, download starting |
+| `updater:not-available` | `{ version: string }` | Already on latest version |
+| `updater:progress` | `{ percent: number, bytesPerSecond: number, transferred: number, total: number }` | During download |
+| `updater:downloaded` | `{ version: string }` | Download complete, ready to install |
+| `updater:error` | `{ message: string, code?: string }` | Any failure |
+
+### preload.cjs additions (follow existing pattern)
+
+```js
+updater: {
+  check: () => ipcRenderer.invoke('updater:check'),
+  install: () => ipcRenderer.invoke('updater:install'),
+  getVersion: () => ipcRenderer.invoke('updater:get-version'),
+  onAvailable: (cb) => { ... ipcRenderer.on('updater:available', ...) },
+  onNotAvailable: (cb) => { ... },
+  onProgress: (cb) => { ... },
+  onDownloaded: (cb) => { ... },
+  onError: (cb) => { ... },
+}
+```
+
+---
+
+## Component Inventory
+
+| Component | Action | Notes |
+|-----------|--------|-------|
+| `Toast.jsx` | **Extend** | Add `persistent?: boolean` prop (skips setTimeout), `action?: { label, onClick }` prop (renders CTA button inside toast), `type: 'update'` (blue/indigo, Download icon). Backwards-compatible. |
+| `SettingsView.jsx` | **Extend** | Add "Aggiornamenti" section. New props: `currentVersion`, `updateStatus`, `updateVersion`, `downloadProgress`, `onCheckUpdates`, `onInstallUpdate`. Inline state display, no modal. |
+| `useToast.js` (hook in App.jsx) | **Extend** | Add `showUpdateToast(version)` method. Needs to support persistent toast without auto-clear. |
+| `electron/main.cjs` | **Extend** | Add `autoUpdater` setup block, 5 IPC handlers, startup check with setTimeout. |
+| `electron/preload.cjs` | **Extend** | Add `window.electronAPI.updater` namespace with 3 invoke commands + 5 event listeners. |
+| `electron/main.cjs` CSP | **Edit** | Add `https://api.github.com https://objects.githubusercontent.com` to `connect-src`. |
+
+No new components need to be created. All changes are additive extensions to existing files.
+
+---
+
+## Feature Dependency Graph
+
+```
+electron-updater installed + build.publish config     ← prerequisite for everything
+         │
+         ├── main.cjs: autoUpdater setup + startup check
+         │         │
+         │         └── IPC bridge (main.cjs handlers + preload.cjs)
+         │                   │
+         │                   ├── Toast.jsx extension (persistent + action)
+         │                   │         └── UpdateToast shown on update-downloaded
+         │                   │
+         │                   └── SettingsView.jsx extension (version + manual check + status)
+         │
+         └── CSP update (connect-src: github domains)     ← must ship with above
+```
+
+**Linear dependency — each layer requires the one above. No parallelism possible.**
+
+---
+
+## Complexity Summary
+
+| Feature | Complexity | Estimated scope |
+|---------|------------|-----------------|
+| Install electron-updater + build.publish config | Low | 5-10 lines package.json |
+| CSP update for GitHub domains | Low | 1 line in main.cjs |
+| main.cjs: autoUpdater setup + startup check + IPC handlers | Medium | ~60 lines |
+| preload.cjs: updater namespace | Low | ~25 lines |
+| Toast.jsx: persistent + action props | Low | ~15 lines delta |
+| SettingsView.jsx: Aggiornamenti section | Medium | ~60 lines new JSX + state |
+| useToast / App.jsx: showUpdateToast integration | Low | ~10 lines |
+| **Total** | **Medium** | **~175 lines net new** |
+
+---
+
+## Sources
+
+- electron-updater documentation: https://www.electron.build/auto-update
+- Electron IPC contextBridge pattern: existing codebase `electron/preload.cjs`
+- electron-builder build config: existing codebase `package.json` build key
+- Toast component analysis: existing codebase `src/components/Toast.jsx`
+- SettingsView pattern analysis: existing codebase `src/views/SettingsView.jsx`
+- CSP constraint analysis: existing codebase `electron/main.cjs` lines 93-109
+- Portable vs NSIS auto-update limitation: electron-builder known behavior (confidence: HIGH — well-documented)
+- GitHub API rate limit (60 req/hour unauthenticated): GitHub docs (confidence: HIGH)
+

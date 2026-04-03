@@ -1,1157 +1,399 @@
-# Domain Pitfalls: Electron + React UI Redesign with Tailwind CSS v4
+﻿# Domain Pitfalls: Adding electron-updater Auto-Update to Existing Windows Electron App
 
-**Domain:** Electron desktop app (MoneyFlow budget tracker) — Complete UI/UX redesign
-**Technology Stack:** Electron 34.5.8 + React 19.2.0 + Vite 7.2.4 + Tailwind CSS v4 (to be added)
-**Researched:** 2025-01-29
-**Context:** Migrating from 2127-line monolithic App.jsx with custom CSS to componentized architecture with Tailwind CSS v4
+**Domain:** Electron desktop app (MoneyFlow) — Adding auto-update via electron-updater + GitHub Releases  
+**Technology Stack:** Electron 34.5.8, electron-builder ^26, CommonJS main process (.cjs), Windows NSIS + Portable, no code signing  
+**Researched:** 2026-04-03  
+**Context:** v1.1 milestone — wiring electron-updater into an existing packaged app (v2.0.0) distributed on GitHub Releases  
+
+> **NOTE:** Original v1.0 UI redesign pitfalls superseded by v1.1 milestone start. This file covers auto-update integration pitfalls specifically.
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, data loss, or major functionality breaks.
-
-### Pitfall 1: CSP Breaks Tailwind's JIT During Development
-**What goes wrong:** Tailwind CSS v4 with Vite uses inline styles during development for JIT (Just-In-Time) compilation. Electron's Content Security Policy with `style-src 'self'` blocks these inline styles, breaking the entire UI. Developers see blank screens or unstyled components and waste hours debugging CSP vs Tailwind interactions.
-
-**Why it happens:** 
-- Current CSP in `electron/main.cjs` allows `'unsafe-inline'` (line 99), which is permissive
-- Tailwind CSS v4 generates inline `<style>` tags during dev mode for instant feedback
-- Production builds compile to external CSS files, so the issue only appears inconsistently
-- Electron's CSP is more restrictive than browser defaults
-
-**Consequences:** 
-- Development environment completely broken — no visual feedback
-- False assumption that Tailwind isn't working, leading to configuration thrashing
-- Time wasted trying Tailwind v3 or other CSS frameworks
-- Team may abandon Tailwind entirely, losing utility-first benefits
-
-**Prevention:**
-1. **Keep `'unsafe-inline'` during development** but document the risk
-2. **Use CSP nonces for production** — Vite plugin `vite-plugin-csp` can inject nonces
-3. **Test production builds early** — verify CSP doesn't break compiled CSS
-4. **Configure Vite to externalize styles in dev mode:**
-   ```javascript
-   // vite.config.js
-   export default defineConfig({
-     css: {
-       devSourcemap: true, // Keep for debugging
-     },
-     build: {
-       cssCodeSplit: false, // Single CSS file for CSP compatibility
-     }
-   })
-   ```
-
-**Detection:** Warning signs before it bites:
-- Console errors: `Refused to apply inline style because it violates CSP directive`
-- UI renders but has no styling in Electron, works fine in browser
-- Tailwind classes not applied in dev mode but work in production build
-
-**Phase assignment:** **Phase 1 (Setup)** — Must configure CSP + Tailwind compatibility before any UI work begins
+Mistakes that cause silent failures, broken updates, or app-breaking regressions in production.
 
 ---
 
-### Pitfall 2: Breaking localStorage During Component Refactoring
-**What goes wrong:** Refactoring App.jsx (2127 lines) into smaller components inadvertently breaks localStorage persistence. State initialization happens in wrong order, causing data loss on app restart. User loses all transactions, categories, and import profiles with no warning.
+### Pitfall 1: Portable Target Silently Ignores Auto-Update
 
-**Why it happens:**
-- Current code has tightly coupled localStorage load/save in `useEffect` (lines 171-212 in App.jsx)
-- Moving state to custom hooks (`useTransactionData`, `useCategoryManagement`) changes initialization order
-- Parent component renders before child hooks load localStorage data
-- Race conditions between Google Drive sync and localStorage read
-- No schema validation — localStorage could contain corrupted data from previous version
+**What goes wrong:** electron-updater **does not support portable `.exe` targets** on Windows. If `autoUpdater.checkForUpdates()` is called when the app is running as a portable executable, the call either silently fails or throws a confusing error. Users running the portable build never receive updates — with no error message unless you check the log.
 
-**Consequences:**
-- **Data loss** — User's financial data disappears silently
-- **Corrupted state** — Partial data loaded, creating inconsistent UI
-- **Sync conflicts** — Google Drive backup out of sync with local state
-- **User trust destroyed** — Budget tracker that loses transactions is unusable
+**Warning signs:**
+- `error` event fired with message like `Cannot update a Portable app` or no event at all on portable
+- `update-downloaded` event fires but `quitAndInstall()` does nothing
+- Users on portable builds report the app never updates
+
+**Root cause:** electron-updater's `NsisUpdater` targets the NSIS-installed app. Portable `.exe` has no installer mechanism. Official electron-updater README lists only "Windows (NSIS)" as supported — portable is omitted by design.
 
 **Prevention:**
-1. **Extract localStorage logic to a dedicated hook FIRST:**
-   ```javascript
-   // hooks/useLocalStorage.js
-   function useLocalStorage(key, initialValue) {
-     const [storedValue, setStoredValue] = useState(() => {
-       try {
-         const item = localStorage.getItem(key);
-         return item ? JSON.parse(item) : initialValue;
-       } catch (error) {
-         console.error('Error reading localStorage:', error);
-         return initialValue;
-       }
+1. Detect whether the running app is portable by checking a known portable marker (e.g., an env var set by electron-builder, or detecting if `app.getPath('exe')` is in a temp/portable path)
+2. **For portable builds: skip auto-update entirely** and instead show a manual "Download new version" link opening the GitHub releases page in the browser
+3. In main process, guard update logic with a portable check:
+   ```js
+   // electron-builder sets this for portable builds
+   const isPortable = process.env.PORTABLE_EXECUTABLE_DIR != null;
+   if (!isPortable && app.isPackaged) {
+     autoUpdater.checkForUpdates();
+   }
+   ```
+4. In SettingsView, show different UI for portable users: "Running portable version — updates must be downloaded manually" with a link to GitHub releases
+
+**Phase to address:** Phase 1 (core updater setup) — design the portable detection + branching from day one, not as an afterthought.
+
+**Confidence:** HIGH — official electron-updater README explicitly lists "Windows (NSIS)" only; portable omission is intentional.
+
+---
+
+### Pitfall 2: autoUpdater Crashes in Dev Mode Without Guard
+
+**What goes wrong:** Calling `autoUpdater.checkForUpdates()` in development (when `app.isPackaged === false`) throws an error: `Error: ENOENT: no such file or directory ... app-update.yml` or similar. The error propagates to an unhandled rejection or fires the `error` event, potentially crashing the startup flow.
+
+**Warning signs:**
+- Stack trace containing `app-update.yml` on first `npm run electron:dev`
+- `autoUpdater.on('error', ...)` fires immediately with "no app-update.yml" on every app launch during dev
+- IPC "update:error" event fires before any real update check
+
+**Root cause:** electron-updater reads update metadata from `app-update.yml` inside the packed `app.asar`. This file doesn't exist in dev mode because there is no `.asar`. The `process.env.ELECTRON_DEV === 'true'` pattern the app uses is correct for guarding Vite, but `app.isPackaged` is the authoritative Electron signal.
+
+**Prevention:**
+1. **Always guard with `app.isPackaged`** before calling any autoUpdater method:
+   ```js
+   // In electron/main.cjs
+   if (app.isPackaged) {
+     autoUpdater.checkForUpdates();
+   }
+   ```
+2. **Do not rely solely on `ELECTRON_DEV`** env var for the updater guard — it can be missing in `electron:preview` mode (`vite build && electron .`), where the app is NOT packaged but ELECTRON_DEV is not set
+3. To test update UI in dev without a real update: create `dev-app-update.yml` in project root (matching publish config) and set `autoUpdater.forceDevUpdateConfig = true` before calling `checkForUpdates()`
+4. Always register `autoUpdater.on('error', ...)` before calling `checkForUpdates()` — unhandled errors in Electron 34 can terminate the app
+
+**Phase to address:** Phase 1 — must be in the initial wiring before any testing.
+
+**Confidence:** HIGH — documented behavior in electron-builder auto-update docs; `app.isPackaged` is the official guard.
+
+---
+
+### Pitfall 3: Missing or Misconfigured `publish` Field in electron-builder Config
+
+**What goes wrong:** Without a `publish` field in `package.json`'s `build` config, electron-builder does NOT generate `latest.yml` during `electron:build`, and electron-updater cannot locate the update feed. The build succeeds with no errors, but updates never work in production — `autoUpdater.checkForUpdates()` fires an error or returns nothing.
+
+**Warning signs:**
+- `latest.yml` absent from `release/` output directory after `npm run electron:build`
+- No `latest.yml` attached to GitHub release assets
+- `autoUpdater` error: `Cannot find latest.yml in the latest release artifacts`
+
+**Root cause:** Current `package.json` build config has no `publish` field. electron-builder only generates `latest.yml` and uploads assets when `publish` is configured.
+
+**Prevention:**
+1. Add `publish` to `package.json` build section **before running any release build**:
+   ```json
+   "build": {
+     "publish": {
+       "provider": "github",
+       "owner": "<github-username>",
+       "repo": "<repo-name>",
+       "releaseType": "release"
+     }
+   }
+   ```
+2. Verify `latest.yml` appears in `release/` after `npm run electron:build`
+3. For CI/CD publish (`GH_TOKEN` required), use `electron-builder --publish always`. For manual upload, use `--publish never` locally and upload `latest.yml` manually with the installer to the GitHub release
+4. **Critical:** `latest.yml` must be attached to the GitHub release alongside the `.exe` installer — if only the installer is uploaded without `latest.yml`, users will never receive update notifications
+5. The `owner` and `repo` values must exactly match the GitHub repository — typos cause silent 404 failures
+
+**Phase to address:** Phase 1 (electron-builder config) and Phase 2 (first release workflow).
+
+**Confidence:** HIGH — documented in electron-builder auto-update guide; verified `latest.yml` section.
+
+---
+
+### Pitfall 4: Code Signing — Windows Behavior Without Signing
+
+**What goes wrong:** Windows Defender SmartScreen marks the downloaded NSIS installer as "unrecognized app" and shows a "Windows protected your PC" warning when the update installs. This happens on EVERY update for unsigned installers, creating friction and eroding user trust. On some enterprise systems, unsigned installers are blocked entirely. The auto-update mechanism itself (checking, downloading, `quitAndInstall()`) still works without signing.
+
+**Warning signs:**
+- Users report SmartScreen popup when app auto-updates
+- Update installs correctly but user must click "Run anyway" — some users cancel
+- On managed Windows machines: "This app has been blocked by your system administrator"
+
+**Root cause:** `signAndEditExecutable: false` in the current config disables signing. electron-updater does perform code signature validation on Windows (unlike macOS, Windows does NOT require signing to function — it's optional validation). Since the app is unsigned, signature validation is skipped but SmartScreen warnings still fire from Windows itself.
+
+**Prevention:**
+1. **Short-term (this milestone):** This is a known limitation of the `signAndEditExecutable: false` setup. Document it in the app's release notes. Ensure the auto-update UX tells users "Click 'More info' → 'Run anyway' if Windows shows a warning."
+2. **Medium-term:** If user complaints increase, obtain a code signing certificate (EV or OV) — OV certificates require ~$200-400/year, EV certificates ($400-600/year) bypass SmartScreen reputation building
+3. **Do NOT** set `verifyUpdateCodeSignature: false` explicitly — this is already the default behavior when no signing is configured; setting it manually is not needed and may cause confusion
+
+**Phase to address:** Phase 1 — decide early that SmartScreen warnings are an accepted limitation for v1.1. Document for future milestone.
+
+**Confidence:** MEDIUM — behavior based on official docs ("Code signature validation on Windows") + well-known SmartScreen behavior; specific interaction with `signAndEditExecutable: false` extrapolated from docs.
+
+---
+
+### Pitfall 5: GitHub API Rate Limiting on Unauthenticated Update Checks
+
+**What goes wrong:** GitHub's API has a rate limit of **60 requests/hour for unauthenticated requests**. electron-updater uses up to 3 API requests per update check. This means a maximum of ~20 update checks/hour per IP before GitHub returns HTTP 403. If the app checks for updates on every window focus, or if multiple users share a NAT IP, rate limits will be hit and `autoUpdater.on('error', ...)` fires with a 403 error.
+
+**Warning signs:**
+- `error` event with "API rate limit exceeded" or HTTP 403
+- Update checks fail intermittently, especially in offices or shared networks
+- Works fine individually but fails when multiple instances run
+
+**Root cause:** No GitHub token configured. The official electron-builder docs state: "The GitHub API currently has a rate limit of 5000 requests per user per hour. An update check uses up to 3 requests per check." — 5000 is the **authenticated** limit; unauthenticated is 60/hour.
+
+**Prevention:**
+1. **Check for updates only on startup** (once per app launch), not on window focus or periodic intervals — this gives worst-case 1 check per app session
+2. **Optionally configure a GitHub token** via `autoUpdater.addAuthHeader('Bearer <token>')` or the `GH_TOKEN` env var for authenticated requests (5000/hour limit) — a public read-only token (no scopes) is safe to bundle for public repos
+3. Handle rate limit errors gracefully: catch the 403, show no error to the user (treat as "no update available"), log internally
+4. Do NOT add a periodic background update check (e.g., setInterval every 30 min) — this multiplies request load
+
+**Phase to address:** Phase 1 (startup check implementation) and Phase 2 (manual check in SettingsView — add explicit rate-limit-aware error handling).
+
+**Confidence:** HIGH — rate limits documented by GitHub and referenced in electron-builder docs.
+
+---
+
+### Pitfall 6: IPC Listener Accumulation in the React Renderer
+
+**What goes wrong:** In React components (e.g., `SettingsView`), calling `window.electronAPI.onUpdateAvailable(callback)` inside `useEffect` without returning a cleanup function causes the listener to pile up on every component re-mount. Each navigation to/from the settings page adds another listener. After several navigations, a single update event fires the callback N times, causing N toasts, N state updates, or N "install" prompts.
+
+**Warning signs:**
+- Toast notification appears multiple times for a single update event
+- Console log shows update callback firing 2x, 3x, 4x after navigating Settings
+- React state update warnings about unmounted components
+
+**Root cause:** The existing IPC pattern in this project uses `ipcMain.handle()` (fire-and-forget handles that are safe). But in the renderer, `ipcRenderer.on(channel, listener)` accumulates listeners unless explicitly removed. There is no existing cleanup pattern in the current `useToast`/`useModals` hooks for IPC listeners.
+
+**Prevention:**
+1. **Always return a cleanup in `useEffect`** when registering IPC listeners:
+   ```js
+   useEffect(() => {
+     const unsubscribe = window.electronAPI.onUpdateAvailable((info) => {
+       showUpdateToast(info);
      });
-
-     const setValue = (value) => {
-       try {
-         setStoredValue(value);
-         localStorage.setItem(key, JSON.stringify(value));
-       } catch (error) {
-         console.error('Error writing localStorage:', error);
-       }
-     };
-
-     return [storedValue, setValue];
+     return () => unsubscribe(); // remove listener on unmount
+   }, []);
+   ```
+2. **Expose `removeListener` in preload** so renderer can unsubscribe:
+   ```js
+   // preload.cjs
+   onUpdateAvailable: (cb) => {
+     ipcRenderer.on('update:available', (_, info) => cb(info));
+     return () => ipcRenderer.removeAllListeners('update:available');
    }
    ```
+3. **Use `ipcRenderer.once()`** for one-shot events (e.g., `update-downloaded`) where you only need to know it happened once per session
+4. For update state that spans the whole app session (not tied to component lifecycle), **manage it in a top-level React context** or in `App.jsx` (which is never unmounted), not inside `SettingsView`
 
-2. **Add data migration layer:**
-   ```javascript
-   const SCHEMA_VERSION = 1;
-   
-   function migrateData(data) {
-     if (!data.version || data.version < SCHEMA_VERSION) {
-       // Apply migrations
-       return { ...data, version: SCHEMA_VERSION };
-     }
-     return data;
-   }
-   ```
+**Phase to address:** Phase 2 (IPC bridge implementation) — design the preload API with cleanup from the start.
 
-3. **Implement backup before refactoring:**
-   ```javascript
-   // Before any changes
-   function backupLocalStorage() {
-     const backup = localStorage.getItem('moneyFlow');
-     localStorage.setItem('moneyFlow_backup_' + Date.now(), backup);
-   }
-   ```
-
-4. **Test localStorage persistence after EVERY refactor step:**
-   - Load app → verify data appears
-   - Close app → verify data persisted
-   - Restart app → verify data still intact
-
-**Detection:** Warning signs before data loss:
-- Empty dashboard after restart (but data was there before)
-- Console errors: `JSON.parse` failures, `undefined` state values
-- Google Drive sync showing "no local data to backup"
-- Toast notifications about "failed to load saved data"
-
-**Phase assignment:** 
-- **Phase 1 (Setup)** — Extract localStorage hook, add migrations
-- **Phase 2 (Refactor)** — Test persistence after each component extraction
-- **Every subsequent phase** — Regression test localStorage after changes
+**Confidence:** HIGH — standard React/IPC pattern issue; matches existing `ipcRenderer.on` behavior in Electron.
 
 ---
 
-### Pitfall 3: Recharts ResponsiveContainer Breaks in Electron Window Resize
-**What goes wrong:** Recharts components don't redraw when Electron window is resized. Charts appear stretched, clipped, or overlapping UI elements. `ResponsiveContainer` relies on browser resize events that Electron handles differently than standard browsers.
+### Pitfall 7: `quitAndInstall()` Conflicts with Google Drive Backup-on-Close
 
-**Why it happens:**
-- `ResponsiveContainer` listens to `window.resize` event
-- Electron windows fire resize events at different rates than browser windows
-- Chart dimensions calculate once on mount, then never update
-- React 19's concurrent rendering can batch resize events, causing missed updates
-- Dashboard has multiple charts (bar, area, pie) — all fail simultaneously
+**What goes wrong:** The existing `mainWindow.on('close', ...)` handler in `main.cjs` intercepts window close to trigger Google Drive backup when authenticated (`isQuitting` guard on lines 53–70). When `autoUpdater.quitAndInstall()` is called, it calls `app.quit()` which fires the `close` event on `mainWindow`. If `isQuitting` is still `false` at that point, the handler calls `e.preventDefault()` and requests backup data — blocking the update installation indefinitely. The app never quits, the update never installs.
 
-**Consequences:**
-- Charts unusable on different screen sizes (laptop → external monitor)
-- User resizes window, charts become unreadable
-- Looks broken/unprofessional — defeats purpose of clean redesign
-- Charts overlap data tables, destroying layout
+**Warning signs:**
+- Clicking "Install and restart" in the update toast appears to do nothing
+- App keeps running after user confirms restart
+- Google Drive backup upload is triggered unexpectedly during update
+
+**Root cause:** `quitAndInstall()` → `app.quit()` → `mainWindow.close` event → `isQuitting === false` → `e.preventDefault()` → close blocked. The `isQuitting` flag is only set in the existing flow when closing naturally while authenticated.
 
 **Prevention:**
-1. **Force Recharts remount on window resize:**
-   ```javascript
-   function useWindowSize() {
-     const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
-
-     useEffect(() => {
-       let timeoutId;
-       const handleResize = () => {
-         clearTimeout(timeoutId);
-         timeoutId = setTimeout(() => {
-           setSize({ width: window.innerWidth, height: window.innerHeight });
-         }, 150); // Debounce for performance
-       };
-
-       window.addEventListener('resize', handleResize);
-       return () => {
-         clearTimeout(timeoutId);
-         window.removeEventListener('resize', handleResize);
-       };
-     }, []);
-
-     return size;
-   }
-
-   // In chart component
-   const { width } = useWindowSize();
-   return <ResponsiveContainer key={width}> {/* Forces remount */}
-   ```
-
-2. **Use explicit dimensions instead of ResponsiveContainer:**
-   ```javascript
-   // More reliable in Electron
-   <BarChart width={containerWidth} height={400} data={data}>
-   ```
-
-3. **Add Electron-specific resize handler in preload:**
-   ```javascript
-   // electron/preload.cjs
-   window.electronAPI.onWindowResize(() => {
-     window.dispatchEvent(new Event('resize'));
+1. **Set `isQuitting = true` before calling `quitAndInstall()`**:
+   ```js
+   ipcMain.handle('update:install', () => {
+     isQuitting = true; // prevent backup-on-close from blocking
+     autoUpdater.quitAndInstall(false, true); // isSilent=false, isForceRunAfter=true
    });
    ```
+2. Consider whether backup should run before installing the update — if yes, trigger backup first, then set `isQuitting = true`, then call `quitAndInstall()` in the backup completion callback
+3. Add this interaction explicitly to Phase 1 integration checklist
 
-4. **Test on multiple window sizes during development:**
-   - 800×600 (minimum)
-   - 1920×1080 (common desktop)
-   - 2560×1440 (high-DPI)
-   - Snap window to half-screen (Windows behavior)
+**Phase to address:** Phase 1 — this is an existing system interaction that must be handled in the initial wiring, not discovered later.
 
-**Detection:** Warning signs:
-- Charts look perfect on first render, break after resize
-- `ResponsiveContainer` console warnings about parent dimensions
-- Charts have incorrect `viewBox` or `preserveAspectRatio` values
-- Browser DevTools works fine, Electron app broken
-
-**Phase assignment:** **Phase 3 (Dashboard Redesign)** — Implement during chart restyling, test immediately
+**Confidence:** HIGH — direct code reading of `main.cjs` confirms the `e.preventDefault()` logic; conflict is deterministic.
 
 ---
 
-### Pitfall 4: React 19 Concurrent Rendering Breaks Existing Callback Chains
-**What goes wrong:** Refactoring App.jsx while React 19's concurrent rendering is active causes race conditions in callback chains. User actions (import file, add transaction, sync Google Drive) trigger callbacks in unpredictable order. State updates interleave, causing partial saves, duplicate transactions, or UI freezes.
+### Pitfall 8: `electron-updater` Installed as devDependency Instead of Dependency
 
-**Why it happens:**
-- React 19 introduced concurrent features by default (no opt-in needed)
-- Current code has deeply nested callbacks: `handleFile → parseRows → categorizeTransactions → mergeTransactions → saveToLocalStorage`
-- Concurrent rendering can interrupt these chains, restart them, or run multiple chains in parallel
-- `useEffect` dependencies may fire multiple times with stale closure values
-- Refs used for persistence (`useRef`) don't trigger re-renders, causing UI/state desync
+**What goes wrong:** If `electron-updater` is added to `devDependencies` instead of `dependencies`, it is excluded from the packaged app bundle. The production build throws `Error: Cannot find module 'electron-updater'` at runtime, crashing the main process. This error is only visible in production (packaged), not in dev mode.
 
-**Consequences:**
-- **Data corruption:** Transactions imported twice or partially
-- **Lost user actions:** Click "add transaction", nothing happens
-- **UI desync:** Dashboard shows old data, localStorage has new data
-- **Google Drive sync fails:** Callback interrupted mid-upload
+**Warning signs:**
+- `require('electron-updater')` throws MODULE_NOT_FOUND in packaged app
+- Works perfectly in `npm run electron:dev`, breaks in `npm run electron:build` + run
+- No error during build, only at runtime
+
+**Root cause:** electron-builder packages files listed in `"files"` config + all `dependencies`. `devDependencies` are NOT included in the final package. `electron-updater` must be a runtime dependency.
 
 **Prevention:**
-1. **Use `useTransition` for non-urgent updates:**
-   ```javascript
-   import { useTransition } from 'react';
+```bash
+npm install electron-updater   # NOT --save-dev
+```
+Verify in `package.json` that `electron-updater` appears under `"dependencies"`, not `"devDependencies"`.
 
-   function TransactionList() {
-     const [isPending, startTransition] = useTransition();
+**Phase to address:** Phase 1 (installation step).
 
-     const handleImport = (file) => {
-       startTransition(() => {
-         // Non-urgent: import can be interrupted for user interactions
-         processImportFile(file);
-       });
-     };
-   }
-   ```
-
-2. **Wrap critical mutations in `flushSync`:**
-   ```javascript
-   import { flushSync } from 'react-dom';
-
-   const handleAddTransaction = (transaction) => {
-     flushSync(() => {
-       // Critical: must complete immediately, no interruptions
-       setTransactions(prev => [...prev, transaction]);
-       localStorage.setItem('moneyFlow', JSON.stringify(state));
-     });
-   };
-   ```
-
-3. **Stabilize callback references with `useCallback`:**
-   ```javascript
-   // Current code has unstable callbacks
-   const handleConfirm = useCallback((data) => {
-     // Callback definition
-   }, [dependencies]); // Explicitly list dependencies
-   ```
-
-4. **Audit all `useEffect` for stale closures:**
-   ```javascript
-   // BAD: captures stale `transactions` value
-   useEffect(() => {
-     saveToLocalStorage(transactions);
-   }, []); // Missing dependency
-
-   // GOOD: always uses fresh value
-   useEffect(() => {
-     saveToLocalStorage(transactions);
-   }, [transactions]);
-   ```
-
-**Detection:** Warning signs:
-- ESLint warnings: `react-hooks/exhaustive-deps`
-- Transactions appear, then disappear, then reappear
-- Multiple toast notifications for single action
-- "Cannot read property of undefined" in callbacks
-- Actions work sometimes, fail other times (nondeterministic)
-
-**Phase assignment:** 
-- **Phase 2 (Refactor App.jsx)** — Audit all callbacks during extraction
-- **Phase 4+ (UI components)** — Verify no new race conditions introduced
+**Confidence:** HIGH — standard electron-builder packaging behavior.
 
 ---
 
-### Pitfall 5: Tailwind Purge Deletes Dynamically Generated Classes
-**What goes wrong:** Tailwind CSS v4's content detection purges classes that are conditionally applied or dynamically constructed. Chart colors, status badges, category pills lose styling in production build. Classes work in dev mode but disappear in built app.
+### Pitfall 9: Silent Failures Without a Logger Configured
 
-**Why it happens:**
-- Tailwind scans source files for class names at build time
-- Dynamic class construction is invisible to static analysis:
-  ```javascript
-  // Purged in production
-  const color = type === 'income' ? 'green' : 'red';
-  className={`text-${color}-500`} // Tailwind can't detect this
-  ```
-- Category colors from `COLORS` array (constants/index.js) not in JSX
-- Recharts custom colors defined as variables, not Tailwind classes
-- Modals conditionally render classes based on state
+**What goes wrong:** By default, electron-updater logs nothing. Update check failures, download errors, and version mismatches produce no output visible in production. When users report "updates don't work," there is no diagnostic information available to debug the issue.
 
-**Consequences:**
-- **Production build broken:** Charts colorless, categories unstyled, UI unreadable
-- **Hard to debug:** Works in dev, breaks in production
-- **Wasted time:** Rebuilding multiple times, checking Vite config
-- **Rollback required:** Deploy broken build to discover issue
+**Warning signs:**
+- Update doesn't work but no errors appear in any log
+- `autoUpdater.on('error', ...)` handler was not registered
+- Packaged app logs are empty on update-related issues
+
+**Root cause:** `autoUpdater.logger` is `null` by default. The `error` event is the only feedback mechanism, and if it's not registered before calling `checkForUpdates()`, errors are silently swallowed.
 
 **Prevention:**
-1. **Use safelist for dynamic classes:**
-   ```javascript
-   // tailwind.config.js
-   export default {
-     content: [
-       './index.html',
-       './src/**/*.{js,jsx}',
-     ],
-     safelist: [
-       // Category colors
-       'bg-blue-500', 'bg-green-500', 'bg-red-500', 'bg-yellow-500',
-       'text-blue-500', 'text-green-500', 'text-red-500',
-       // Chart colors - keep all used shades
-       { pattern: /bg-(blue|green|red|yellow|purple|pink|indigo)-(100|200|500|600)/ },
-     ],
-   }
+1. Set a logger immediately on import:
+   ```js
+   const { autoUpdater } = require('electron-updater');
+   autoUpdater.logger = require('electron-log');  // if electron-log is installed
+   autoUpdater.logger.transports.file.level = 'info';
+   // OR use console for simplicity:
+   autoUpdater.logger = console;
    ```
+2. **Always register `autoUpdater.on('error', handler)` before any `checkForUpdates()` call** — unhandled errors in Electron 34 can crash the main process
+3. `electron-log` writes to `%APPDATA%\MoneyFlow\logs\` automatically — useful for user-reported bugs
 
-2. **Avoid string concatenation for classes:**
-   ```javascript
-   // BAD: Purged
-   className={`text-${color}-500`}
+**Phase to address:** Phase 1 — logging must be configured before any update logic is wired.
 
-   // GOOD: Full strings visible to Tailwind
-   const colorClasses = {
-     income: 'text-green-500 bg-green-100',
-     expense: 'text-red-500 bg-red-100',
-   };
-   className={colorClasses[type]}
+**Confidence:** HIGH — documented default behavior; electron-log is the standard companion.
+
+---
+
+### Pitfall 10: `type: "module"` in package.json Breaks require() in New Main Process Files
+
+**What goes wrong:** `package.json` has `"type": "module"`, which makes Node.js treat all `.js` files as ES modules. If a new file is added to `electron/` with a `.js` extension (e.g., `updateManager.js`), it cannot use `require()` — the CommonJS pattern used throughout `main.cjs` and `googleDrive.cjs`. The error is: `ReferenceError: require is not defined in ES module scope`.
+
+**Warning signs:**
+- Any new `.js` file added to `electron/` that uses `require()` fails immediately
+- Works fine in existing `.cjs` files but breaks in newly created `.js` files
+
+**Root cause:** `package.json` `"type": "module"` + `.js` extension = ESM. The project already correctly uses `.cjs` for main process files, but this must be maintained consistently.
+
+**Prevention:**
+1. **All new electron main process files must use `.cjs` extension** — enforce as a project rule
+2. Create update logic in `electron/updater.cjs` (not `updater.js`)
+3. Add a comment at the top of `electron/main.cjs`: `// All electron/ files must use .cjs extension (package.json type:module)`
+
+**Phase to address:** Phase 1 — naming convention must be established before creating any new files.
+
+**Confidence:** HIGH — directly observable from `package.json` + existing file naming pattern.
+
+---
+
+### Pitfall 11: Blocking Update Dialogs in the Main Process
+
+**What goes wrong:** Using `dialog.showMessageBoxSync()` or `dialog.showMessageBox().then()` in `autoUpdater` event handlers blocks the Electron main process event loop during the dialog. This freezes the entire app UI, including Google Drive operations and IPC responses. More critically: it is not the design intended by UPD-03 (non-blocking toast).
+
+**Warning signs:**
+- App becomes unresponsive while update dialog is open
+- Google Drive backup triggered during update dialog hangs
+- Entire app freezes if dialog fires during a Drive sync
+
+**Prevention:**
+1. **Never use `dialog.showMessageBoxSync()`** in update handlers — it blocks the event loop
+2. Always send IPC events to the renderer and let React handle the update UX:
+   ```js
+   autoUpdater.on('update-available', (info) => {
+     mainWindow.webContents.send('update:available', info);
+   });
    ```
+3. The renderer shows a non-blocking toast (UPD-03) with an "Install and Restart" button that sends `update:install` back via IPC
 
-3. **Keep color constants in sync with Tailwind:**
-   ```javascript
-   // constants/index.js
-   export const COLORS = [
-     'rgb(59 130 246)', // Tailwind blue-500
-     'rgb(16 185 129)', // Tailwind green-500
-     'rgb(239 68 68)',  // Tailwind red-500
-   ];
-   ```
+**Phase to address:** Phase 2 (IPC bridge + renderer UX) — architecture decision that must be stated explicitly.
 
-4. **Test production build before committing:**
-   ```bash
-   npm run electron:preview
-   # Check every colored element: charts, badges, categories, buttons
-   ```
-
-**Detection:** Warning signs:
-- Elements have correct HTML structure but no colors
-- Tailwind classes present in DOM but no CSS rules applied
-- DevTools shows classes like `text-green-500` with no matching styles
-- Production CSS bundle much smaller than expected
-
-**Phase assignment:** 
-- **Phase 1 (Setup)** — Configure safelist before writing any Tailwind classes
-- **Phase 3+ (UI work)** — Test production build after adding dynamic classes
+**Confidence:** HIGH — well-known Electron pattern; aligns with stated UPD-03 requirement.
 
 ---
 
 ## Moderate Pitfalls
 
-Issues causing significant rework but not catastrophic.
+---
 
-### Pitfall 6: CSS Specificity Wars During Migration
-**What goes wrong:** Mixing custom CSS (App.css, index.css) with Tailwind creates specificity conflicts. Tailwind classes don't override existing styles, or vice versa. Developer adds `!important` to force overrides, creating specificity spiral. Styles become unpredictable.
+### Pitfall 12: CSP Does NOT Block electron-updater (But Renderer CSP May Need Update)
 
-**Why it happens:**
-- Current CSS has high specificity selectors: `.stat-card.income`, `.transaction-list tbody tr:hover`
-- Tailwind utilities are single-class selectors (low specificity)
-- CSS cascade rules mean existing styles win over Tailwind
-- Developer tries `!important` in Tailwind config, breaks other styles
-- No clear migration path — gradually adding Tailwind creates hybrid mess
-
-**Consequences:**
-- Tailwind classes ignored, forcing inline styles
-- Duplicate styles (Tailwind + custom CSS) increase bundle size
-- Impossible to predict which style wins
-- Redesign looks inconsistent — some components styled, others not
+**What goes wrong (misconception):** Developers sometimes assume the strict CSP in `main.cjs` will block electron-updater from reaching GitHub. It won't — electron-updater runs in the **main process (Node.js)**, not in the renderer. CSP only applies to web content loaded in `BrowserWindow`. However, if any update-related UI in the renderer makes direct `fetch()` calls to GitHub (anti-pattern), those would be blocked by the current CSP.
 
 **Prevention:**
-1. **Use Tailwind layers correctly:**
-   ```css
-   /* index.css - wrap existing styles */
-   @layer base {
-     /* Global resets and base styles */
-     button { font-family: inherit; }
-   }
+1. **No action needed for electron-updater** — main process network calls are not subject to renderer CSP
+2. Do NOT make `fetch()` calls to GitHub from the renderer for update checks — route everything through IPC to the main process
+3. If `electron-log` is used and configured to send logs to a remote endpoint, the CSP `connect-src` would need updating — but this is not required for basic auto-update
 
-   @layer components {
-     /* Complex components that need custom CSS */
-     .stat-card { /* ... */ }
-   }
+**Phase to address:** Phase 1 — no action required, but developers should be aware to avoid unnecessary CSP changes.
 
-   @layer utilities {
-     /* Custom utilities beyond Tailwind */
-   }
-   ```
-
-2. **Remove CSS incrementally by component:**
-   - Phase 1: Convert `StatCard` to Tailwind → delete `.stat-card` styles
-   - Phase 2: Convert `TransactionList` → delete `.transaction-list` styles
-   - Don't leave orphaned CSS — delete as you migrate
-
-3. **Use Tailwind's `@apply` for complex patterns:**
-   ```css
-   /* Temporary bridge during migration */
-   .stat-card {
-     @apply bg-white rounded-lg p-4 shadow-md;
-   }
-   /* Later: move to JSX as className="bg-white rounded-lg p-4 shadow-md" */
-   ```
-
-4. **Disable existing CSS per-component:**
-   ```javascript
-   // During migration
-   // import './App.css'; // Commented out temporarily
-   import './App.tailwind.css'; // New Tailwind-only file
-   ```
-
-**Detection:** Warning signs:
-- DevTools shows strikethrough on Tailwind classes (overridden)
-- Need `!important` to make Tailwind classes work
-- Multiple CSS rules applying to same element
-- Hover states not working (specificity too low)
-
-**Phase assignment:** 
-- **Phase 2 (Refactor)** — Convert extracted components to Tailwind immediately
-- **Phase 3-6 (UI redesign)** — Migrate CSS progressively, component by component
+**Confidence:** HIGH — confirmed from Electron architecture; CSP is renderer-only.
 
 ---
 
-### Pitfall 7: Electron Native Scrollbars Conflict with Tailwind Overrides
-**What goes wrong:** Tailwind's scrollbar utilities (`overflow-auto`, `scrollbar-thin`) conflict with Electron's native scrollbar rendering. Custom scrollbar styles in index.css (`::-webkit-scrollbar`) break or look inconsistent across Windows versions. Scrollbars disappear or become impossible to grab.
+### Pitfall 13: Version Tag Format Mismatch Between package.json and GitHub Tags
 
-**Why it happens:**
-- Electron uses Chromium's scrollbar rendering (platform-specific)
-- Custom `::-webkit-scrollbar` styles only work on WebKit-based browsers
-- Tailwind's `overflow-*` utilities reset scrollbar properties
-- Windows 7/8/10/11 have different native scrollbar styles
-- High-DPI displays render scrollbars at wrong sizes
+**What goes wrong:** electron-updater checks the GitHub releases API for the latest release with a tag matching the version format. If `package.json` version is `2.0.0` but the GitHub tag is `v2.0.0` (with prefix `v`), the version comparison may fail or behave unexpectedly.
 
-**Consequences:**
-- Scrollbars invisible on some Windows versions
-- User can't scroll transaction list or category manager
-- Inconsistent UX — some scrollbars styled, others native
-- Accessibility issue — keyboard users can't navigate lists
+**Warning signs:**
+- Auto-updater always reports "update available" even after updating
+- `latest.yml` version field doesn't match GitHub tag
+- `checkForUpdates()` resolves but `updateInfo.version` seems wrong
 
 **Prevention:**
-1. **Use Tailwind's `scrollbar` plugin for consistency:**
-   ```javascript
-   // tailwind.config.js
-   export default {
-     plugins: [
-       require('tailwind-scrollbar')({ nocompatible: true }),
-     ],
-   }
+1. The existing `release:patch/minor/major` scripts use `npm version` which creates tags like `v2.0.0` (with `v` prefix) — this is the GitHub convention
+2. electron-builder handles the `v` prefix stripping automatically when comparing — **no action needed** as long as all releases use the same tag format consistently
+3. Verify: first release after adding electron-updater should be tested end-to-end before shipping
 
-   // Then in JSX
-   className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
-   ```
+**Phase to address:** Phase 2 (first release test).
 
-2. **Keep native scrollbars for accessibility:**
-   ```css
-   /* Remove custom scrollbar styles for accessibility */
-   /* ::-webkit-scrollbar { } */ // Delete this
-   
-   /* Use Tailwind classes instead */
-   .transaction-list {
-     overflow-y: auto; /* Native scrollbar */
-   }
-   ```
-
-3. **Test on Windows 7, 10, 11 if possible:**
-   - Electron 34 still supports Windows 7
-   - Scrollbar styles differ significantly between versions
-
-4. **Add keyboard navigation as fallback:**
-   ```javascript
-   // Don't rely solely on scrollbars
-   const handleKeyDown = (e) => {
-     if (e.key === 'ArrowDown') containerRef.current.scrollBy(0, 40);
-     if (e.key === 'ArrowUp') containerRef.current.scrollBy(0, -40);
-   };
-   ```
-
-**Detection:** Warning signs:
-- Scrollbars have zero width (invisible but functional)
-- DevTools shows scrollbar styles but nothing renders
-- Scrollbar thumb too small to grab with mouse
-- Different appearance in Electron vs browser DevTools
-
-**Phase assignment:** **Phase 4 (Transaction List)** — Redesign scrollbars during table overhaul
+**Confidence:** MEDIUM — electron-builder handles `v` prefix; specific behavior in edge cases needs end-to-end testing.
 
 ---
 
-### Pitfall 8: Accessibility Regressions from Visual Redesign
-**What goes wrong:** Focus on visual aesthetics breaks existing keyboard navigation and screen reader support. Modal focus traps disappear, form labels lost, color contrast fails WCAG standards. App becomes unusable for accessibility tools users.
+### Pitfall 14: `latest.yml` Checksum Mismatch After Manual File Edits
 
-**Why it happens:**
-- Current code has basic accessibility (`:focus-visible` in index.css)
-- Tailwind classes remove semantic HTML (replacing `<button>` with `<div className="cursor-pointer">`)
-- Visual-only indicators (color changes) without ARIA labels
-- Modal redesigns forget to restore focus to trigger element
-- High-contrast mode broken by Tailwind's fixed colors
-
-**Consequences:**
-- Keyboard users can't navigate UI (tab order broken)
-- Screen readers announce incorrect information or nothing at all
-- Violates WCAG 2.1 standards (legal risk in some jurisdictions)
-- Reduces user base — excludes users with disabilities
+**What goes wrong:** If anyone manually edits the NSIS installer `.exe` after `electron:build` (e.g., re-signing, post-processing), the SHA512 checksum in `latest.yml` no longer matches the file. electron-updater validates the checksum after download and rejects the file with: `Error: sha512 checksum mismatch`.
 
 **Prevention:**
-1. **Audit accessibility after EVERY component redesign:**
-   ```bash
-   # Use axe-core or similar
-   npm install -D axe-core
-   # Manual testing: Tab through entire UI, verify focus visible
-   ```
+1. Never manually modify release artifacts after building — generate a fresh build if changes are needed
+2. If re-signing post-build becomes necessary in the future, regenerate `latest.yml` checksum accordingly
+3. Not relevant for current `signAndEditExecutable: false` setup
 
-2. **Preserve semantic HTML:**
-   ```javascript
-   // BAD: Non-semantic
-   <div onClick={handleClick} className="cursor-pointer">Add</div>
+**Phase to address:** Phase 2 (release process documentation).
 
-   // GOOD: Semantic + accessible
-   <button onClick={handleClick} className="cursor-pointer">Add Transaction</button>
-   ```
-
-3. **Add ARIA labels for icon-only buttons:**
-   ```javascript
-   // Current code uses Lucide icons
-   <button aria-label="Delete transaction">
-     <Trash2 size={16} />
-   </button>
-   ```
-
-4. **Test focus management in modals:**
-   ```javascript
-   // Modal component must:
-   // 1. Focus first interactive element on open
-   // 2. Trap focus inside modal (Tab doesn't escape)
-   // 3. Return focus to trigger element on close
-   useEffect(() => {
-     const firstInput = modalRef.current?.querySelector('input, button');
-     firstInput?.focus();
-   }, [isOpen]);
-   ```
-
-5. **Check color contrast:**
-   ```javascript
-   // Use Tailwind's color system with sufficient contrast
-   // BAD: text-gray-400 on bg-gray-100 (low contrast)
-   // GOOD: text-gray-700 on bg-white (4.5:1 ratio)
-   ```
-
-**Detection:** Warning signs:
-- Tab key doesn't move focus visibly between elements
-- Screen reader announces "clickable" instead of "button"
-- Modal opens but focus stays on background
-- Colors look washed out in high-contrast mode
-
-**Phase assignment:** 
-- **Phase 5 (Modals)** — Critical for modal focus trap redesign
-- **All phases** — Test with keyboard-only navigation before considering phase complete
+**Confidence:** HIGH — documented electron-updater behavior.
 
 ---
 
-### Pitfall 9: Performance Degradation with Tailwind's Large Class Strings
-**What goes wrong:** Refactored components have className strings with 20+ Tailwind utilities. React's reconciliation algorithm slows down diffing these massive strings. App feels laggy, especially when rendering 100+ transactions in a list. Bundle size increases from class name duplication.
+## Phase-Specific Warnings Summary
 
-**Why it happens:**
-- Tailwind encourages utility-first → long className strings
-- Transaction list renders many rows with identical class strings
-- React diffs every className string character-by-character
-- No class name deduplication → "bg-white p-4 rounded shadow" repeated 100 times in DOM
-- Vite bundles all class strings as literals (no optimization)
-
-**Consequences:**
-- Slow scrolling through transaction list (janky 30fps instead of smooth 60fps)
-- High memory usage from duplicated class strings
-- Larger HTML bundle size in production
-- Poor UX — redesign makes app slower, not faster
-
-**Prevention:**
-1. **Extract repeated class strings to constants:**
-   ```javascript
-   // Don't repeat inline
-   const CARD_CLASSES = 'bg-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow';
-
-   {transactions.map(t => (
-     <div key={t.id} className={CARD_CLASSES}>
-       {/* ... */}
-     </div>
-   ))}
-   ```
-
-2. **Use `@apply` for frequently reused patterns:**
-   ```css
-   /* styles/components.css */
-   @layer components {
-     .card {
-       @apply bg-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow;
-     }
-   }
-   ```
-
-3. **Virtualize long lists:**
-   ```javascript
-   // For transaction list with 100+ items
-   import { useVirtualizer } from '@tanstack/react-virtual';
-
-   const virtualizer = useVirtualizer({
-     count: transactions.length,
-     getScrollElement: () => containerRef.current,
-     estimateSize: () => 60, // Row height
-   });
-
-   // Only render visible rows
-   {virtualizer.getVirtualItems().map(virtualRow => (
-     <TransactionRow key={virtualRow.index} transaction={transactions[virtualRow.index]} />
-   ))}
-   ```
-
-4. **Profile before and after Tailwind migration:**
-   ```javascript
-   // React DevTools Profiler
-   import { Profiler } from 'react';
-
-   <Profiler id="TransactionList" onRender={(id, phase, actualDuration) => {
-     console.log(`${id} (${phase}) took ${actualDuration}ms`);
-   }}>
-     <TransactionList />
-   </Profiler>
-   ```
-
-**Detection:** Warning signs:
-- DevTools Profiler shows increased render times after adding Tailwind
-- `className` strings in React DevTools are 100+ characters
-- Scrolling feels sluggish (monitor FPS in Performance tab)
-- Bundle size increased significantly (check `npm run build` output)
-
-**Phase assignment:** 
-- **Phase 4 (Transaction List)** — Critical for list with many rows
-- **Phase 3 (Dashboard)** — Less critical (fewer repeated elements)
+| Phase | Topic | Pitfall | Mitigation |
+|-------|-------|---------|------------|
+| Phase 1: Core Wiring | Install electron-updater | Installed as devDep | Use `npm install electron-updater` (no --save-dev) |
+| Phase 1: Core Wiring | Portable detection | Auto-update on portable crashes | Guard with `PORTABLE_EXECUTABLE_DIR` check |
+| Phase 1: Core Wiring | Dev mode guard | Crashes on `checkForUpdates()` in dev | `if (app.isPackaged)` guard required |
+| Phase 1: Core Wiring | electron-builder config | No `latest.yml` generated | Add `publish.github` config before first build |
+| Phase 1: Core Wiring | quitAndInstall + Drive backup | Update install blocked by backup handler | Set `isQuitting = true` before `quitAndInstall()` |
+| Phase 1: Core Wiring | File naming | `require()` fails in `.js` files | All new electron files must use `.cjs` extension |
+| Phase 1: Core Wiring | Logging | Silent failures in production | Configure `autoUpdater.logger` + register `error` handler |
+| Phase 2: IPC Bridge | Renderer listeners | IPC listener accumulation | useEffect cleanup + `removeAllListeners` in preload |
+| Phase 2: IPC Bridge | Update dialogs | Blocking `dialog.showMessageBoxSync()` | Always use IPC → renderer toast (UPD-03 pattern) |
+| Phase 2: IPC Bridge | GitHub rate limits | 403 from GitHub API | One check per startup; handle 403 gracefully |
+| Phase 2: Release | latest.yml upload | Missing from GitHub release | Verify `latest.yml` in release assets before announcing |
+| Phase 2: Release | Version tag format | Tag/version mismatch | End-to-end test first update cycle before v1.1 ship |
 
 ---
 
-### Pitfall 10: Drag Regions Break After Adding Tailwind to Header
-**What goes wrong:** Adding Tailwind classes to app header makes window un-draggable. User can't move Electron window by dragging title bar. `-webkit-app-region: drag` CSS property conflicts with Tailwind's resets or gets overridden by utility classes.
-
-**Why it happens:**
-- Electron requires `-webkit-app-region: drag` on header for window dragging
-- Tailwind's preflight reset may override `-webkit-app-region`
-- Adding `cursor-pointer` or other Tailwind utilities on header elements sets `-webkit-app-region: no-drag` implicitly
-- React event handlers (`onClick`) on draggable area block native drag behavior
-
-**Consequences:**
-- Window stuck in place — user can't reposition it
-- Non-standard UX for desktop app (expects draggable title bar)
-- Buttons in header area become unclickable (drag intercepts clicks)
-
-**Prevention:**
-1. **Explicitly set drag regions in CSS:**
-   ```css
-   /* index.css or App.css */
-   .app-header {
-     -webkit-app-region: drag;
-     -webkit-user-select: none; /* Prevent text selection during drag */
-   }
-
-   .app-header button,
-   .app-header input,
-   .app-header a {
-     -webkit-app-region: no-drag; /* Interactive elements can't be drag handles */
-   }
-   ```
-
-2. **Add Tailwind plugin for drag regions:**
-   ```javascript
-   // tailwind.config.js
-   export default {
-     plugins: [
-       function({ addUtilities }) {
-         addUtilities({
-           '.drag': { '-webkit-app-region': 'drag' },
-           '.no-drag': { '-webkit-app-region': 'no-drag' },
-         });
-       },
-     ],
-   }
-
-   // Then use in JSX
-   <header className="app-header drag">
-     <button className="no-drag">Settings</button>
-   </header>
-   ```
-
-3. **Test window dragging immediately after header redesign:**
-   - Try dragging by clicking empty space in header
-   - Try clicking buttons (should work, not drag window)
-   - Test on Windows (different drag behavior than macOS)
-
-**Detection:** Warning signs:
-- Can't drag window by clicking header
-- Header buttons don't respond to clicks
-- DevTools shows `-webkit-app-region: no-drag` on header
-- Cursor doesn't change when hovering over header
-
-**Phase assignment:** **Phase 5 (Navigation Redesign)** — When redesigning header/navigation
-
----
-
-## Minor Pitfalls
-
-Issues causing annoyance but quick to fix.
-
-### Pitfall 11: Vite HMR Breaks with Tailwind During Development
-**What goes wrong:** Hot Module Replacement (HMR) stops working after adding Tailwind CSS v4. Every code change requires full page reload, slowing down development. Vite's dev server sometimes crashes with PostCSS errors.
-
-**Why it happens:**
-- Tailwind CSS v4 uses PostCSS for processing
-- Vite's HMR doesn't always detect CSS changes in `@import` statements
-- Circular dependencies between CSS files break HMR
-- PostCSS plugins not configured correctly in Vite config
-
-**Prevention:**
-1. **Configure PostCSS correctly:**
-   ```javascript
-   // vite.config.js
-   export default defineConfig({
-     plugins: [react()],
-     css: {
-       postcss: {
-         plugins: [
-           require('tailwindcss'),
-           require('autoprefixer'),
-         ],
-       },
-     },
-   });
-   ```
-
-2. **Use single entry point for CSS:**
-   ```css
-   /* index.css - single source of truth */
-   @import 'tailwindcss/base';
-   @import 'tailwindcss/components';
-   @import 'tailwindcss/utilities';
-
-   /* Don't import Tailwind in multiple files */
-   ```
-
-3. **Restart Vite after Tailwind config changes:**
-   ```bash
-   # Vite doesn't watch tailwind.config.js by default
-   # Add to vite.config.js:
-   server: {
-     watch: {
-       ignored: ['!**/tailwind.config.js'],
-     },
-   }
-   ```
-
-**Detection:** Warning signs:
-- Changes to JSX require full reload instead of hot update
-- Tailwind classes don't update until manual refresh
-- Console errors: "PostCSS plugin failed" or "Circular dependency"
-
-**Phase assignment:** **Phase 1 (Setup)** — Fix during initial Tailwind configuration
-
----
-
-### Pitfall 12: Font Loading Breaks Tailwind Typography Plugin
-**What goes wrong:** Current app imports Google Fonts via `@import` in index.css (line 1). Tailwind's typography plugin or custom font stack conflicts with this, causing FOUT (Flash of Unstyled Text) or fonts not loading at all.
-
-**Why it happens:**
-- `@import` in CSS is blocking (delays page render)
-- Tailwind's preflight may override font-family settings
-- Google Fonts URL in CSP but font files block due to CORS
-- Font loading race condition with Tailwind styles
-
-**Prevention:**
-1. **Preload fonts in HTML:**
-   ```html
-   <!-- index.html -->
-   <link rel="preconnect" href="https://fonts.googleapis.com">
-   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-   ```
-
-2. **Configure Tailwind font family:**
-   ```javascript
-   // tailwind.config.js
-   export default {
-     theme: {
-       extend: {
-         fontFamily: {
-           sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-         },
-       },
-     },
-   }
-   ```
-
-3. **Remove `@import` from index.css:**
-   ```css
-   /* Delete this line from index.css */
-   /* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); */
-   ```
-
-**Detection:** Warning signs:
-- Fonts load, then flash to different font, then back
-- Console warning about font-face not loading
-- Fonts work in browser, fail in Electron build
-
-**Phase assignment:** **Phase 1 (Setup)** — Migrate font loading before Tailwind setup
-
----
-
-### Pitfall 13: Recharts Tooltip Styling Inconsistent with Tailwind Theme
-**What goes wrong:** Recharts tooltips use inline styles that don't match Tailwind's design tokens. Tooltips have different colors, fonts, shadows than rest of UI. Custom tooltip components break chart responsiveness.
-
-**Why it happens:**
-- Recharts has own theming system (not Tailwind-aware)
-- Custom tooltips require explicit styling with inline styles or CSS
-- Tooltip colors hardcoded in Recharts (doesn't read CSS variables)
-
-**Prevention:**
-1. **Create custom Recharts tooltip component:**
-   ```javascript
-   function CustomTooltip({ active, payload, label }) {
-     if (!active || !payload) return null;
-
-     return (
-       <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-         <p className="text-sm font-medium text-gray-900">{label}</p>
-         {payload.map((entry, index) => (
-           <p key={index} className="text-sm text-gray-600">
-             {entry.name}: {entry.value}
-           </p>
-         ))}
-       </div>
-     );
-   }
-
-   <BarChart>
-     <Tooltip content={<CustomTooltip />} />
-   </BarChart>
-   ```
-
-2. **Map Tailwind colors to Recharts:**
-   ```javascript
-   // constants/index.js
-   import resolveConfig from 'tailwindcss/resolveConfig';
-   import tailwindConfig from '../tailwind.config.js';
-
-   const fullConfig = resolveConfig(tailwindConfig);
-   export const CHART_COLORS = [
-     fullConfig.theme.colors.blue[500],
-     fullConfig.theme.colors.green[500],
-     fullConfig.theme.colors.red[500],
-   ];
-   ```
-
-**Detection:** Warning signs:
-- Tooltips have different font than rest of app
-- Tooltip shadows don't match design system
-- Tooltips overflow chart container
-
-**Phase assignment:** **Phase 3 (Dashboard Redesign)** — Style tooltips during chart restyling
-
----
-
-### Pitfall 14: Toast Notifications Lost in Tailwind Transition
-**What goes wrong:** Existing toast notification system (App.jsx lines with `showToast`) breaks during refactoring. Toasts don't appear, appear in wrong position, or lack animations. User loses feedback on import success/failure.
-
-**Why it happens:**
-- Toast component hardcoded positioning in App.css
-- Tailwind's positioning utilities conflict with custom CSS
-- Z-index issues — modals cover toasts or vice versa
-- Animation keyframes in index.css not compatible with Tailwind transitions
-
-**Prevention:**
-1. **Migrate Toast to Tailwind classes first:**
-   ```javascript
-   // components/Toast.jsx
-   export default function Toast({ message, type, onClose }) {
-     return (
-       <div className={`
-         fixed bottom-4 right-4 z-50
-         bg-white border-l-4 rounded-lg shadow-lg p-4
-         transform transition-all duration-300 ease-in-out
-         ${type === 'success' ? 'border-green-500' : 'border-red-500'}
-         animate-slideUp
-       `}>
-         <p className="text-sm font-medium text-gray-900">{message}</p>
-       </div>
-     );
-   }
-   ```
-
-2. **Add Tailwind animation:**
-   ```javascript
-   // tailwind.config.js
-   export default {
-     theme: {
-       extend: {
-         animation: {
-           slideUp: 'slideUp 0.3s ease-out',
-         },
-         keyframes: {
-           slideUp: {
-             '0%': { opacity: '0', transform: 'translateY(10px)' },
-             '100%': { opacity: '1', transform: 'translateY(0)' },
-           },
-         },
-       },
-     },
-   }
-   ```
-
-3. **Preserve z-index hierarchy:**
-   ```javascript
-   // Define z-index scale in Tailwind config
-   // Modal: z-50, Toast: z-60, Dropdown: z-40
-   ```
-
-**Detection:** Warning signs:
-- Toasts visible in DevTools but not on screen (z-index issue)
-- Toasts appear without animation (keyframes lost)
-- Import succeeds but user sees no confirmation
-
-**Phase assignment:** **Phase 2 (Refactor)** — Extract Toast component early with Tailwind
-
----
-
-### Pitfall 15: Class Name Conflicts Between Tailwind and Existing CSS
-**What goes wrong:** Tailwind class names collide with existing custom classes in App.css. For example, custom `.shadow` class conflicts with Tailwind's `.shadow` utility. Styles become unpredictable depending on CSS load order.
-
-**Why it happens:**
-- Existing CSS uses generic class names (`.shadow`, `.card`, `.button`)
-- Tailwind has utilities with same names
-- CSS cascade depends on import order (index.css vs App.css)
-- Specificity ties resolved by order, not intent
-
-**Prevention:**
-1. **Prefix custom classes:**
-   ```css
-   /* App.css - add prefix to avoid conflicts */
-   .mf-shadow { /* MoneyFlow prefix */ }
-   .mf-card { }
-   .mf-button { }
-   ```
-
-2. **Audit existing classes before adding Tailwind:**
-   ```bash
-   # Search for potential conflicts
-   grep -r "className=" src/ | grep -E "\.(shadow|card|button|input|container)"
-   ```
-
-3. **Use CSS Modules for component-specific styles:**
-   ```javascript
-   // StatCard.module.css
-   .card { /* Scoped automatically */ }
-
-   // StatCard.jsx
-   import styles from './StatCard.module.css';
-   <div className={styles.card}>
-   ```
-
-**Detection:** Warning signs:
-- DevTools shows multiple CSS rules with same class name
-- Styles different in different browsers (load order varies)
-- Removing custom CSS breaks Tailwind utilities
-
-**Phase assignment:** **Phase 1 (Setup)** — Audit and rename conflicting classes before Tailwind install
-
----
-
-## Phase-Specific Warnings
-
-Pitfalls mapped to roadmap phases where they're most likely to occur.
-
-| Phase | Likely Pitfall | Mitigation Strategy |
-|-------|---------------|---------------------|
-| **Phase 1: Setup & Tailwind Install** | CSP breaks Tailwind JIT (Pitfall #1) | Configure CSP + Tailwind compatibility before any UI work |
-| **Phase 1: Setup & Tailwind Install** | Vite HMR breaks (Pitfall #11) | Test HMR immediately after PostCSS config |
-| **Phase 1: Setup & Tailwind Install** | Class name conflicts (Pitfall #15) | Audit existing CSS, rename conflicts |
-| **Phase 1: Setup & Tailwind Install** | Font loading issues (Pitfall #12) | Migrate Google Fonts to HTML preload |
-| **Phase 2: Refactor App.jsx** | localStorage data loss (Pitfall #2) | Extract localStorage hook first, backup data |
-| **Phase 2: Refactor App.jsx** | React 19 callback races (Pitfall #4) | Audit all useEffect, useCallback dependencies |
-| **Phase 2: Refactor App.jsx** | Toast notifications lost (Pitfall #14) | Migrate Toast component early |
-| **Phase 3: Dashboard Redesign** | Recharts ResponsiveContainer (Pitfall #3) | Implement window resize handler immediately |
-| **Phase 3: Dashboard Redesign** | Recharts tooltip styling (Pitfall #13) | Create custom tooltip with Tailwind |
-| **Phase 3: Dashboard Redesign** | Tailwind purge deletes chart colors (Pitfall #5) | Safelist all dynamic classes |
-| **Phase 4: Transaction List** | Performance with large lists (Pitfall #9) | Extract class constants, consider virtualization |
-| **Phase 4: Transaction List** | Scrollbar styling conflicts (Pitfall #7) | Use Tailwind scrollbar plugin |
-| **Phase 5: Navigation/Modals** | Drag regions break (Pitfall #10) | Add `-webkit-app-region` utilities |
-| **Phase 5: Navigation/Modals** | Accessibility regressions (Pitfall #8) | Test focus trap, keyboard navigation |
-| **Phase 5: Navigation/Modals** | Modal z-index issues (Pitfall #14) | Define z-index hierarchy |
-| **All Phases** | CSS specificity wars (Pitfall #6) | Migrate CSS incrementally, delete old styles |
-| **All Phases** | Accessibility regressions (Pitfall #8) | Keyboard-test every component |
-
----
-
-## Validation Checklist
-
-Use this checklist after completing each phase to catch pitfalls early:
-
-### Phase 1 (Setup)
-- [ ] HMR works with Tailwind changes (no full reload needed)
-- [ ] CSP doesn't block Tailwind dev mode inline styles
-- [ ] Production build has styled components (Tailwind not purged)
-- [ ] Google Fonts load without FOUT
-- [ ] No class name conflicts between Tailwind and existing CSS
-
-### Phase 2 (Refactor)
-- [ ] localStorage data persists across app restarts
-- [ ] Toast notifications appear and animate correctly
-- [ ] No ESLint warnings about missing useEffect dependencies
-- [ ] Google Drive sync still works after refactoring
-
-### Phase 3 (Dashboard)
-- [ ] Charts resize correctly when Electron window resized
-- [ ] Chart colors match Tailwind theme (not hardcoded)
-- [ ] Recharts tooltips styled consistently with UI
-- [ ] All chart colors present in production build (not purged)
-
-### Phase 4 (Transaction List)
-- [ ] Scrolling 100+ transactions is smooth (60fps)
-- [ ] Scrollbars visible and grabbable on Windows
-- [ ] List performance acceptable (< 50ms render time)
-- [ ] Keyboard navigation works (arrow keys, tab)
-
-### Phase 5 (Modals/Navigation)
-- [ ] Can drag Electron window by header
-- [ ] Buttons in header still clickable (not intercepted by drag)
-- [ ] Modal focus trap works (Tab doesn't escape)
-- [ ] Focus returns to trigger element on modal close
-- [ ] Z-index hierarchy correct (modal > toast > dropdown)
-
-### All Phases
-- [ ] Keyboard-only navigation works (no mouse needed)
-- [ ] Screen reader announces elements correctly
-- [ ] Color contrast meets WCAG 2.1 AA standards
-- [ ] No console errors or warnings
-- [ ] localStorage data intact after phase changes
-
----
-
-## Emergency Recovery Procedures
-
-If a critical pitfall occurs, follow these steps:
-
-### Data Loss (Pitfall #2)
-1. **Stop immediately** — don't make more changes
-2. Check `localStorage` backup:
-   ```javascript
-   // In browser DevTools console
-   Object.keys(localStorage).filter(k => k.includes('moneyFlow'))
-   // Look for backup keys
-   ```
-3. Restore from Google Drive if available:
-   ```javascript
-   // Use existing sync mechanism
-   await window.electronAPI.googleDrive.restoreBackup();
-   ```
-4. Add data migration layer before continuing:
-   ```javascript
-   const SCHEMA_VERSION = 1;
-   function migrate(data) { /* ... */ }
-   ```
-
-### UI Completely Broken (Pitfall #1, #5)
-1. **Check production build:**
-   ```bash
-   npm run electron:preview
-   # If dev works but production broken → Tailwind purge issue
-   ```
-2. **Temporarily disable Tailwind:**
-   ```javascript
-   // vite.config.js
-   css: {
-     postcss: {
-       plugins: [], // Empty to disable Tailwind
-     },
-   }
-   ```
-3. **Restore previous commit:**
-   ```bash
-   git log --oneline -10
-   git checkout <last-working-commit>
-   ```
-
-### Performance Degraded (Pitfall #9)
-1. **Profile render times:**
-   ```javascript
-   import { Profiler } from 'react';
-   <Profiler id="App" onRender={(id, phase, actualDuration) => {
-     if (actualDuration > 50) console.warn(`Slow render: ${id} ${actualDuration}ms`);
-   }}>
-   ```
-2. **Remove Tailwind classes temporarily:**
-   - Replace long className strings with simple class
-   - Measure performance improvement
-3. **Add virtualization:**
-   ```bash
-   npm install @tanstack/react-virtual
-   ```
-
----
-
-## Sources & Confidence
-
-**Confidence Level: HIGH** for Electron + React patterns, **MEDIUM** for Tailwind CSS v4 specifics
-
-### Primary Sources (HIGH Confidence)
-- **Codebase Analysis:** Direct inspection of App.jsx, electron/main.cjs, package.json, existing CSS
-- **React 19 Documentation:** Concurrent rendering patterns, useTransition, flushSync usage
-- **Electron Documentation:** CSP configuration, window dragging, security best practices
-- **Recharts Documentation:** ResponsiveContainer behavior, custom tooltip patterns
-
-### Secondary Sources (MEDIUM Confidence)
-- **Tailwind CSS v4 Documentation:** Content detection, purge configuration (v4 beta, behavior may change)
-- **Vite Documentation:** PostCSS integration, HMR behavior with CSS preprocessors
-- **Community Experience:** Common Electron + Tailwind gotchas (Stack Overflow, GitHub issues)
-
-### Areas Needing Validation (LOW Confidence)
-- **Tailwind CSS v4 + Electron CSP interaction:** v4 is in beta, specific CSP behavior may change before stable release
-- **React 19 + Recharts compatibility:** Both recently released, edge cases may exist
-- **Windows 7 scrollbar behavior:** Support ending soon, testing difficult
-
-### Recommendations for Further Research
-- **Before Phase 1:** Verify Tailwind CSS v4 stable release notes for CSP changes
-- **Before Phase 3:** Check Recharts changelog for React 19 compatibility fixes
-- **Before Phase 4:** Test virtualization libraries (@tanstack/react-virtual) with Electron
-
----
-
-*Research completed: 2025-01-29*  
-*Next review: After Tailwind CSS v4 stable release or if React 19.3+ introduces breaking changes*
+## Sources
+
+- electron-updater official README: https://github.com/electron-userland/electron-builder/tree/master/packages/electron-updater (HIGH confidence)
+- electron-builder Auto Update guide: https://www.electron.build/auto-update (HIGH confidence)
+- GitHub API rate limits: https://docs.github.com/en/rest/overview/rate-limits-for-the-rest-api (HIGH confidence)
+- MoneyFlow `electron/main.cjs` — direct code inspection (HIGH confidence, project-specific)
+- MoneyFlow `package.json` build config — direct code inspection (HIGH confidence, project-specific)
