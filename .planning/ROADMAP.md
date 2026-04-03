@@ -46,7 +46,10 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
   2. In DevTools console of a running dev/packaged build, `typeof window.electronAPI.updater.checkForUpdates === 'function'` returns `true` and all 7 bridge methods (`checkForUpdates`, `installUpdate`, `onUpdateAvailable`, `onUpdateNotAvailable`, `onDownloadProgress`, `onUpdateDownloaded`, `onUpdateError`) are callable
   3. In a packaged NSIS build, the background startup check fires after ~3 s without crashing; portable build silently swallows updater errors without forwarding them to the renderer
   4. Clicking "Installa e riavvia" can only reach `quitAndInstall()` via explicit renderer invocation — `isQuitting = true` is set before the call, preventing the `before-quit` backup flow from conflicting
-**Plans**: TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 09-01-PLAN.md — Install electron-updater, configure GitHub publish, wire main process + IPC bridge
 
 ### Phase 10: Update UI
 **Goal**: Users can see and act on available updates — automatic notification in the corner when a download is ready, and full manual control from the Settings screen
@@ -64,5 +67,5 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 9. Update Infrastructure | 0/? | Not started | — |
+| 9. Update Infrastructure | 0/1 | Planned | — |
 | 10. Update UI | 0/? | Not started | — |
