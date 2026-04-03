@@ -10,21 +10,21 @@
 
 ### Update Infrastructure
 
-- [ ] **UPD-01**: L'app installa `electron-updater` (dependency) e configura `electron-builder` con il provider GitHub Releases (owner/repo specificati nel `publish` block di `package.json`).
-- [ ] **UPD-02**: Il main process inizializza `autoUpdater` solo in produzione (guarded by `isDev`) e avvia un check automatico all'avvio con 3 secondi di ritardo dopo `createWindow()`.
-- [ ] **UPD-03**: Il preload espone il namespace `window.electronAPI.updater` con metodi: `checkForUpdates()`, `installUpdate()`, e i cinque listener `on*` con cleanup function.
+- [x] **UPD-01**: L'app installa `electron-updater` (dependency) e configura `electron-builder` con il provider GitHub Releases (owner/repo specificati nel `publish` block di `package.json`).
+- [x] **UPD-02**: Il main process inizializza `autoUpdater` solo in produzione (guarded by `isDev`) e avvia un check automatico all'avvio con 3 secondi di ritardo dopo `createWindow()`.
+- [x] **UPD-03**: Il preload espone il namespace `window.electronAPI.updater` con metodi: `checkForUpdates()`, `installUpdate()`, e i cinque listener `on*` con cleanup function.
 
 ### Update UX — Notifica Automatica
 
-- [ ] **UPD-04**: Quando un aggiornamento è disponibile, l'app mostra un banner non-bloccante (`UpdateBanner`) nell'angolo in basso a destra con la versione disponibile e il pulsante "Installa e riavvia".
-- [ ] **UPD-05**: Il banner "Installa e riavvia" è visibile solo quando il download è completato (`status === 'ready'`) — non durante il download in corso.
-- [ ] **UPD-06**: Il pulsante "Installa e riavvia" chiama `quitAndInstall()` solo su azione esplicita dell'utente; l'app non si riavvia mai automaticamente.
+- [x] **UPD-04**: Quando un aggiornamento è disponibile, l'app mostra un banner non-bloccante (`UpdateBanner`) nell'angolo in basso a destra con la versione disponibile e il pulsante "Installa e riavvia".
+- [x] **UPD-05**: Il banner "Installa e riavvia" è visibile solo quando il download è completato (`status === 'ready'`) — non durante il download in corso.
+- [x] **UPD-06**: Il pulsante "Installa e riavvia" chiama `quitAndInstall()` solo su azione esplicita dell'utente; l'app non si riavvia mai automaticamente.
 
 ### Update UX — Controllo Manuale in Settings
 
-- [ ] **UPD-07**: La schermata Impostazioni mostra una sezione "Aggiornamenti" con la versione corrente dell'app (`app.getVersion()` via IPC).
-- [ ] **UPD-08**: L'utente può cliccare "Controlla aggiornamenti" per avviare un check manuale; il pulsante mostra uno stato di caricamento durante il check.
-- [ ] **UPD-09**: Dopo il check manuale, la sezione Aggiornamenti mostra uno dei tre stati: "Sei già aggiornato", "Versione X.Y.Z disponibile — download in corso (N%)", "Impossibile controllare gli aggiornamenti" con messaggio di errore.
+- [x] **UPD-07**: La schermata Impostazioni mostra una sezione "Aggiornamenti" con la versione corrente dell'app (`app.getVersion()` via IPC).
+- [x] **UPD-08**: L'utente può cliccare "Controlla aggiornamenti" per avviare un check manuale; il pulsante mostra uno stato di caricamento durante il check.
+- [x] **UPD-09**: Dopo il check manuale, la sezione Aggiornamenti mostra uno dei tre stati: "Sei già aggiornato", "Versione X.Y.Z disponibile — download in corso (N%)", "Impossibile controllare gli aggiornamenti" con messaggio di errore.
 
 ---
 
@@ -48,12 +48,12 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| UPD-01 | Phase 9 | pending |
-| UPD-02 | Phase 9 | pending |
-| UPD-03 | Phase 9 | pending |
-| UPD-04 | Phase 10 | pending |
-| UPD-05 | Phase 10 | pending |
-| UPD-06 | Phase 9 | pending |
-| UPD-07 | Phase 10 | pending |
-| UPD-08 | Phase 10 | pending |
-| UPD-09 | Phase 10 | pending |
+| UPD-01 | Phase 9 | satisfied |
+| UPD-02 | Phase 9 | satisfied |
+| UPD-03 | Phase 9 | satisfied |
+| UPD-04 | Phase 10 | satisfied |
+| UPD-05 | Phase 10 | satisfied |
+| UPD-06 | Phase 9 | satisfied |
+| UPD-07 | Phase 10 | satisfied |
+| UPD-08 | Phase 10 | satisfied |
+| UPD-09 | Phase 10 | satisfied |

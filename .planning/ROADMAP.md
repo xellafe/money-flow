@@ -32,7 +32,7 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
 
 ## Phases
 
-- [ ] **Phase 9: Update Infrastructure** — Install electron-updater, wire main process, expose IPC bridge to renderer
+- [x] **Phase 9: Update Infrastructure** — Install electron-updater, wire main process, expose IPC bridge to renderer (completed 2026-04-03)
 - [x] **Phase 10: Update UI** — UpdateBanner, Settings Aggiornamenti section, manual check, post-check feedback (completed 2026-04-03)
 
 ## Phase Details
@@ -63,8 +63,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 10-01-PLAN.md — IPC handler + useUpdateStatus hook (foundation)
-- [ ] 10-02-PLAN.md — UpdateBanner component + App.jsx wiring + SettingsView Aggiornamenti section
+- [x] 10-01-PLAN.md — IPC handler + useUpdateStatus hook (foundation)
+- [x] 10-02-PLAN.md — UpdateBanner component + App.jsx wiring + SettingsView Aggiornamenti section
 
 **UI hint**: yes
 
@@ -72,5 +72,5 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 9. Update Infrastructure | 0/1 | Planned | — |
-| 10. Update UI | 0/2 | Complete    | 2026-04-03 |
+| 9. Update Infrastructure | 1/1 | Complete | 2026-04-03 |
+| 10. Update UI | 2/2 | Complete | 2026-04-03 |
