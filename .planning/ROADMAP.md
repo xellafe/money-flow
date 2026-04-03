@@ -60,7 +60,12 @@ Plans:
   2. Clicking "Controlla aggiornamenti" puts the button in a loading/disabled state during the check; once resolved the section shows exactly one of: "Sei già aggiornato", "Versione X.Y.Z disponibile — download N% completato", or "Impossibile controllare gli aggiornamenti" with the error detail
   3. A blue banner appears in the bottom-right corner only after the download completes (`status === 'ready'`); the banner is absent while the download is still in progress or when no update is available
   4. Clicking "Installa e riavvia" (banner or Settings) triggers quit-and-install — the app never restarts automatically without this explicit user action
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — IPC handler + useUpdateStatus hook (foundation)
+- [ ] 10-02-PLAN.md — UpdateBanner component + App.jsx wiring + SettingsView Aggiornamenti section
+
 **UI hint**: yes
 
 ## Progress Table
@@ -68,4 +73,4 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 9. Update Infrastructure | 0/1 | Planned | — |
-| 10. Update UI | 0/? | Not started | — |
+| 10. Update UI | 0/2 | Planned | — |
