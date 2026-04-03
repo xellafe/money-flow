@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const googleDrive = require('./googleDrive.cjs');
+const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
 
 // Disabilita la GPU cache per evitare errori di permessi su Windows
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
@@ -30,6 +32,55 @@ if (isDev) {
   } catch (e) {
     console.log('electron-reload not available:', e.message);
   }
+}
+
+// Auto-updater setup — called only in production
+function setupAutoUpdater() {
+  // Assign logger — writes to %APPDATA%\MoneyFlow\logs\main.log
+  autoUpdater.logger = log;
+  autoUpdater.logger.transports.file.level = 'info';
+
+  // Core config per CONTEXT.md decisions
+  autoUpdater.autoDownload = false;     // D-07: renderer must call startDownload()
+  autoUpdater.allowPrerelease = false;  // D-04: stable releases only
+
+  // Push events → renderer (guarded against destroyed window)
+  autoUpdater.on('update-available', (info) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('updater:update-available', info);
+    }
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('updater:update-not-available', info);
+    }
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('updater:download-progress', progress);
+    }
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('updater:update-downloaded', info);
+    }
+  });
+
+  // Error handler: log always, do NOT forward to renderer here
+  // The IPC handler catches errors from checkForUpdates() and forwards them
+  autoUpdater.on('error', (err) => {
+    log.error('autoUpdater error:', err.message);
+  });
+
+  // Startup check — 3s delay per D-06
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch((err) => {
+      log.error('Startup checkForUpdates failed:', err.message);
+    });
+  }, 3000);
 }
 
 function createWindow() {
@@ -109,6 +160,11 @@ app.whenReady().then(() => {
   });
 
   createWindow();
+
+  // Initialize auto-updater in production only (D-05)
+  if (!isDev) {
+    setupAutoUpdater();
+  }
 
   app.on('activate', () => {
     // Su macOS, ricrea la finestra se l'icona nel dock viene cliccata
@@ -273,4 +329,36 @@ ipcMain.handle('google-drive:get-user-info', async () => {
     console.error('Errore info utente:', error);
     return { success: false, error: error.message };
   }
+});
+
+// ============================================
+// IPC Handlers per Auto-Updater
+// ============================================
+
+ipcMain.handle('updater:check-for-updates', async () => {
+  try {
+    await autoUpdater.checkForUpdates();
+    return { success: true };
+  } catch (err) {
+    log.error('checkForUpdates error:', err.message);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('updater:error', err.message);
+    }
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('updater:start-download', async () => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return { success: true };
+  } catch (err) {
+    log.error('downloadUpdate error:', err.message);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('updater:install-update', async () => {
+  isQuitting = true;  // D-08: prevents backup flow in 'close' handler
+  autoUpdater.quitAndInstall();
 });
