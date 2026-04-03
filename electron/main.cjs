@@ -353,7 +353,7 @@ ipcMain.handle('updater:start-download', async () => {
     return { success: true };
   } catch (err) {
     log.error('downloadUpdate error:', err.message);
-    return { success: false, error: err.message };
+    throw err;
   }
 });
 
