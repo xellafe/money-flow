@@ -1,399 +1,584 @@
-﻿# Domain Pitfalls: Adding electron-updater Auto-Update to Existing Windows Electron App
+# Domain Pitfalls: Adding Security & Encryption to an Existing Electron App
 
-**Domain:** Electron desktop app (MoneyFlow) — Adding auto-update via electron-updater + GitHub Releases  
-**Technology Stack:** Electron 34.5.8, electron-builder ^26, CommonJS main process (.cjs), Windows NSIS + Portable, no code signing  
-**Researched:** 2026-04-03  
-**Context:** v1.1 milestone — wiring electron-updater into an existing packaged app (v2.0.0) distributed on GitHub Releases  
+**Domain:** Electron desktop app (MoneyFlow) — Adding safeStorage encryption, encrypted Drive backups, CSP hardening, and dependency audit to an existing app with live user data
+**Technology Stack:** Electron 34.5.8, React 19.2.0, Vite 7.2.4, Tailwind CSS v4, Framer Motion, Recharts, CommonJS main process (.cjs), Windows NSIS + Portable
+**Researched:** 2026-04-10
+**Context:** v1.2 milestone — retro-fitting security features onto a shipped app (v2.0.0) that currently stores all data in plaintext localStorage and sends plaintext JSON to Google Drive
 
-> **NOTE:** Original v1.0 UI redesign pitfalls superseded by v1.1 milestone start. This file covers auto-update integration pitfalls specifically.
+> **CRITICAL SCOPE NOTE:** `nodeIntegration: false` and `contextIsolation: true` are **already correctly set** in `electron/main.cjs` lines 97–99. The preload bridge is already correct. SEC-04 partial work is done — pitfalls in this area focus on *what not to break* when adding new IPC handlers.
 
----
-
-## Critical Pitfalls
-
-Mistakes that cause silent failures, broken updates, or app-breaking regressions in production.
+> **NOTE:** v1.1 auto-update pitfalls archived. This file covers v1.2 Security & Privacy integration pitfalls.
 
 ---
 
-### Pitfall 1: Portable Target Silently Ignores Auto-Update
+## Area 1: safeStorage Migration — localStorage Plaintext → Encrypted (SEC-01)
 
-**What goes wrong:** electron-updater **does not support portable `.exe` targets** on Windows. If `autoUpdater.checkForUpdates()` is called when the app is running as a portable executable, the call either silently fails or throws a confusing error. Users running the portable build never receive updates — with no error message unless you check the log.
+---
 
-**Warning signs:**
-- `error` event fired with message like `Cannot update a Portable app` or no event at all on portable
-- `update-downloaded` event fires but `quitAndInstall()` does nothing
-- Users on portable builds report the app never updates
+### CRITICAL — Pitfall 1.1: Renderer Cannot Call safeStorage (Architecture Mismatch)
 
-**Root cause:** electron-updater's `NsisUpdater` targets the NSIS-installed app. Portable `.exe` has no installer mechanism. Official electron-updater README lists only "Windows (NSIS)" as supported — portable is omitted by design.
+**What goes wrong:** `safeStorage` lives in the **main process** (Node.js). The React hooks (`useTransactionData.js`) currently read/write `localStorage` directly from the **renderer** process. You cannot import or call `safeStorage` from renderer-side code — it will be `undefined` or throw.
+
+**Why it happens:** Developers assume "it's Electron, I have access to everything." But with `contextIsolation: true` (correctly set), the renderer is a sandboxed browser context. Only what's explicitly exposed through `contextBridge` is available.
+
+**Consequences:** Any attempt to call `window.require('electron').safeStorage` in React throws `TypeError: Cannot read properties of undefined`. The app silently stores nothing, or crashes.
+
+**Prevention — specific pattern:**
+```js
+// electron/main.cjs — add IPC handlers for encrypted storage
+const { safeStorage } = require('electron');
+// ...
+ipcMain.handle('storage:encrypt', (event, plaintext) => {
+  if (!safeStorage.isEncryptionAvailable()) return { ok: false, reason: 'unavailable' };
+  return { ok: true, data: safeStorage.encryptString(plaintext).toString('base64') };
+});
+ipcMain.handle('storage:decrypt', (event, base64) => {
+  if (!safeStorage.isEncryptionAvailable()) return { ok: false, reason: 'unavailable' };
+  return { ok: true, data: safeStorage.decryptString(Buffer.from(base64, 'base64')) };
+});
+
+// electron/preload.cjs — expose through contextBridge
+storage: {
+  encrypt: (text) => ipcRenderer.invoke('storage:encrypt', text),
+  decrypt: (b64)  => ipcRenderer.invoke('storage:decrypt', b64),
+}
+```
+
+**Detection:** `window.electronAPI.storage` undefined in DevTools console after adding preload binding.
+
+---
+
+### CRITICAL — Pitfall 1.2: safeStorage Returns Buffer, Not String — contextBridge Rejects It
+
+**What goes wrong:** `safeStorage.encryptString(str)` returns a **Node.js `Buffer`**. Electron's `contextBridge.exposeInMainWorld` serializes return values through a structured-clone algorithm that **cannot serialize Buffers** (it either throws or strips the data silently).
+
+**Why it happens:** Buffer is a Node-specific type not present in the Web Platform structured-clone algorithm. contextBridge only passes JSON-serializable values plus specific Electron types.
+
+**Consequences:** The encrypted buffer arrives as `{}` or `null` in the renderer. You then store garbage, and every decrypt attempt fails.
 
 **Prevention:**
-1. Detect whether the running app is portable by checking a known portable marker (e.g., an env var set by electron-builder, or detecting if `app.getPath('exe')` is in a temp/portable path)
-2. **For portable builds: skip auto-update entirely** and instead show a manual "Download new version" link opening the GitHub releases page in the browser
-3. In main process, guard update logic with a portable check:
-   ```js
-   // electron-builder sets this for portable builds
-   const isPortable = process.env.PORTABLE_EXECUTABLE_DIR != null;
-   if (!isPortable && app.isPackaged) {
-     autoUpdater.checkForUpdates();
-   }
-   ```
-4. In SettingsView, show different UI for portable users: "Running portable version — updates must be downloaded manually" with a link to GitHub releases
+```js
+// main.cjs — ALWAYS base64-encode before returning through IPC
+ipcMain.handle('storage:encrypt', (event, plaintext) => {
+  const buf = safeStorage.encryptString(plaintext);
+  return buf.toString('base64'); // ← critical: Buffer → string
+});
+ipcMain.handle('storage:decrypt', (event, base64) => {
+  return safeStorage.decryptString(Buffer.from(base64, 'base64')); // ← string → Buffer → string
+});
+```
 
-**Phase to address:** Phase 1 (core updater setup) — design the portable detection + branching from day one, not as an afterthought.
-
-**Confidence:** HIGH — official electron-updater README explicitly lists "Windows (NSIS)" only; portable omission is intentional.
+**Detection:** `typeof result` in renderer is `'object'` with no enumerable keys, or result is `null`.
 
 ---
 
-### Pitfall 2: autoUpdater Crashes in Dev Mode Without Guard
+### CRITICAL — Pitfall 1.3: First-Launch Migration Race — Existing Data Becomes Unreadable
 
-**What goes wrong:** Calling `autoUpdater.checkForUpdates()` in development (when `app.isPackaged === false`) throws an error: `Error: ENOENT: no such file or directory ... app-update.yml` or similar. The error propagates to an unhandled rejection or fires the `error` event, potentially crashing the startup flow.
+**What goes wrong:** On the first launch after adding encryption, existing plaintext `localStorage.getItem('moneyFlow')` data is valid JSON. Your new code tries to decrypt it (it's not encrypted) → `safeStorage.decryptString()` throws `"Failed to decrypt"` → app boots with **zero transactions** even though data exists.
 
-**Warning signs:**
-- Stack trace containing `app-update.yml` on first `npm run electron:dev`
-- `autoUpdater.on('error', ...)` fires immediately with "no app-update.yml" on every app launch during dev
-- IPC "update:error" event fires before any real update check
+**Why it happens:** There's no migration marker. The code can't tell "is this plaintext or encrypted?"
 
-**Root cause:** electron-updater reads update metadata from `app-update.yml` inside the packed `app.asar`. This file doesn't exist in dev mode because there is no `.asar`. The `process.env.ELECTRON_DEV === 'true'` pattern the app uses is correct for guarding Vite, but `app.isPackaged` is the authoritative Electron signal.
+**Consequences:** User opens the app after update, sees empty transaction list. Thinks data is lost. Panic. (Data is still there in localStorage, just the read path is broken.)
+
+**Prevention — migration pattern:**
+```js
+// In main process, on app ready, BEFORE renderer loads:
+async function migrateLocalStorage() {
+  const userData = app.getPath('userData');
+  const migrationFlag = path.join(userData, '.storage-migrated-v1');
+  
+  if (fs.existsSync(migrationFlag)) return; // already migrated
+  
+  // Migration: tell renderer to send its current plaintext data
+  // then re-encrypt it. OR: read from localStorage via session.
+  // Simplest: add a 'storage:migrate' IPC that reads localStorage
+  // in the renderer and sends back plaintext, main encrypts and writes
+  // to a file, then marks migration done.
+  
+  // Mark ONLY after verified round-trip
+  fs.writeFileSync(migrationFlag, new Date().toISOString());
+}
+```
+
+**Key rule:** Never delete plaintext data until encrypted version is verified (round-trip decrypt works). Use an atomic flag file, not a localStorage key (the thing you're migrating can't hold its own migration state reliably).
+
+**Detection:** App boots with empty state after update. `localStorage.getItem('moneyFlow')` still has data in DevTools.
+
+---
+
+### Pitfall 1.4: useEffect Write Path Is Synchronous — IPC Is Async
+
+**What goes wrong:** `useTransactionData.js` writes to localStorage inside a `useEffect`:
+```js
+useEffect(() => {
+  localStorage.setItem('moneyFlow', JSON.stringify({ transactions, ... }));
+}, [transactions, categories, ...]);
+```
+If you replace `localStorage.setItem` with an IPC call (`window.electronAPI.storage.set(...)`), the useEffect can't `await` the IPC call cleanly — React's `useEffect` callback is synchronous, and fire-and-forget IPC calls risk data races on rapid state changes.
+
+**Why it happens:** Encryption is inherently async (IPC round-trip). The existing write path is sync.
+
+**Consequences:** On rapid updates (e.g., importing 500 transactions), IPC calls queue up. The last one might arrive out of order. Stored data reflects an intermediate state.
 
 **Prevention:**
-1. **Always guard with `app.isPackaged`** before calling any autoUpdater method:
-   ```js
-   // In electron/main.cjs
-   if (app.isPackaged) {
-     autoUpdater.checkForUpdates();
-   }
-   ```
-2. **Do not rely solely on `ELECTRON_DEV`** env var for the updater guard — it can be missing in `electron:preview` mode (`vite build && electron .`), where the app is NOT packaged but ELECTRON_DEV is not set
-3. To test update UI in dev without a real update: create `dev-app-update.yml` in project root (matching publish config) and set `autoUpdater.forceDevUpdateConfig = true` before calling `checkForUpdates()`
-4. Always register `autoUpdater.on('error', ...)` before calling `checkForUpdates()` — unhandled errors in Electron 34 can terminate the app
-
-**Phase to address:** Phase 1 — must be in the initial wiring before any testing.
-
-**Confidence:** HIGH — documented behavior in electron-builder auto-update docs; `app.isPackaged` is the official guard.
+```js
+// Use a debounced write with a ref to track the "latest" state
+const pendingWriteRef = useRef(null);
+useEffect(() => {
+  if (pendingWriteRef.current) clearTimeout(pendingWriteRef.current);
+  pendingWriteRef.current = setTimeout(async () => {
+    await window.electronAPI.storage.set('moneyFlow', JSON.stringify(state));
+  }, 300); // 300ms debounce
+}, [state]);
+```
+This serializes writes and ensures only the final state gets persisted after a burst of updates.
 
 ---
 
-### Pitfall 3: Missing or Misconfigured `publish` Field in electron-builder Config
+### Pitfall 1.5: safeStorage Unavailable on Linux Without libsecret
 
-**What goes wrong:** Without a `publish` field in `package.json`'s `build` config, electron-builder does NOT generate `latest.yml` during `electron:build`, and electron-updater cannot locate the update feed. The build succeeds with no errors, but updates never work in production — `autoUpdater.checkForUpdates()` fires an error or returns nothing.
+**What goes wrong:** `safeStorage.isEncryptionAvailable()` returns `false` on Linux systems without `libsecret-1-0` installed. Calling `encryptString()` when unavailable **throws** — it does NOT gracefully degrade.
 
-**Warning signs:**
-- `latest.yml` absent from `release/` output directory after `npm run electron:build`
-- No `latest.yml` attached to GitHub release assets
-- `autoUpdater` error: `Cannot find latest.yml in the latest release artifacts`
+**Why it happens:** safeStorage delegates to the OS keyring. Linux needs `gnome-libsecret` or `kwallet`. Headless/minimal desktop environments don't have it.
 
-**Root cause:** Current `package.json` build config has no `publish` field. electron-builder only generates `latest.yml` and uploads assets when `publish` is configured.
+**Consequences:** App crashes on startup for Linux users without libsecret. Or, if you catch the error, you fall back to storing unencrypted data (acceptable for this app's threat model, but must be explicit).
 
-**Prevention:**
-1. Add `publish` to `package.json` build section **before running any release build**:
-   ```json
-   "build": {
-     "publish": {
-       "provider": "github",
-       "owner": "<github-username>",
-       "repo": "<repo-name>",
-       "releaseType": "release"
-     }
-   }
-   ```
-2. Verify `latest.yml` appears in `release/` after `npm run electron:build`
-3. For CI/CD publish (`GH_TOKEN` required), use `electron-builder --publish always`. For manual upload, use `--publish never` locally and upload `latest.yml` manually with the installer to the GitHub release
-4. **Critical:** `latest.yml` must be attached to the GitHub release alongside the `.exe` installer — if only the installer is uploaded without `latest.yml`, users will never receive update notifications
-5. The `owner` and `repo` values must exactly match the GitHub repository — typos cause silent 404 failures
-
-**Phase to address:** Phase 1 (electron-builder config) and Phase 2 (first release workflow).
-
-**Confidence:** HIGH — documented in electron-builder auto-update guide; verified `latest.yml` section.
+**Prevention — already partially in googleDrive.cjs, replicate this pattern:**
+```js
+function encryptData(plaintext) {
+  if (!safeStorage.isEncryptionAvailable()) {
+    // Fallback: store base64-encoded (obfuscated, not encrypted)
+    // Log a warning, don't throw
+    return { encrypted: false, data: Buffer.from(plaintext).toString('base64') };
+  }
+  return { encrypted: true, data: safeStorage.encryptString(plaintext).toString('base64') };
+}
+```
+Store the `{ encrypted: true/false, data: '...' }` envelope so decrypt knows whether to call safeStorage or just base64-decode.
 
 ---
 
-### Pitfall 4: Code Signing — Windows Behavior Without Signing
-
-**What goes wrong:** Windows Defender SmartScreen marks the downloaded NSIS installer as "unrecognized app" and shows a "Windows protected your PC" warning when the update installs. This happens on EVERY update for unsigned installers, creating friction and eroding user trust. On some enterprise systems, unsigned installers are blocked entirely. The auto-update mechanism itself (checking, downloading, `quitAndInstall()`) still works without signing.
-
-**Warning signs:**
-- Users report SmartScreen popup when app auto-updates
-- Update installs correctly but user must click "Run anyway" — some users cancel
-- On managed Windows machines: "This app has been blocked by your system administrator"
-
-**Root cause:** `signAndEditExecutable: false` in the current config disables signing. electron-updater does perform code signature validation on Windows (unlike macOS, Windows does NOT require signing to function — it's optional validation). Since the app is unsigned, signature validation is skipped but SmartScreen warnings still fire from Windows itself.
-
-**Prevention:**
-1. **Short-term (this milestone):** This is a known limitation of the `signAndEditExecutable: false` setup. Document it in the app's release notes. Ensure the auto-update UX tells users "Click 'More info' → 'Run anyway' if Windows shows a warning."
-2. **Medium-term:** If user complaints increase, obtain a code signing certificate (EV or OV) — OV certificates require ~$200-400/year, EV certificates ($400-600/year) bypass SmartScreen reputation building
-3. **Do NOT** set `verifyUpdateCodeSignature: false` explicitly — this is already the default behavior when no signing is configured; setting it manually is not needed and may cause confusion
-
-**Phase to address:** Phase 1 — decide early that SmartScreen warnings are an accepted limitation for v1.1. Document for future milestone.
-
-**Confidence:** MEDIUM — behavior based on official docs ("Code signature validation on Windows") + well-known SmartScreen behavior; specific interaction with `signAndEditExecutable: false` extrapolated from docs.
+## Area 2: Google Drive Encrypted Backups (SEC-02)
 
 ---
 
-### Pitfall 5: GitHub API Rate Limiting on Unauthenticated Update Checks
+### CRITICAL — Pitfall 2.1: Machine-Specific Key Breaks Cross-Machine Restore
 
-**What goes wrong:** GitHub's API has a rate limit of **60 requests/hour for unauthenticated requests**. electron-updater uses up to 3 API requests per update check. This means a maximum of ~20 update checks/hour per IP before GitHub returns HTTP 403. If the app checks for updates on every window focus, or if multiple users share a NAT IP, rate limits will be hit and `autoUpdater.on('error', ...)` fires with a 403 error.
+**What goes wrong:** If backup encryption uses the same `safeStorage`-derived key (which is DPAPI on Windows, Keychain on macOS), the encrypted backup on Google Drive can **only be decrypted on the same machine**. New machine, reinstalled Windows, or another user restoring their backup → `decryptString()` throws with "Failed to decrypt" → restore silently fails or errors out.
 
-**Warning signs:**
-- `error` event with "API rate limit exceeded" or HTTP 403
-- Update checks fail intermittently, especially in offices or shared networks
-- Works fine individually but fails when multiple instances run
+**Why it happens:** DPAPI keys are tied to the Windows user profile on a specific machine. This is by design for LOCAL data. It is the wrong key for cloud-synced data.
 
-**Root cause:** No GitHub token configured. The official electron-builder docs state: "The GitHub API currently has a rate limit of 5000 requests per user per hour. An update check uses up to 3 requests per check." — 5000 is the **authenticated** limit; unauthenticated is 60/hour.
+**Consequences:** Google Drive sync becomes useless as a disaster-recovery mechanism. The backup exists but can't be restored. This is the single most dangerous architectural mistake for SEC-02.
 
-**Prevention:**
-1. **Check for updates only on startup** (once per app launch), not on window focus or periodic intervals — this gives worst-case 1 check per app session
-2. **Optionally configure a GitHub token** via `autoUpdater.addAuthHeader('Bearer <token>')` or the `GH_TOKEN` env var for authenticated requests (5000/hour limit) — a public read-only token (no scopes) is safe to bundle for public repos
-3. Handle rate limit errors gracefully: catch the 403, show no error to the user (treat as "no update available"), log internally
-4. Do NOT add a periodic background update check (e.g., setInterval every 30 min) — this multiplies request load
+**Prevention options (choose one):**
+1. **Don't use safeStorage key for Drive backups.** Use a deterministic key derived from a user-controlled password (KDF: `crypto.scrypt(password, salt, 32)`). The password is entered on restore. This is the correct approach for portable encrypted backups.
+2. **Store the encryption key alongside the backup** (encrypted with safeStorage at upload time), and include a plaintext re-keying instruction. Only valid if same machine.
+3. **Accept the limitation explicitly in UI.** Show a warning: "Encrypted backup can only be restored on this computer." This is the simplest option but limits Drive's disaster-recovery value.
 
-**Phase to address:** Phase 1 (startup check implementation) and Phase 2 (manual check in SettingsView — add explicit rate-limit-aware error handling).
-
-**Confidence:** HIGH — rate limits documented by GitHub and referenced in electron-builder docs.
+**Recommended for MoneyFlow:** Option 3 (simplest) + clear UI warning. The app is single-user, single-machine. Complexity of password-based KDF is out of scope for v1.2.
 
 ---
 
-### Pitfall 6: IPC Listener Accumulation in the React Renderer
+### CRITICAL — Pitfall 2.2: Old Plaintext Backup on Drive — Restore Silently Corrupts
 
-**What goes wrong:** In React components (e.g., `SettingsView`), calling `window.electronAPI.onUpdateAvailable(callback)` inside `useEffect` without returning a cleanup function causes the listener to pile up on every component re-mount. Each navigation to/from the settings page adds another listener. After several navigations, a single update event fires the callback N times, causing N toasts, N state updates, or N "install" prompts.
+**What goes wrong:** Existing users already have `moneyflow-backup.json` on their Google Drive — a valid JSON file. After you add encryption, `downloadBackup()` returns that file's content, and the restore path tries to JSON-parse what it thinks is encrypted data. Or worse: the encrypt/decrypt step is added in `uploadBackup()` but not guarded in `downloadBackup()` — the renderer receives a Buffer-like string and tries to iterate it as transactions.
 
-**Warning signs:**
-- Toast notification appears multiple times for a single update event
-- Console log shows update callback firing 2x, 3x, 4x after navigating Settings
-- React state update warnings about unmounted components
+**Why it happens:** No version envelope on the backup format. The code in `useTransactionData.js::importBackup()` just does `JSON.parse(text)` — it has no format-version awareness.
 
-**Root cause:** The existing IPC pattern in this project uses `ipcMain.handle()` (fire-and-forget handles that are safe). But in the renderer, `ipcRenderer.on(channel, listener)` accumulates listeners unless explicitly removed. There is no existing cleanup pattern in the current `useToast`/`useModals` hooks for IPC listeners.
+**Consequences:** Restore silently imports garbage data, replacing the user's live transactions with malformed objects. **Data loss.**
 
-**Prevention:**
-1. **Always return a cleanup in `useEffect`** when registering IPC listeners:
-   ```js
-   useEffect(() => {
-     const unsubscribe = window.electronAPI.onUpdateAvailable((info) => {
-       showUpdateToast(info);
-     });
-     return () => unsubscribe(); // remove listener on unmount
-   }, []);
-   ```
-2. **Expose `removeListener` in preload** so renderer can unsubscribe:
-   ```js
-   // preload.cjs
-   onUpdateAvailable: (cb) => {
-     ipcRenderer.on('update:available', (_, info) => cb(info));
-     return () => ipcRenderer.removeAllListeners('update:available');
-   }
-   ```
-3. **Use `ipcRenderer.once()`** for one-shot events (e.g., `update-downloaded`) where you only need to know it happened once per session
-4. For update state that spans the whole app session (not tied to component lifecycle), **manage it in a top-level React context** or in `App.jsx` (which is never unmounted), not inside `SettingsView`
+**Prevention — add a version envelope:**
+```js
+// uploadBackup() in googleDrive.cjs — new encrypted format
+const envelope = {
+  version: 2,              // NEW: bump version for encrypted format
+  encrypted: true,
+  algorithm: 'safeStorage', 
+  payload: encryptedBase64, // the encrypted JSON
+};
+const content = JSON.stringify(envelope);
 
-**Phase to address:** Phase 2 (IPC bridge implementation) — design the preload API with cleanup from the start.
+// downloadBackup() — detect format
+const parsed = JSON.parse(rawContent);
+if (parsed.version === 2 && parsed.encrypted === true) {
+  // decrypt payload
+} else {
+  // version 1 plaintext — return as-is (backward compat)
+  return { data: parsed, wasPlaintext: true };
+}
+```
 
-**Confidence:** HIGH — standard React/IPC pattern issue; matches existing `ipcRenderer.on` behavior in Electron.
+**Key rule:** Never attempt to decrypt without checking `parsed.encrypted === true` first. Wrap decrypt in a try/catch that falls back to treating the content as plaintext.
 
 ---
 
-### Pitfall 7: `quitAndInstall()` Conflicts with Google Drive Backup-on-Close
+### Pitfall 2.3: AES-GCM Nonce Reuse Breaks Authentication
 
-**What goes wrong:** The existing `mainWindow.on('close', ...)` handler in `main.cjs` intercepts window close to trigger Google Drive backup when authenticated (`isQuitting` guard on lines 53–70). When `autoUpdater.quitAndInstall()` is called, it calls `app.quit()` which fires the `close` event on `mainWindow`. If `isQuitting` is still `false` at that point, the handler calls `e.preventDefault()` and requests backup data — blocking the update installation indefinitely. The app never quits, the update never installs.
+**What goes wrong:** If you use `crypto.createCipheriv('aes-256-gcm', key, nonce)` with a **static or incremented nonce** (e.g., `Buffer.alloc(12)` filled with zeros), GCM's authentication guarantee breaks. Two ciphertexts encrypted with the same key+nonce allow an attacker to XOR them and recover both plaintexts.
 
-**Warning signs:**
-- Clicking "Install and restart" in the update toast appears to do nothing
-- App keeps running after user confirms restart
-- Google Drive backup upload is triggered unexpectedly during update
+**Why it happens:** Developers copy AES-GCM examples that show a hardcoded nonce. For a local backup that's only written once, it seems harmless. It isn't.
 
-**Root cause:** `quitAndInstall()` → `app.quit()` → `mainWindow.close` event → `isQuitting === false` → `e.preventDefault()` → close blocked. The `isQuitting` flag is only set in the existing flow when closing naturally while authenticated.
+**Consequences:** Authenticated encryption loses its authenticity guarantee. Subtle and hard to detect.
 
-**Prevention:**
-1. **Set `isQuitting = true` before calling `quitAndInstall()`**:
-   ```js
-   ipcMain.handle('update:install', () => {
-     isQuitting = true; // prevent backup-on-close from blocking
-     autoUpdater.quitAndInstall(false, true); // isSilent=false, isForceRunAfter=true
-   });
-   ```
-2. Consider whether backup should run before installing the update — if yes, trigger backup first, then set `isQuitting = true`, then call `quitAndInstall()` in the backup completion callback
-3. Add this interaction explicitly to Phase 1 integration checklist
+**Prevention — always generate fresh random nonce:**
+```js
+// main process encryption utility
+function encryptForBackup(plaintext, key) {
+  const nonce = crypto.randomBytes(12);   // 96-bit GCM nonce
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, nonce);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  // Prepend nonce + authTag to ciphertext so decrypt can extract them
+  return Buffer.concat([nonce, authTag, ciphertext]).toString('base64');
+}
 
-**Phase to address:** Phase 1 — this is an existing system interaction that must be handled in the initial wiring, not discovered later.
-
-**Confidence:** HIGH — direct code reading of `main.cjs` confirms the `e.preventDefault()` logic; conflict is deterministic.
+function decryptFromBackup(base64, key) {
+  const buf = Buffer.from(base64, 'base64');
+  const nonce    = buf.slice(0, 12);
+  const authTag  = buf.slice(12, 28);
+  const ct       = buf.slice(28);
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, nonce);
+  decipher.setAuthTag(authTag);
+  return decipher.update(ct) + decipher.final('utf8');
+}
+```
+Note: If using `safeStorage` rather than manual AES-GCM, this is handled internally — don't implement your own crypto unless you need the cross-machine portability.
 
 ---
 
-### Pitfall 8: `electron-updater` Installed as devDependency Instead of Dependency
+### Pitfall 2.4: Encrypting in the Renderer with Web Crypto API Diverges from Main Process
 
-**What goes wrong:** If `electron-updater` is added to `devDependencies` instead of `dependencies`, it is excluded from the packaged app bundle. The production build throws `Error: Cannot find module 'electron-updater'` at runtime, crashing the main process. This error is only visible in production (packaged), not in dev mode.
+**What goes wrong:** You decide to encrypt the backup **in the renderer** using `window.crypto.subtle` before passing data to `uploadBackup()` via IPC. This seems like it reduces IPC round-trips. However:
+- The key must come from somewhere — you'd need to pass the safeStorage-derived key from main to renderer, **which exposes the key in JavaScript memory in the renderer** (a sandboxed but still scriptable context)
+- Web Crypto and Node `crypto` use different key formats (CryptoKey vs Buffer)
+- The key derivation using `safeStorage` can't happen in the renderer anyway
 
-**Warning signs:**
-- `require('electron-updater')` throws MODULE_NOT_FOUND in packaged app
-- Works perfectly in `npm run electron:dev`, breaks in `npm run electron:build` + run
-- No error during build, only at runtime
+**Why it happens:** Trying to minimize IPC calls. Web Crypto API feels convenient in React.
 
-**Root cause:** electron-builder packages files listed in `"files"` config + all `dependencies`. `devDependencies` are NOT included in the final package. `electron-updater` must be a runtime dependency.
+**Consequences:** The encryption key crosses the IPC boundary in plaintext. Defeats the purpose of safeStorage key protection.
+
+**Prevention:** Always encrypt in the **main process**. Pass plaintext data to main via IPC, encrypt there, upload from there. The `uploadBackup` IPC handler (already in `main.cjs`) is the right place:
+```js
+ipcMain.handle('google-drive:upload-backup', async (event, data) => {
+  const plaintext = JSON.stringify(data);
+  const encrypted = encryptForBackup(plaintext, getBackupKey());
+  // wrap in envelope
+  const envelope = { version: 2, encrypted: true, payload: encrypted };
+  await googleDrive.uploadBackup(JSON.stringify(envelope));
+});
+```
+
+---
+
+## Area 3: CSP — Content Security Policy (SEC-04)
+
+---
+
+### CRITICAL — Pitfall 3.1: `script-src 'unsafe-inline'` Is Hardcoded in Production (Confirmed Bug)
+
+**What goes wrong:** In the current `electron/main.cjs` lines 152–153:
+```js
+"script-src 'self' 'unsafe-inline'; " +   // ← NO isDev guard!
+```
+The `unsafe-inline` for `script-src` is **always active**, even in production builds. This makes the CSP declaration in production essentially useless for script injection protection — the very threat CSP is designed to stop.
+
+Compare with `style-src` on line 154 which correctly uses `styleUnsafe` (only in dev). The `script-src` line was not given the same treatment.
+
+**Why it happens:** During initial implementation, `unsafe-inline` was added to fix a startup issue in dev and the guard was never added.
+
+**Consequences:** Production app accepts inline `<script>` tags. If any XSS vector exists (unlikely in Electron but possible via maliciously crafted import files), it's not blocked by CSP.
+
+**Fix:**
+```js
+// electron/main.cjs — apply isDev guard to script-src too
+const scriptUnsafe = isDev ? " 'unsafe-inline'" : "";
+const styleUnsafe  = isDev ? " 'unsafe-inline'" : "";
+// ...
+`script-src 'self'${scriptUnsafe}; ` +
+`style-src 'self'${styleUnsafe}; ` +
+`style-src-elem 'self'${styleUnsafe}; ` +
+```
+
+**Note:** React in production (Vite build) does NOT need `unsafe-inline` for scripts. The build output is a bundled `.js` file loaded via `<script src>` — fully covered by `'self'`.
+
+---
+
+### CRITICAL — Pitfall 3.2: Framer Motion Inline Styles Blocked in Production
+
+**What goes wrong:** The current production CSP has `style-src 'self'` (no `unsafe-inline`). Framer Motion applies animations via **inline `style` attributes** on DOM elements (e.g., `style="transform: translateX(0px); opacity: 1"`). Inline style attributes are governed by `style-src-attr` (CSP Level 3) which, when not explicitly set, **falls back to `style-src`**.
+
+With `style-src 'self'` (no `unsafe-inline`) in production, all Framer Motion animations are silently blocked. Elements snap to their final state with no transition. No console error in older Chromium; in newer Electron 34 Chromium you **will** see CSP violation reports.
+
+**Why it happens:** `style-src` seems like it only covers `<style>` blocks, but it's the catch-all for inline style attributes too (via `style-src-attr` fallback). Framer Motion is invisible in dev (where `unsafe-inline` is on) and breaks silently in prod.
+
+**Consequences:** Every Framer Motion animation in the app (sidebar, modals, toast, page transitions, all 7 migrated modals) breaks in production. App feels broken.
+
+**Fix — add `style-src-attr 'unsafe-inline'` for inline styles:**
+```js
+"default-src 'self'; " +
+`script-src 'self'${scriptUnsafe}; ` +
+`style-src 'self'${styleUnsafe}; ` +          // covers <style> elements
+`style-src-elem 'self'${styleUnsafe}; ` +     // explicit for <style> elements
+"style-src-attr 'unsafe-inline'; " +          // Framer Motion inline styles — always needed
+"font-src 'self' data:; " +
+"img-src 'self' data: https:; " +
+"connect-src 'self' http://localhost:* ws://localhost:* https://www.googleapis.com https://oauth2.googleapis.com"
+```
+
+**Why `style-src-attr 'unsafe-inline'` is safe here:** Inline style attributes can't execute JavaScript. They're safe to allow even in strict CSPs. This is the standard exception for apps using CSS-in-JS or animation libraries.
+
+---
+
+### Pitfall 3.3: Tailwind CSS v4 — Production Build Does NOT Need unsafe-inline for styles
+
+**What goes wrong (fear):** Developers assume Tailwind v4 (which generates styles at build time via `@tailwindcss/vite`) needs `style-src 'unsafe-inline'` in production.
+
+**Reality:** Tailwind v4 via `@tailwindcss/vite` generates a **static CSS file** in `dist/assets/`. In production (`vite build`), all utility classes are in that file. No inline `<style>` injection at runtime. `style-src 'self'` in production is **correct and sufficient** for Tailwind.
+
+The `unsafe-inline` for styles is only needed in **dev mode** (Vite HMR injects `<style>` tags dynamically during hot reload).
+
+**Confidence:** HIGH — verified by the current `isDev ? "'unsafe-inline'" : ""` pattern in the code, which already works correctly for style-src.
+
+---
+
+### Pitfall 3.4: Vite HMR WebSocket — connect-src Must Include `ws://localhost:*`
+
+**What goes wrong:** Adding a strict CSP to dev mode breaks Vite's HMR WebSocket connection. The browser tries to open `ws://localhost:5173/` for hot reload and CSP blocks it.
+
+**Reality:** The current code already handles this correctly in `connect-src`:
+```js
+"connect-src 'self' http://localhost:* ws://localhost:* https://..."
+```
+**This is NOT a bug to fix** — it's a pattern to preserve when editing the CSP.
+
+**Risk:** Accidentally removing `ws://localhost:*` when tightening the CSP. Add a dev-mode test to verify HMR still works after any CSP change.
+
+---
+
+### Pitfall 3.5: Google OAuth Redirect URI Blocked by CSP
+
+**What goes wrong:** The OAuth flow opens `http://localhost:8095/callback` in the system browser (via `shell.openExternal`). This is outside the Electron window — CSP doesn't apply to external browser windows. However, if `connect-src` is ever tightened to remove `http://localhost:*`, and any renderer-side code tries to poll the OAuth server (it currently doesn't), that would be blocked.
+
+**Current code is safe** — OAuth is fully handled in main process. But if a future developer adds any renderer-side OAuth polling (e.g., status check via fetch), it would require `http://localhost:8095` in `connect-src`.
+
+**Prevention:** Leave `http://localhost:*` in `connect-src` and add a comment explaining it covers both Vite dev server AND the OAuth callback server.
+
+---
+
+## Area 4: nodeIntegration: false / contextIsolation: true (SEC-04 — Already Done)
+
+---
+
+### IMPORTANT — Pitfall 4.0: This Is Already Correctly Set — Don't Undo It
+
+**Current state (confirmed in `electron/main.cjs` lines 97–99):**
+```js
+webPreferences: {
+  nodeIntegration: false,   // ← CORRECT
+  contextIsolation: true,   // ← CORRECT
+  preload: path.join(__dirname, 'preload.cjs'),
+}
+```
+The preload bridge is also correctly structured using `contextBridge.exposeInMainWorld`.
+
+**The pitfall is undoing this to "debug" safeStorage integration issues.**
+
+---
+
+### CRITICAL — Pitfall 4.1: Never Add `nodeIntegration: true` to Debug safeStorage
+
+**What goes wrong:** While wiring up safeStorage IPC, a developer gets `window.require is not defined` and "fixes" it by setting `nodeIntegration: true`. This "works" but exposes Node.js APIs (`require`, `fs`, `crypto`, `child_process`) to all renderer JavaScript, including any third-party library in `node_modules` that runs in the renderer context.
+
+**Why it happens:** The root cause is usually forgetting to add the new handler to `preload.cjs`. The fix is never `nodeIntegration: true`.
+
+**Prevention:** Treat `nodeIntegration: true` as a red flag in code review. Add a lint comment or explicit test:
+```js
+// electron/main.cjs — add assertion to catch misconfiguration
+app.whenReady().then(() => {
+  const prefs = mainWindow.webContents.getWebPreferences();
+  console.assert(prefs.nodeIntegration === false, 'SECURITY: nodeIntegration must be false');
+  console.assert(prefs.contextIsolation === true, 'SECURITY: contextIsolation must be true');
+});
+```
+
+---
+
+### Pitfall 4.2: Adding New IPC Handlers Without Updating preload.cjs
+
+**What goes wrong:** You add `ipcMain.handle('storage:encrypt', ...)` in `main.cjs` but forget to expose it in `preload.cjs`. React code calling `window.electronAPI.storage.encrypt(...)` gets `TypeError: Cannot read properties of undefined`. Developer thinks "IPC is broken" and either gives up or adds `nodeIntegration: true`.
+
+**Why it happens:** The two-step pattern (main handler + preload bridge) is easy to do half of.
+
+**Prevention:** Treat `main.cjs` handler additions and `preload.cjs` bridge additions as an atomic commit — they always go together. Pattern to follow (consistent with existing code):
+```js
+// preload.cjs — mirror the shape of existing bridges
+storage: {
+  get:     (key)  => ipcRenderer.invoke('storage:get', key),
+  set:     (key, value) => ipcRenderer.invoke('storage:set', key, value),
+  remove:  (key)  => ipcRenderer.invoke('storage:remove', key),
+  encrypt: (text) => ipcRenderer.invoke('storage:encrypt', text),
+  decrypt: (b64)  => ipcRenderer.invoke('storage:decrypt', b64),
+}
+```
+
+---
+
+### Pitfall 4.3: Never Add `webSecurity: false` to Work Around CSP
+
+**What goes wrong:** While testing CSP, some resource gets blocked. Developer adds `webSecurity: false` to BrowserWindow options to "see if CSP is the issue." This disables ALL security enforcement in the renderer — same-origin policy, CSP, mixed content blocking — everything.
+
+**Consequences:** `webSecurity: false` is the nuclear option. It removes all browser security from the Electron window. Never land in production code.
+
+**Prevention:** When a CSP directive blocks a resource, fix the directive. Use DevTools Console → look for CSP violation messages → add the minimal directive to allow the specific resource. Never use `webSecurity: false` as a "fix."
+
+---
+
+## Area 5: npm audit — Dependency Vulnerabilities (SEC-05)
+
+---
+
+### CRITICAL — Pitfall 5.1: `npm audit fix --force` Breaks Major Versions
+
+**What goes wrong:** Running `npm audit fix --force` to resolve all vulnerabilities in one shot performs semver-breaking upgrades to resolve audit findings. Common victims in this project:
+- `electron-store` v8 → v9/v10 (breaking API changes for `encryptionKey` option and Store constructor)
+- `googleapis` v170 → potential breaking changes
+- `electron` itself potentially bumped to incompatible version
+
+**Why it happens:** The `--force` flag bypasses semver range restrictions. It looks like it "fixed everything" but the app breaks at runtime.
+
+**Consequences:** Build succeeds, app crashes on startup. The `getOrCreateEncryptionKey()` pattern in `googleDrive.cjs` depends on `electron-store ^8.2.0` API — v9 has different constructor signature.
 
 **Prevention:**
 ```bash
-npm install electron-updater   # NOT --save-dev
+# NEVER run this:
+npm audit fix --force
+
+# DO run this (safe fixes only):
+npm audit fix
+
+# Then review remaining issues manually:
+npm audit --json > audit-report.json
+# Evaluate each CVE: is it in prod deps? Is it exploitable in Electron context?
 ```
-Verify in `package.json` that `electron-updater` appears under `"dependencies"`, not `"devDependencies"`.
-
-**Phase to address:** Phase 1 (installation step).
-
-**Confidence:** HIGH — standard electron-builder packaging behavior.
 
 ---
 
-### Pitfall 9: Silent Failures Without a Logger Configured
+### Pitfall 5.2: Electron's Bundled Chromium CVEs Are Not Actionable
 
-**What goes wrong:** By default, electron-updater logs nothing. Update check failures, download errors, and version mismatches produce no output visible in production. When users report "updates don't work," there is no diagnostic information available to debug the issue.
+**What goes wrong:** `npm audit` reports 10–30 HIGH severity CVEs that trace back to `electron` itself — its vendored Chromium version has known vulnerabilities. Developers try to fix these by upgrading Electron patch versions, or give up on the audit entirely.
 
-**Warning signs:**
-- Update doesn't work but no errors appear in any log
-- `autoUpdater.on('error', ...)` handler was not registered
-- Packaged app logs are empty on update-related issues
+**Why it happens:** Chromium bundles hundreds of C++ libraries. Any CVE in those libraries appears as a CVE in `electron`. You can't patch the Chromium internals.
 
-**Root cause:** `autoUpdater.logger` is `null` by default. The `error` event is the only feedback mechanism, and if it's not registered before calling `checkForUpdates()`, errors are silently swallowed.
+**Reality check:**
+- Electron 34.x Chromium CVEs that affect web apps usually don't apply to desktop Electron apps (no cross-origin iframes, no CORS attack vectors in typical Electron architecture)
+- The correct response is: upgrade to the latest Electron patch (`34.x.y`) to get the latest Chromium, then accept remaining findings as noise
+- Mark these as "acceptable / Electron context mitigates" in your audit notes
 
 **Prevention:**
-1. Set a logger immediately on import:
-   ```js
-   const { autoUpdater } = require('electron-updater');
-   autoUpdater.logger = require('electron-log');  // if electron-log is installed
-   autoUpdater.logger.transports.file.level = 'info';
-   // OR use console for simplicity:
-   autoUpdater.logger = console;
-   ```
-2. **Always register `autoUpdater.on('error', handler)` before any `checkForUpdates()` call** — unhandled errors in Electron 34 can crash the main process
-3. `electron-log` writes to `%APPDATA%\MoneyFlow\logs\` automatically — useful for user-reported bugs
+```bash
+# Focus on production deps only, skip electron (devDependency)
+npm audit --omit=dev
 
-**Phase to address:** Phase 1 — logging must be configured before any update logic is wired.
-
-**Confidence:** HIGH — documented default behavior; electron-log is the standard companion.
+# Check Electron release notes for security patches:
+# https://releases.electronjs.org/
+# Upgrade to latest 34.x.y patch
+```
 
 ---
 
-### Pitfall 10: `type: "module"` in package.json Breaks require() in New Main Process Files
+### Pitfall 5.3: xlsx (SheetJS CE) Has Known Unpatched CVEs
 
-**What goes wrong:** `package.json` has `"type": "module"`, which makes Node.js treat all `.js` files as ES modules. If a new file is added to `electron/` with a `.js` extension (e.g., `updateManager.js`), it cannot use `require()` — the CommonJS pattern used throughout `main.cjs` and `googleDrive.cjs`. The error is: `ReferenceError: require is not defined in ES module scope`.
+**What goes wrong:** `xlsx ^0.18.5` (SheetJS Community Edition) has multiple open CVEs for prototype pollution and ReDoS. `npm audit` will flag these. SheetJS CE is no longer actively maintained for security patches (maintainer moved to SheetJS Pro, a paid product).
 
-**Warning signs:**
-- Any new `.js` file added to `electron/` that uses `require()` fails immediately
-- Works fine in existing `.cjs` files but breaks in newly created `.js` files
+**Threat model assessment for MoneyFlow:**
+- The app only opens Excel/CSV files that the **user themselves** selects from their local filesystem
+- No network-fetched files, no untrusted input from remote sources
+- Prototype pollution attacks require a crafted malicious file that the user would have to intentionally open
+- **Risk: LOW in this specific context**
 
-**Root cause:** `package.json` `"type": "module"` + `.js` extension = ESM. The project already correctly uses `.cjs` for main process files, but this must be maintained consistently.
+**What NOT to do:** Upgrade to `xlsx ^2.x` or `exceljs` mid-milestone. This would break the entire import system (`useImportLogic.js`).
 
-**Prevention:**
-1. **All new electron main process files must use `.cjs` extension** — enforce as a project rule
-2. Create update logic in `electron/updater.cjs` (not `updater.js`)
-3. Add a comment at the top of `electron/main.cjs`: `// All electron/ files must use .cjs extension (package.json type:module)`
-
-**Phase to address:** Phase 1 — naming convention must be established before creating any new files.
-
-**Confidence:** HIGH — directly observable from `package.json` + existing file naming pattern.
+**Prevention:** Document as accepted risk in audit notes with rationale. Use `npm audit --ignore <GHSA-id>` or add `.nsprc` / `audit-ci` config to suppress known-accepted findings in CI. Revisit in a dedicated dependency-debt phase.
 
 ---
 
-### Pitfall 11: Blocking Update Dialogs in the Main Process
+### Pitfall 5.4: Conflating devDependency vs. Production Vulnerabilities
 
-**What goes wrong:** Using `dialog.showMessageBoxSync()` or `dialog.showMessageBox().then()` in `autoUpdater` event handlers blocks the Electron main process event loop during the dialog. This freezes the entire app UI, including Google Drive operations and IPC responses. More critically: it is not the design intended by UPD-03 (non-blocking toast).
+**What goes wrong:** `npm audit` by default reports vulnerabilities in ALL packages, including devDependencies (`electron-builder`, `eslint`, `vite`, `@tailwindcss/vite`, `electron-reload`). These packages are **never shipped to users** — they only run on the developer's machine during build. A HIGH severity in `electron-builder` is irrelevant to end-user security.
 
-**Warning signs:**
-- App becomes unresponsive while update dialog is open
-- Google Drive backup triggered during update dialog hangs
-- Entire app freezes if dialog fires during a Drive sync
+**Why it happens:** Developers treat all `npm audit` output as equally urgent.
 
-**Prevention:**
-1. **Never use `dialog.showMessageBoxSync()`** in update handlers — it blocks the event loop
-2. Always send IPC events to the renderer and let React handle the update UX:
-   ```js
-   autoUpdater.on('update-available', (info) => {
-     mainWindow.webContents.send('update:available', info);
-   });
-   ```
-3. The renderer shows a non-blocking toast (UPD-03) with an "Install and Restart" button that sends `update:install` back via IPC
+**Prioritization:**
+```
+PRIORITY 1 — Fix: production dependencies with exploitable CVEs
+  → google-auth-library, googleapis, electron-store, framer-motion, recharts, xlsx (assess each)
 
-**Phase to address:** Phase 2 (IPC bridge + renderer UX) — architecture decision that must be stated explicitly.
+PRIORITY 2 — Update if easy: production deps with low/moderate CVEs
+  → patch-level upgrades, no breaking changes
 
-**Confidence:** HIGH — well-known Electron pattern; aligns with stated UPD-03 requirement.
+PRIORITY 3 — Accept: devDependency CVEs
+  → electron-builder, vite, eslint, electron-reload — never shipped, not user risk
 
----
+PRIORITY 4 — Accept with rationale: Electron/Chromium CVEs
+  → upgrade to latest patch, then document remainder
+```
 
-## Moderate Pitfalls
-
----
-
-### Pitfall 12: CSP Does NOT Block electron-updater (But Renderer CSP May Need Update)
-
-**What goes wrong (misconception):** Developers sometimes assume the strict CSP in `main.cjs` will block electron-updater from reaching GitHub. It won't — electron-updater runs in the **main process (Node.js)**, not in the renderer. CSP only applies to web content loaded in `BrowserWindow`. However, if any update-related UI in the renderer makes direct `fetch()` calls to GitHub (anti-pattern), those would be blocked by the current CSP.
-
-**Prevention:**
-1. **No action needed for electron-updater** — main process network calls are not subject to renderer CSP
-2. Do NOT make `fetch()` calls to GitHub from the renderer for update checks — route everything through IPC to the main process
-3. If `electron-log` is used and configured to send logs to a remote endpoint, the CSP `connect-src` would need updating — but this is not required for basic auto-update
-
-**Phase to address:** Phase 1 — no action required, but developers should be aware to avoid unnecessary CSP changes.
-
-**Confidence:** HIGH — confirmed from Electron architecture; CSP is renderer-only.
+**Command:**
+```bash
+npm audit --omit=dev   # production deps only
+```
 
 ---
 
-### Pitfall 13: Version Tag Format Mismatch Between package.json and GitHub Tags
+### Pitfall 5.5: electron-store v8 encryptionKey Is the Only Safe Upgrade Blocker
 
-**What goes wrong:** electron-updater checks the GitHub releases API for the latest release with a tag matching the version format. If `package.json` version is `2.0.0` but the GitHub tag is `v2.0.0` (with prefix `v`), the version comparison may fail or behave unexpectedly.
+**What goes wrong:** `electron-store ^8.2.0` is in `dependencies` (shipped to users). If `npm audit` flags a CVE in it, the temptation is to upgrade to v9+. However, `electron-store` v9 dropped the `encryptionKey` constructor option that `googleDrive.cjs` currently uses.
 
-**Warning signs:**
-- Auto-updater always reports "update available" even after updating
-- `latest.yml` version field doesn't match GitHub tag
-- `checkForUpdates()` resolves but `updateInfo.version` seems wrong
+**Current usage in googleDrive.cjs:**
+```js
+const store = new Store({
+  name: 'google-auth',
+  encryptionKey: getOrCreateEncryptionKey(),  // ← v8 API
+});
+```
 
-**Prevention:**
-1. The existing `release:patch/minor/major` scripts use `npm version` which creates tags like `v2.0.0` (with `v` prefix) — this is the GitHub convention
-2. electron-builder handles the `v` prefix stripping automatically when comparing — **no action needed** as long as all releases use the same tag format consistently
-3. Verify: first release after adding electron-updater should be tested end-to-end before shipping
+**electron-store v9+** removed `encryptionKey` in favor of the app developer managing encryption separately (i.e., the store stores plaintext, you encrypt before storing).
 
-**Phase to address:** Phase 2 (first release test).
+**Consequences of blind upgrade:** `new Store({ encryptionKey: ... })` silently ignores the option in v9, stored tokens are plaintext, and the app behaves differently than expected.
 
-**Confidence:** MEDIUM — electron-builder handles `v` prefix; specific behavior in edge cases needs end-to-end testing.
-
----
-
-### Pitfall 14: `latest.yml` Checksum Mismatch After Manual File Edits
-
-**What goes wrong:** If anyone manually edits the NSIS installer `.exe` after `electron:build` (e.g., re-signing, post-processing), the SHA512 checksum in `latest.yml` no longer matches the file. electron-updater validates the checksum after download and rejects the file with: `Error: sha512 checksum mismatch`.
-
-**Prevention:**
-1. Never manually modify release artifacts after building — generate a fresh build if changes are needed
-2. If re-signing post-build becomes necessary in the future, regenerate `latest.yml` checksum accordingly
-3. Not relevant for current `signAndEditExecutable: false` setup
-
-**Phase to address:** Phase 2 (release process documentation).
-
-**Confidence:** HIGH — documented electron-updater behavior.
+**Prevention:** If upgrading electron-store, review the changelog for the `encryptionKey` deprecation. Migrate the token storage to use `safeStorage` directly (which the `getOrCreateEncryptionKey()` pattern already does at the key level) before upgrading.
 
 ---
 
 ## Phase-Specific Warnings Summary
 
-| Phase | Topic | Pitfall | Mitigation |
-|-------|-------|---------|------------|
-| Phase 1: Core Wiring | Install electron-updater | Installed as devDep | Use `npm install electron-updater` (no --save-dev) |
-| Phase 1: Core Wiring | Portable detection | Auto-update on portable crashes | Guard with `PORTABLE_EXECUTABLE_DIR` check |
-| Phase 1: Core Wiring | Dev mode guard | Crashes on `checkForUpdates()` in dev | `if (app.isPackaged)` guard required |
-| Phase 1: Core Wiring | electron-builder config | No `latest.yml` generated | Add `publish.github` config before first build |
-| Phase 1: Core Wiring | quitAndInstall + Drive backup | Update install blocked by backup handler | Set `isQuitting = true` before `quitAndInstall()` |
-| Phase 1: Core Wiring | File naming | `require()` fails in `.js` files | All new electron files must use `.cjs` extension |
-| Phase 1: Core Wiring | Logging | Silent failures in production | Configure `autoUpdater.logger` + register `error` handler |
-| Phase 2: IPC Bridge | Renderer listeners | IPC listener accumulation | useEffect cleanup + `removeAllListeners` in preload |
-| Phase 2: IPC Bridge | Update dialogs | Blocking `dialog.showMessageBoxSync()` | Always use IPC → renderer toast (UPD-03 pattern) |
-| Phase 2: IPC Bridge | GitHub rate limits | 403 from GitHub API | One check per startup; handle 403 gracefully |
-| Phase 2: Release | latest.yml upload | Missing from GitHub release | Verify `latest.yml` in release assets before announcing |
-| Phase 2: Release | Version tag format | Tag/version mismatch | End-to-end test first update cycle before v1.1 ship |
+| Phase/Feature | Pitfall | Mitigation |
+|---------------|---------|------------|
+| SEC-01 safeStorage migration | First-launch: plaintext data read as encrypted → empty state | Add migration flag file BEFORE changing read path |
+| SEC-01 safeStorage migration | safeStorage.encryptString() returns Buffer → contextBridge drops it | Always base64-encode before IPC return |
+| SEC-01 safeStorage migration | useEffect localStorage write is sync, IPC is async | Debounce IPC writes (300ms), use ref for latest state |
+| SEC-02 Drive backup | Machine-specific key → cross-machine restore impossible | Use version envelope, document limitation in UI |
+| SEC-02 Drive backup | Old plaintext backup parsed as encrypted → data corruption | Check `backup.version` / `backup.encrypted` before decrypt |
+| SEC-02 Drive backup | AES-GCM nonce reuse | Always `crypto.randomBytes(12)`, prepend to ciphertext |
+| SEC-04 CSP | `script-src 'unsafe-inline'` hardcoded in prod | Add `scriptUnsafe` guard matching existing `styleUnsafe` pattern |
+| SEC-04 CSP | Framer Motion inline styles blocked in prod | Add `style-src-attr 'unsafe-inline'` (always, not dev-only) |
+| SEC-04 hardening | Debug fix: `nodeIntegration: true` | Never. Fix the missing preload bridge instead |
+| SEC-04 hardening | Debug fix: `webSecurity: false` | Never. Fix the CSP directive instead |
+| SEC-05 audit | `npm audit fix --force` breaks electron-store v8 API | Manual review, patch-only safe fixes |
+| SEC-05 audit | xlsx SheetJS CE CVEs flagged | Accept as low-risk for local-file-only context, document |
+| SEC-05 audit | Electron Chromium CVEs flagged | Upgrade to latest Electron 34.x patch, accept remainder |
 
 ---
 
 ## Sources
 
-- electron-updater official README: https://github.com/electron-userland/electron-builder/tree/master/packages/electron-updater (HIGH confidence)
-- electron-builder Auto Update guide: https://www.electron.build/auto-update (HIGH confidence)
-- GitHub API rate limits: https://docs.github.com/en/rest/overview/rate-limits-for-the-rest-api (HIGH confidence)
-- MoneyFlow `electron/main.cjs` — direct code inspection (HIGH confidence, project-specific)
-- MoneyFlow `package.json` build config — direct code inspection (HIGH confidence, project-specific)
+- Electron safeStorage API: https://www.electronjs.org/docs/latest/api/safe-storage
+- Electron contextBridge structured clone limitations: https://www.electronjs.org/docs/latest/api/context-bridge#parameter--error--return-type-support
+- CSP Level 3 `style-src-attr`: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/style-src-attr
+- Framer Motion + CSP: known issue documented in Framer Motion GitHub discussions
+- electron-store v8 → v9 breaking changes: https://github.com/sindresorhus/electron-store/releases
+- AES-GCM nonce requirements: NIST SP 800-38D
+- SheetJS Community Edition CVE history: https://github.com/SheetJS/sheetjs/issues
+- Code references: `electron/main.cjs` lines 97-99 (nodeIntegration), 146-162 (CSP), `electron/googleDrive.cjs` lines 22-40 (safeStorage key pattern), `src/hooks/useTransactionData.js` lines 37-88 (localStorage read/write path)
+
+**Confidence:** HIGH — all pitfalls verified against actual source code in this repository, not hypothetical. CSP bug (Pitfall 3.1) confirmed by reading main.cjs line 153 directly.
