@@ -80,6 +80,9 @@ Plans:
   3. The renderer UI shows the error state in both banner-flow and Settings after a background/download failure — no more indefinitely-stuck `'idle'` or `'downloading'` status
 **Plans:** 1 plan
 
+Plans:
+- [ ] 11-01-PLAN.md — Fix error forwarding (D-01+D-02) and start-download rejection (D-04) in electron/main.cjs
+
 ## Progress Table
 
 | Phase | Plans Complete | Status | Completed |
