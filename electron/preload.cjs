@@ -32,6 +32,41 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('backup-data-for-close', data);
   },
   
+  // Auto-updater bridge (D-09, D-10, D-11)
+  updater: {
+    // Invoke methods (renderer → main, awaited)
+    checkForUpdates: () => ipcRenderer.invoke('updater:check-for-updates'),
+    startDownload: () => ipcRenderer.invoke('updater:start-download'),
+    installUpdate: () => ipcRenderer.invoke('updater:install-update'),
+
+    // Listener methods — each returns a cleanup function (D-11)
+    onUpdateAvailable: (cb) => {
+      const handler = (_, info) => cb(info);
+      ipcRenderer.on('updater:update-available', handler);
+      return () => ipcRenderer.removeListener('updater:update-available', handler);
+    },
+    onUpdateNotAvailable: (cb) => {
+      const handler = (_, info) => cb(info);
+      ipcRenderer.on('updater:update-not-available', handler);
+      return () => ipcRenderer.removeListener('updater:update-not-available', handler);
+    },
+    onDownloadProgress: (cb) => {
+      const handler = (_, progress) => cb(progress);
+      ipcRenderer.on('updater:download-progress', handler);
+      return () => ipcRenderer.removeListener('updater:download-progress', handler);
+    },
+    onUpdateDownloaded: (cb) => {
+      const handler = (_, info) => cb(info);
+      ipcRenderer.on('updater:update-downloaded', handler);
+      return () => ipcRenderer.removeListener('updater:update-downloaded', handler);
+    },
+    onUpdateError: (cb) => {
+      const handler = (_, message) => cb(message);
+      ipcRenderer.on('updater:error', handler);
+      return () => ipcRenderer.removeListener('updater:error', handler);
+    },
+  },
+  
   // Utility per sapere se siamo in Electron
   isElectron: true,
 });
