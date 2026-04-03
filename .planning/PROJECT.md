@@ -32,12 +32,15 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 
 ### Active
 
-- [ ] **UPD-01**: Configurare electron-updater con GitHub Releases come provider
-- [ ] **UPD-02**: Check aggiornamenti automatico all'avvio dell'app
 - [ ] **UPD-03**: Toast non-bloccante con pulsante "Installa e riavvia" se update disponibile
 - [ ] **UPD-04**: Sezione "Aggiornamenti" in SettingsView con versione corrente e stato
 - [ ] **UPD-05**: Pulsante "Controlla aggiornamenti" con feedback visivo (loading, found, up-to-date, error)
-- [ ] **UPD-06**: IPC bridge main ↔ renderer per eventi update (check, progress, ready, error)
+
+### Validated
+
+- [x] **UPD-01**: Configurare electron-updater con GitHub Releases come provider — *Validated in Phase 09: update-infrastructure*
+- [x] **UPD-02**: Check aggiornamenti automatico all'avvio dell'app — *Validated in Phase 09: update-infrastructure*
+- [x] **UPD-06**: IPC bridge main ↔ renderer per eventi update (check, progress, ready, error) — *Validated in Phase 09: update-infrastructure*
 
 ### Out of Scope
 
@@ -113,4 +116,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-03 after v1.1 milestone started*
+*Last updated: 2026-04-03 — Phase 09 complete: auto-update infrastructure wired (electron-updater, IPC bridge, GitHub publish)*
