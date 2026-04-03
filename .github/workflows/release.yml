@@ -41,23 +41,15 @@ jobs:
           $credentials | ConvertTo-Json -Depth 3 | Set-Content -Path "electron/google-credentials.json"
         shell: pwsh
 
-      - name: Build Electron app
+      - name: Build and publish Electron app
         run: npm run electron:build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: MoneyFlow-Windows
-          path: release/*.exe
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: release/*.exe
-          generate_release_notes: true
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          path: |
+            release/*.exe
+            release/latest.yml
