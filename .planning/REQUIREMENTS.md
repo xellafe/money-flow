@@ -48,12 +48,12 @@
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| UPD-01 | — | pending |
-| UPD-02 | — | pending |
-| UPD-03 | — | pending |
-| UPD-04 | — | pending |
-| UPD-05 | — | pending |
-| UPD-06 | — | pending |
-| UPD-07 | — | pending |
-| UPD-08 | — | pending |
-| UPD-09 | — | pending |
+| UPD-01 | Phase 9 | pending |
+| UPD-02 | Phase 9 | pending |
+| UPD-03 | Phase 9 | pending |
+| UPD-04 | Phase 10 | pending |
+| UPD-05 | Phase 10 | pending |
+| UPD-06 | Phase 9 | pending |
+| UPD-07 | Phase 10 | pending |
+| UPD-08 | Phase 10 | pending |
+| UPD-09 | Phase 10 | pending |
