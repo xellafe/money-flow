@@ -32,27 +32,11 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 
 ### Active
 
-*(Nothing — v1.1 milestone complete. Next requirements defined in next milestone.)*
-
-### Validated
-
-- ✓ Importazione transazioni da Excel/CSV (Illimity, Fineco, PayPal, generic) — existing
-- ✓ Auto-categorizzazione keyword-based con gestione conflitti — existing
-- ✓ Dashboard analytics con grafici (Recharts: bar, area, pie) — existing
-- ✓ CRUD transazioni manuali (add, edit, delete) — existing
-- ✓ Gestione categorie (add, edit, delete, keyword mapping) — existing
-- ✓ Sincronizzazione Google Drive (OAuth, backup/restore, auto-backup alla chiusura) — existing
-- ✓ Import profiles personalizzabili — existing
-- ✓ Persistenza locale via localStorage — existing
-- ✓ Toast notifications — existing
-- ✓ Tailwind CSS v4 come sistema di styling principale — v1.0
-- ✓ Refactor App.jsx monolitico (2127 righe) in 6 hook separati — v1.0
-- ✓ Design system: token colori, tipografia, spacing coerenti — v1.0
-- ✓ Redesign navigazione: sidebar fissa animata (240px/64px), AppHeader contestuale — v1.0
-- ✓ Redesign Dashboard: stat cards, AreaChart + DonutChart, period selector, cross-filter — v1.0
-- ✓ Redesign Lista Transazioni: tabella sortable, inline editing, ricerca debounced, filter chips — v1.0
-- ✓ Redesign Modali: Radix Dialog + ModalShell, scale/fade 200ms, focus trap, 7 modali migrate — v1.0
-- ✓ UX polish: toast animato, skeleton loading, empty states, page transitions, cursor coerente — v1.0
+- [ ] **SEC-01**: Cifratura trasparente dati locali con chiave derivata dal sistema (Electron `safeStorage`)
+- [ ] **SEC-02**: Backup Google Drive cifrati prima dell'upload, decifrati al restore
+- [ ] **SEC-03**: Privacy policy in-app — schermata in Settings + consenso a primo avvio
+- [ ] **SEC-04**: Electron security hardening — CSP nel renderer, `nodeIntegration: false`, `contextIsolation: true`
+- [ ] **SEC-05**: Dependency audit — `npm audit`, fix vulnerabilità critiche
 - ✓ **UPD-01**: electron-updater configurato con GitHub Releases come provider — v1.1
 - ✓ **UPD-02**: Check aggiornamenti automatico all'avvio (3s delay, prod-only guard) — v1.1
 - ✓ **UPD-03**: Toast non-bloccante "Installa e riavvia" quando download completato — v1.1
@@ -68,6 +52,17 @@ L'utente riesce a capire la propria situazione finanziaria a colpo d'occhio — 
 - Mobile app — desktop-only (Electron)
 - Nuove funzionalità business (budget goals, forecast) — solo redesign UI/UX esistente
 - Date range picker nella TransactionFilterBar — deferred to v1.1 (AppHeader-only decision)
+
+## Current Milestone: v1.2 Security & Privacy
+
+**Goal:** Proteggere i dati finanziari con cifratura trasparente, rafforzare la sicurezza Electron, e integrare la privacy policy nell'app.
+
+**Target features:**
+- Cifratura locale trasparente (`safeStorage`, no password aggiuntiva per l'utente)
+- Backup Google Drive cifrati prima dell'upload
+- Privacy policy in-app (Settings + consenso primo avvio)
+- Electron security hardening (CSP, nodeIntegration, contextIsolation)
+- Dependency audit + fix vulnerabilità critiche
 
 ## Last Shipped: v1.1 Auto-Update — **2026-04-03**
 
@@ -141,4 +136,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-03 — v1.1 milestone complete: auto-update system shipped (Phases 9–11)*
+*Last updated: 2026-04-03 — v1.2 milestone started: Security & Privacy*
