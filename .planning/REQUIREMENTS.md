@@ -56,16 +56,16 @@
 
 | Requirement | Phase | Plan | Status |
 |-------------|-------|------|--------|
-| SEC-01 | TBD | TBD | Pending |
-| SEC-02 | TBD | TBD | Pending |
-| SEC-03 | TBD | TBD | Pending |
-| SEC-04 | TBD | TBD | Pending |
-| SEC-05 | TBD | TBD | Pending |
-| SEC-06 | TBD | TBD | Pending |
-| SEC-07 | TBD | TBD | Pending |
-| SEC-08 | TBD | TBD | Pending |
-| SEC-09 | TBD | TBD | Pending |
-| SEC-10 | TBD | TBD | Pending |
-| SEC-11 | TBD | TBD | Pending |
-| SEC-12 | TBD | TBD | Pending |
-| SEC-13 | TBD | TBD | Pending |
+| SEC-01 | Phase 12 | TBD | Pending |
+| SEC-02 | Phase 13 | TBD | Pending |
+| SEC-03 | Phase 13 | TBD | Pending |
+| SEC-04 | Phase 13 | TBD | Pending |
+| SEC-05 | Phase 14 | TBD | Pending |
+| SEC-06 | Phase 14 | TBD | Pending |
+| SEC-07 | Phase 15 | TBD | Pending |
+| SEC-08 | Phase 15 | TBD | Pending |
+| SEC-09 | Phase 15 | TBD | Pending |
+| SEC-10 | Phase 16 | TBD | Pending |
+| SEC-11 | Phase 16 | TBD | Pending |
+| SEC-12 | Phase 16 | TBD | Pending |
+| SEC-13 | Phase 16 | TBD | Pending |
