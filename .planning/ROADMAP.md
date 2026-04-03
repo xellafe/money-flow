@@ -35,7 +35,7 @@ Full archive: `.planning/milestones/v1.0-ROADMAP.md`
 - [x] **Phase 9: Update Infrastructure** — Install electron-updater, wire main process, expose IPC bridge to renderer (completed 2026-04-03)
 - [x] **Phase 10: Update UI** — UpdateBanner, Settings Aggiornamenti section, manual check, post-check feedback (completed 2026-04-03)
 
-- [ ] **Phase 11: Update Error Handling** — Fix silent error swallowing in IPC bridge (background/download errors reach renderer)
+- [x] **Phase 11: Update Error Handling** — Fix silent error swallowing in IPC bridge (background/download errors reach renderer) (completed 2026-04-03)
 
 ## Phase Details
 
@@ -78,10 +78,10 @@ Plans:
   1. When `autoUpdater.on('error', ...)` fires (background startup check or mid-download), a `webContents.send('updater:error', err.message)` call is made so `useUpdateStatus` transitions to `status='error'`
   2. When `updater:start-download` IPC handler encounters an error, the promise rejects (or the hook inspects the return value) so `useUpdateStatus.catch()` fires and sets `status='error'`
   3. The renderer UI shows the error state in both banner-flow and Settings after a background/download failure — no more indefinitely-stuck `'idle'` or `'downloading'` status
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 11-01-PLAN.md — Fix error forwarding (D-01+D-02) and start-download rejection (D-04) in electron/main.cjs
+- [x] 11-01-PLAN.md — Fix error forwarding (D-01+D-02) and start-download rejection (D-04) in electron/main.cjs
 
 ## Progress Table
 
@@ -89,4 +89,4 @@ Plans:
 |-------|----------------|--------|-----------|
 | 9. Update Infrastructure | 1/1 | Complete | 2026-04-03 |
 | 10. Update UI | 2/2 | Complete | 2026-04-03 |
-| 11. Update Error Handling | 0/1 | Planned | — |
+| 11. Update Error Handling | 1/1 | Complete   | 2026-04-03 |
