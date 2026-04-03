@@ -32,7 +32,7 @@ sources:
 
 ## 2. Spacing
 
-8-point scale. No exceptions for this phase.
+8-point scale. Exceptions limited to 12px (py-3, gap-3) for Toast visual-match compatibility.
 
 | Token  | px  | Tailwind class |
 |--------|-----|----------------|
@@ -60,11 +60,11 @@ Font: **Inter Variable**. Declare exactly 4 sizes, 2 weights.
 | Role                    | Size    | Weight    | Line-height | Tailwind classes                               |
 |-------------------------|---------|-----------|-------------|------------------------------------------------|
 | Page heading            | 24px    | 600       | 1.2         | `text-2xl font-semibold`                       |
-| Section heading         | 14px    | 500       | 1.4         | `text-sm font-medium uppercase tracking-wider` |
+| Section heading         | 14px    | 600       | 1.4         | `text-sm font-semibold uppercase tracking-wider` |
 | Body / labels           | 14px    | 400       | 1.5         | `text-sm`                                      |
 | Version / meta text     | 14px    | 400       | 1.5         | `text-sm text-gray-500`                        |
 
-**Weights used:** regular (400) + medium/semibold (500/600)
+**Weights used:** regular (400) + semibold (600)
 **Progress emphasis:** progress percentage N% rendered in `font-semibold` within the body text string
 
 ---
@@ -77,7 +77,7 @@ Font: **Inter Variable**. Declare exactly 4 sizes, 2 weights.
 |-------------------|---------------|-------------------------|-------------------------------------------------|
 | Surface (60%)     | white         | `bg-white`              | All card surfaces, banner, settings background  |
 | Secondary (30%)   | gray-100/200  | `bg-gray-100`/`border-gray-200` | Inactive buttons, section dividers, borders |
-| Accent (10%)      | blue-500/600  | `bg-blue-500 hover:bg-blue-600` | "Installa e riavvia" button (banner + settings), "Riprova" link |
+| Accent (10%)      | blue-500/600  | `bg-blue-500 hover:bg-blue-600` | "Installa e riavvia" button (banner + Settings) |
 | Text primary      | gray-800      | `text-gray-800`         | All body text, banner message                   |
 | Text secondary    | gray-500      | `text-gray-500`         | Section headings, version label, "Sei già aggiornato" |
 | Text muted        | gray-400/600  | `text-gray-400`/`text-gray-600` | Dismiss X button idle, progress text     |
@@ -170,7 +170,7 @@ flex items-center gap-3 text-gray-800 min-w-[260px]
 **Section structure (follows existing Categorie / Sincronizzazione pattern):**
 ```jsx
 <section>
-  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
     Aggiornamenti
   </h3>
   {/* version row */}
